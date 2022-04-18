@@ -1,0 +1,10 @@
+{
+	"cSpell.words": [
+		"actix",
+		"opentelemetry",
+		"reqwest",
+		"rstest",
+		"sqlx",
+		"wiremock"
+	]
+}
