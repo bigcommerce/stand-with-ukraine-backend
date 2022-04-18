@@ -2,5 +2,5 @@ application:
   host: 127.0.0.1
   base_url: http://127.0.0.1
 database:
-  port: 5434
+  port: 5432
   require_ssl: false

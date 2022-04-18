@@ -21,7 +21,7 @@ fi
 DB_USER=${POSTGRES_USER:=postgres}
 DB_PASSWORD="${POSTGRES_PASSWORD:=password}"
 DB_NAME="${POSTGRES_DB:=swu}"
-DB_PORT="${POSTGRES_PORT:=5434}"
+DB_PORT="${POSTGRES_PORT:=5432}"
 DB_CONTAINER_NAME="swu-db"
 
 # Allow to skip Docker if a dockerized Postgres database is already running
@@ -54,4 +54,3 @@ export DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@localhost:${DB_PORT}/${
 sqlx database create
 sqlx migrate run
 cargo sqlx prepare -- --bin swu-app
-cargo sqlx prepare --check -- --bin swu-app
