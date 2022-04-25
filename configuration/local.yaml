@@ -4,3 +4,6 @@ application:
 database:
   port: 5432
   require_ssl: false
+bigcommerce:
+  client_secret: "abcdefg"
+  client_id: "abcdefg"

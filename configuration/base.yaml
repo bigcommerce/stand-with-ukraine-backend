@@ -1,8 +1,13 @@
 application:
   port: 8000
+  jwt_secret: "abcdefghijklmnopqrstuv"
 database:
   host: "localhost"
   port: 5432
   username: "postgres"
   password: "password"
   database_name: "swu"
+bigcommerce:
+  api_base_url: https://api.bigcommerce.com
+  login_base_url: https://login.bigcommerce.com
+  timeout: 10000

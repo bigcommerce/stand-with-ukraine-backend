@@ -10,6 +10,7 @@ use sqlx::{
 pub struct Settings {
     pub database: DatabaseSettings,
     pub application: ApplicationSettings,
+    pub bigcommerce: BCAppSettings,
 }
 
 #[derive(serde::Deserialize, Clone)]
@@ -22,6 +23,17 @@ pub struct DatabaseSettings {
     pub host: String,
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub port: u16,
+}
+
+#[derive(serde::Deserialize, Clone)]
+pub struct BCAppSettings {
+    pub client_id: String,
+    pub client_secret: Secret<String>,
+
+    pub api_base_url: String,
+    pub login_base_url: String,
+    #[serde(deserialize_with = "deserialize_number_from_string")]
+    pub timeout: u16,
 }
 
 impl DatabaseSettings {
@@ -51,6 +63,7 @@ impl DatabaseSettings {
 #[derive(serde::Deserialize, Clone)]
 pub struct ApplicationSettings {
     pub base_url: String,
+    pub jwt_secret: Secret<String>,
 
     pub host: String,
     #[serde(deserialize_with = "deserialize_number_from_string")]
@@ -72,6 +85,22 @@ pub fn get_configuration() -> Result<Settings, ConfigError> {
         .add_source(Environment::with_prefix("app").separator("__"))
         .build()?
         .try_deserialize()
+}
+
+pub struct ApplicationBaseUrl(pub String);
+
+impl AsRef<str> for ApplicationBaseUrl {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
+
+pub struct JWTSecret(pub Secret<String>);
+
+impl AsRef<Secret<String>> for JWTSecret {
+    fn as_ref(&self) -> &Secret<String> {
+        &self.0
+    }
 }
 
 #[derive(PartialEq, Eq, Debug)]
