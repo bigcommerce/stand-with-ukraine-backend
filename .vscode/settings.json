@@ -1,9 +1,13 @@
 {
 	"cSpell.words": [
+		"abcdefghijklmnopqrstuv",
 		"actix",
+		"httpauth",
+		"jsonwebtoken",
 		"opentelemetry",
 		"reqwest",
 		"rstest",
+		"splitn",
 		"sqlx",
 		"wiremock"
 	]
