@@ -50,6 +50,7 @@ until psql -h "localhost" -U "${DB_USER}" -p "${DB_PORT}" -d "postgres" -c '\q' 
 done
 
 echo >&2 "Postgres is up and running on port ${DB_PORT}!"
-export DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@localhost:${DB_PORT}/${DB_NAME}
+DATABASE_URL_WITHOUT_DB=postgres://${DB_USER}:${DB_PASSWORD}@localhost:${DB_PORT}
+export DATABASE_URL=${DATABASE_URL_WITHOUT_DB}/${DB_NAME}
 sqlx database create
 sqlx migrate run
