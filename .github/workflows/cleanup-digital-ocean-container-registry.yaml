@@ -1,0 +1,20 @@
+name: Clean up
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  clean_up:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Do clean up using doctl
+        run: |
+          doctl registry garbage-collection start --include-untagged-manifests registry.digitalocean.com/stand-with-ukraine

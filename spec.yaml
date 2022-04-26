@@ -4,7 +4,8 @@ services:
   - name: swu-backend
     image:
       registry_type: DOCR
-      repository: zero2prod
+      repository: app
+      tag: latest
     health_check:
       http_path: /health_check
     http_port: 8000
@@ -13,22 +14,22 @@ services:
     routes:
       - path: /
     envs:
-      - key: APP_APPLICATION__BASE_URL
+      - key: APP__APPLICATION__BASE_URL
         scope: RUN_TIME
         value: ${APP_URL}
-      - key: APP_DATABASE__USERNAME
+      - key: APP__DATABASE__USERNAME
         scope: RUN_TIME
         value: ${db.USERNAME}
-      - key: APP_DATABASE__PASSWORD
+      - key: APP__DATABASE__PASSWORD
         scope: RUN_TIME
         value: ${db.PASSWORD}
-      - key: APP_DATABASE__HOST
+      - key: APP__DATABASE__HOST
         scope: RUN_TIME
         value: ${db.HOSTNAME}
-      - key: APP_DATABASE__PORT
+      - key: APP__DATABASE__PORT
         scope: RUN_TIME
         value: ${db.PORT}
-      - key: APP_DATABASE__DATABASE_NAME
+      - key: APP__DATABASE__DATABASE_NAME
         scope: RUN_TIME
         value: ${db.DATABASE}
 databases:
