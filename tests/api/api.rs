@@ -173,6 +173,63 @@ async fn widget_publish_request_succeeds() {
         .mount(&app.bigcommerce_server)
         .await;
 
+    Mock::given(method("GET"))
+        .and(path("/stores/test-store/v3/content/scripts"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+                "data": [
+                  {
+                    "uuid": "095be615-a8ad-4c33-8e9c-c7612fbf6c9f",
+                    "date_created": "2019-08-24T14:15:22Z",
+                    "date_modified": "2019-08-24T14:15:22Z",
+                    "description": "string",
+                    "html": "string",
+                    "src": "https://code.jquery.com/jquery-3.2.1.min.js",
+                    "auto_uninstall": true,
+                    "load_method": "default",
+                    "location": "head",
+                    "visibility": "storefront",
+                    "kind": "src",
+                    "api_client_id": "string",
+                    "consent_category": "essential",
+                    "enabled": true,
+                    "channel_id": 1
+                  }
+                ],
+                "meta": {
+                  "pagination": {
+                    "total": 36,
+                    "count": 36,
+                    "per_page": 50,
+                    "current_page": 1,
+                    "total_pages": 1,
+                    "links": {
+                      "previous": "string",
+                      "current": "?page=1&limit=50",
+                      "next": "string"
+                    }
+                  }
+                }
+        })))
+        .named("BigCommerce oauth token request")
+        .expect(1)
+        .mount(&app.bigcommerce_server)
+        .await;
+
+    Mock::given(method("DELETE"))
+        .and(path(
+            "/stores/test-store/v3/content/scripts/095be615-a8ad-4c33-8e9c-c7612fbf6c9f",
+        ))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": 204,
+            "title": "string",
+            "type": "string",
+            "instance": "string"
+        })))
+        .named("BigCommerce oauth token request")
+        .expect(1)
+        .mount(&app.bigcommerce_server)
+        .await;
+
     let response = client
         .post(&format!("{}/api/v1/publish", &app.address))
         .bearer_auth(app.generate_local_jwt_token())

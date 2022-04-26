@@ -102,7 +102,7 @@ impl BCClient {
         format!("{}/{}", self.get_scripts_route(store_hash), script_id)
     }
 
-    pub async fn remove_scripts(&self, store: BCStore) -> Result<(), anyhow::Error> {
+    pub async fn remove_scripts(&self, store: &BCStore) -> Result<(), anyhow::Error> {
         let BCListScriptsResponse { data } = self
             .http_client
             .get(self.get_scripts_route(&store.store_hash))
@@ -127,8 +127,8 @@ impl BCClient {
 
     pub async fn create_script(
         &self,
-        store: BCStore,
-        script_content: String,
+        store: &BCStore,
+        script_content: &String,
     ) -> Result<(), anyhow::Error> {
         self
             .http_client

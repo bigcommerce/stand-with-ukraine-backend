@@ -107,7 +107,13 @@ pub async fn publish_widget(
         .map_err(PublishError::UnexpectedError)?;
 
     bigcommerce_client
-        .create_script(store, script_content)
+        .remove_scripts(&store)
+        .await
+        .context("Failed to remove scripts.")
+        .map_err(PublishError::UnexpectedError)?;
+
+    bigcommerce_client
+        .create_script(&store, &script_content)
         .await
         .context("Failed to create script in BigCommerce")
         .map_err(PublishError::UnexpectedError)?;
@@ -128,7 +134,7 @@ pub async fn get_published_status(
 
     let store_status = read_store_published(store_hash, &db_pool)
         .await
-        .context("Failed to set store as published")
+        .context("Failed to get store status")
         .map_err(PublishError::UnexpectedError)?;
 
     Ok(HttpResponse::Ok().json(store_status))
@@ -147,7 +153,7 @@ pub async fn remove_widget(
         .map_err(PublishError::UnexpectedError)?;
 
     bigcommerce_client
-        .remove_scripts(store)
+        .remove_scripts(&store)
         .await
         .context("Failed to remove scripts in BigCommerce")
         .map_err(PublishError::UnexpectedError)?;
