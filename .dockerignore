@@ -7,3 +7,5 @@ tests/
 Dockerfile
 scripts/
 migrations/
+.github/
+.vscode/
