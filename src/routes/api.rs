@@ -7,8 +7,8 @@ use crate::{
     bigcommerce::BCClient,
     configuration::ApplicationBaseUrl,
     data::{
-        read_store_credentials, read_widget_configuration, write_store_published,
-        write_widget_configuration, WidgetConfiguration,
+        read_store_credentials, read_store_published, read_widget_configuration,
+        write_store_published, write_widget_configuration, WidgetConfiguration,
     },
 };
 
@@ -118,6 +118,20 @@ pub async fn publish_widget(
         .map_err(PublishError::UnexpectedError)?;
 
     Ok(HttpResponse::Ok().finish())
+}
+
+pub async fn get_published_status(
+    auth: AuthClaims,
+    db_pool: web::Data<PgPool>,
+) -> Result<HttpResponse, PublishError> {
+    let store_hash = auth.sub.as_str();
+
+    let store_status = read_store_published(store_hash, &db_pool)
+        .await
+        .context("Failed to set store as published")
+        .map_err(PublishError::UnexpectedError)?;
+
+    Ok(HttpResponse::Ok().json(store_status))
 }
 
 pub async fn remove_widget(

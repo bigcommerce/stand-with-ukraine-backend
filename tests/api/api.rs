@@ -1,4 +1,9 @@
-use swu_app::data::WidgetConfiguration;
+use serde_json::json;
+use swu_app::data::{StoreStatus, WidgetConfiguration};
+use wiremock::{
+    matchers::{method, path},
+    Mock, ResponseTemplate,
+};
 
 use crate::helpers::spawn_app;
 
@@ -27,6 +32,7 @@ async fn save_and_read_widget_configuration() {
     let app = spawn_app().await;
 
     let client = reqwest::Client::new();
+
     sqlx::query!(
         r#"
         INSERT INTO stores (id, store_hash, access_token, installed_at, uninstalled) 
@@ -95,4 +101,96 @@ async fn save_and_read_widget_configuration() {
     assert_eq!(response_widget_configuration.placement, "top-left");
     assert_eq!(response_widget_configuration.modal_body, "Body!");
     assert_eq!(response_widget_configuration.modal_title, "Title!");
+}
+
+#[tokio::test]
+async fn widget_publish_request_succeeds() {
+    let app = spawn_app().await;
+
+    sqlx::query!(
+        r#"
+        INSERT INTO stores (id, store_hash, access_token, installed_at, uninstalled) 
+        VALUES (gen_random_uuid(), 'test-store', 'test-token', '2021-04-20 00:00:00-07'::timestamptz, false)
+        "#,
+    )
+    .execute(&app.db_pool)
+    .await
+    .unwrap();
+
+    let configuration = WidgetConfiguration {
+        style: "blue".to_string(),
+        placement: "top-left".to_string(),
+        charity_selections: vec!["razom".to_string()],
+        modal_title: "Title!".to_string(),
+        modal_body: "Body!".to_string(),
+    };
+
+    let client = reqwest::Client::new();
+    client
+        .post(&format!("{}/api/v1/configuration", &app.address))
+        .bearer_auth(app.generate_local_jwt_token())
+        .json(&configuration)
+        .send()
+        .await
+        .expect("Failed to execute the request");
+
+    let response = client
+        .get(&format!("{}/api/v1/publish", &app.address))
+        .bearer_auth(app.generate_local_jwt_token())
+        .send()
+        .await
+        .expect("Failed to execute the request")
+        .json::<StoreStatus>()
+        .await
+        .expect("Invalid response format");
+
+    assert_eq!(response.published, false);
+
+    Mock::given(method("POST"))
+        .and(path("/stores/test-store/v3/content/scripts"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "data": {
+                "uuid": "095be615-a8ad-4c33-8e9c-c7612fbf6c9f",
+                "date_created": "2019-08-24T14:15:22Z",
+                "date_modified": "2019-08-24T14:15:22Z",
+                "description": "string",
+                "html": "string",
+                "src": "https://code.jquery.com/jquery-3.2.1.min.js",
+                "auto_uninstall": true,
+                "load_method": "default",
+                "location": "head",
+                "visibility": "storefront",
+                "kind": "src",
+                "api_client_id": "string",
+                "consent_category": "essential",
+                "enabled": true,
+                "channel_id": 1
+            },
+            "meta": {}
+        })))
+        .named("BigCommerce oauth token request")
+        .expect(1)
+        .mount(&app.bigcommerce_server)
+        .await;
+
+    let response = client
+        .post(&format!("{}/api/v1/publish", &app.address))
+        .bearer_auth(app.generate_local_jwt_token())
+        .send()
+        .await
+        .expect("Failed to execute the request");
+
+    assert!(response.status().is_success());
+
+    let response = client
+        .get(&format!("{}/api/v1/publish", &app.address))
+        .bearer_auth(app.generate_local_jwt_token())
+        .send()
+        .await
+        .expect("Failed to execute the request")
+        .json::<StoreStatus>()
+        .await
+        .expect("Invalid response format");
+
+    assert_eq!(response.published, true);
 }

@@ -20,6 +20,26 @@
     },
     "query": "\n        SELECT widget_configuration FROM stores\n        WHERE store_hash = $1;\n        "
   },
+  "56233a8901131d539dcb562b66d0e2d3bfe6226dbc6cc05f7efb7b1f85e12c01": {
+    "describe": {
+      "columns": [
+        {
+          "name": "published",
+          "ordinal": 0,
+          "type_info": "Bool"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "\n        SELECT published FROM stores\n        WHERE store_hash = $1;\n        "
+  },
   "7a1730c7c73eb4345511ab5efdb398cbc0ee56bfad6b20571b8ab0ecf70d22fd": {
     "describe": {
       "columns": [],

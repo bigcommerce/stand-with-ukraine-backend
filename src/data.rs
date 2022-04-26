@@ -87,6 +87,33 @@ pub async fn write_store_published(
     Ok(())
 }
 
+#[derive(serde::Deserialize, serde::Serialize)]
+pub struct StoreStatus {
+    pub published: bool,
+}
+
+#[tracing::instrument(
+    name = "Read store published status from database",
+    skip(store_hash, pool)
+)]
+pub async fn read_store_published(
+    store_hash: &str,
+    pool: &PgPool,
+) -> Result<StoreStatus, sqlx::Error> {
+    let store_status = sqlx::query_as!(
+        StoreStatus,
+        r#"
+        SELECT published FROM stores
+        WHERE store_hash = $1;
+        "#,
+        store_hash,
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(store_status)
+}
+
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct WidgetConfiguration {
     pub style: String,
