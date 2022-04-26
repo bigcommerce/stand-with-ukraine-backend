@@ -3,7 +3,7 @@ use once_cell::sync::Lazy;
 use secrecy::{ExposeSecret, Secret};
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use swu_app::{
-    authentication::{create_jwt, AuthClaims},
+    authentication::create_jwt,
     configuration::{get_configuration, DatabaseSettings, JWTSecret},
     startup::{get_connection_pool, Application},
     telemetry::{get_subscriber, init_subscriber},
@@ -96,19 +96,23 @@ async fn configure_database(config: &DatabaseSettings) -> PgPool {
 
 impl TestApp {
     pub fn generate_bc_jwt_token(&self) -> String {
-        let exp = ((OffsetDateTime::now_utc() + Duration::minutes(30)).unix_timestamp()) as i64;
+        let now = OffsetDateTime::now_utc();
+        let expiration = now + Duration::minutes(30);
         let claims = serde_json::json!( {
+            "iss": "bc",
+            "iat": now.unix_timestamp(),
+            "exp": expiration.unix_timestamp(),
+            "sub": "stores/test-store",
             "user": {
                 "id": 1,
-                "email": "test@test.com".to_string(),
+                "email": "test@test.com"
             },
             "owner": {
                 "id": 1,
                 "email": "test@test.com"
-
             },
-            "store_hash": "test-store",
-            "exp": exp,
+            "url": "/",
+            "channel_id": null
         });
         let header = Header::new(Algorithm::HS256);
         let key = EncodingKey::from_secret(self.bc_secret.expose_secret().as_bytes());
