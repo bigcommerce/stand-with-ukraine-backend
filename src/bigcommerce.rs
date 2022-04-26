@@ -72,6 +72,8 @@ impl BCClient {
         scope: &str,
         context: &str,
     ) -> Result<BCOAuthResponse, reqwest::Error> {
+        let callback_url = format!("{}/load", callback_url);
+
         self.http_client
             .post(self.get_oauth2_url())
             .json(&json!({
