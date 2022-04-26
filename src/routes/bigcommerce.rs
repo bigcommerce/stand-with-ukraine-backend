@@ -1,8 +1,4 @@
-use actix_web::{
-    http::StatusCode,
-    web::{self},
-    HttpResponse, ResponseError,
-};
+use actix_web::{http::StatusCode, web, HttpResponse, ResponseError};
 use anyhow::Context;
 use reqwest::header::LOCATION;
 use sqlx::PgPool;
