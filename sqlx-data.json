@@ -20,7 +20,7 @@
     },
     "query": "\n        SELECT widget_configuration FROM stores\n        WHERE store_hash = $1;\n        "
   },
-  "691ba7bf897c87e83aa9a09bf5cb79e9994cadc7429df20c97a4404f31b6f5d8": {
+  "7a1730c7c73eb4345511ab5efdb398cbc0ee56bfad6b20571b8ab0ecf70d22fd": {
     "describe": {
       "columns": [],
       "nullable": [],
@@ -31,7 +31,7 @@
         ]
       }
     },
-    "query": "\n        UPDATE stores\n        SET published = true, widget_configuration = $1\n        WHERE store_hash = $2;\n        "
+    "query": "\n        UPDATE stores\n        SET widget_configuration = $1\n        WHERE store_hash = $2;\n        "
   },
   "9f9a27a24eb386efa467214ef3b9aec2d96111c7263f9fd03e66872596806104": {
     "describe": {
@@ -44,6 +44,19 @@
       }
     },
     "query": "\n        UPDATE stores\n        SET uninstalled = true, published = false \n        WHERE store_hash = $1;\n        "
+  },
+  "a1374c9626cc38c8095d779b57445a161b4ca2a516d5097eeeb6497674218f57": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Bool",
+          "Text"
+        ]
+      }
+    },
+    "query": "\n        UPDATE stores\n        SET published = $1\n        WHERE store_hash = $2;\n        "
   },
   "af6e181247f7b17a473be8e19ef4e96699c6a8949bef209bcf5c651e30758c3b": {
     "describe": {

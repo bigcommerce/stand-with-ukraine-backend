@@ -63,6 +63,30 @@ pub async fn write_store_as_uninstalled(
     Ok(())
 }
 
+#[tracing::instrument(
+    name = "Write store published status in database",
+    skip(store_hash, pool)
+)]
+pub async fn write_store_published(
+    store_hash: &str,
+    status: bool,
+    pool: &PgPool,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"
+        UPDATE stores
+        SET published = $1
+        WHERE store_hash = $2;
+        "#,
+        status,
+        store_hash,
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct WidgetConfiguration {
     pub style: String,
@@ -87,7 +111,7 @@ pub async fn write_widget_configuration(
     sqlx::query!(
         r#"
         UPDATE stores
-        SET published = true, widget_configuration = $1
+        SET widget_configuration = $1
         WHERE store_hash = $2;
         "#,
         widget_configuration,
