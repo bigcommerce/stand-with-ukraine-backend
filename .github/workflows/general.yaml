@@ -241,7 +241,7 @@ jobs:
           SPEC_FILE: 'deployment.yaml'
           TAG: ${{ steps.prep.outputs.tag }}
         run: |
-          doctl apps spec get $DO_APP_ID > $SPEC_FILE
+          doctl apps spec get $DIGITALOCEAN_APP_ID > $SPEC_FILE
           echo "Setting tag $TAG"
           sed -i '' "s/tag: [a-z0-9]*$/tag: $TAG/g" $SPEC_FILE
           doctl apps spec validate $SPEC_FILE
