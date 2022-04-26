@@ -11,7 +11,7 @@ use crate::{
     authentication::create_jwt,
     bigcommerce::BCClient,
     configuration::{ApplicationBaseUrl, JWTSecret},
-    data::save_store_credentials,
+    data::{save_store_credentials, set_store_as_uninstalled},
 };
 
 #[derive(serde::Deserialize)]
@@ -104,6 +104,10 @@ impl ResponseError for LoadError {
     }
 }
 
+#[tracing::instrument(
+    name = "Process load request",
+    skip(query, bigcommerce_client, base_url, jwt_secret)
+)]
 pub async fn load(
     query: web::Query<LoadQuery>,
     bigcommerce_client: web::Data<BCClient>,
@@ -124,13 +128,21 @@ pub async fn load(
         .finish())
 }
 
-pub async fn uninstall(query: web::Query<LoadQuery>) -> HttpResponse {
-    HttpResponse::Ok().body(format!(
-        "Uninstall request with signed_payload_jwt={}",
-        query.signed_payload_jwt
-    ))
-}
+#[tracing::instrument(name = "Process uninstall request", skip(query, bigcommerce_client, db_pool), fields(store_hash=tracing::field::Empty, user_email=tracing::field::Empty))]
+pub async fn uninstall(
+    query: web::Query<LoadQuery>,
+    bigcommerce_client: web::Data<BCClient>,
+    db_pool: web::Data<PgPool>,
+) -> Result<HttpResponse, LoadError> {
+    let store = bigcommerce_client
+        .decode_jwt(&query.signed_payload_jwt)
+        .context("Failed to decode bigcommerce jwt")
+        .map_err(LoadError::InvalidCredentials)?;
 
-pub async fn logout() -> HttpResponse {
-    HttpResponse::Ok().body(format!("Logout request with signed_payload_jwt",))
+    set_store_as_uninstalled(&store.store_hash, &db_pool)
+        .await
+        .context("Failed to mark store as uninstalled")
+        .map_err(LoadError::UnexpectedError)?;
+
+    Ok(HttpResponse::Ok().finish())
 }

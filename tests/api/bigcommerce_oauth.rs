@@ -1,12 +1,13 @@
 use crate::helpers::spawn_app;
 use serde_json::json;
+use swu_app::{bigcommerce::BCStore, data::save_store_credentials};
 use wiremock::{
     matchers::{method, path},
     Mock, ResponseTemplate,
 };
 
 #[tokio::test]
-async fn install_request_from_bigcommerce_fails_without_query_parameters() {
+async fn install_request_fails_without_query_parameters() {
     let app = spawn_app().await;
 
     let client = reqwest::Client::new();
@@ -52,7 +53,7 @@ async fn install_request_from_bigcommerce_fails_without_query_parameters() {
 }
 
 #[tokio::test]
-async fn install_request_from_bigcommerce_succeeds() {
+async fn install_request_succeeds() {
     let app = spawn_app().await;
 
     Mock::given(method("POST"))
@@ -78,7 +79,7 @@ async fn install_request_from_bigcommerce_succeeds() {
     let response = client
         .get(&format!("{}/bigcommerce/install", &app.address))
         .query(&[
-            ("context", "test-context"),
+            ("context", "stores/STORE_HASH"),
             ("scope", "test-scope"),
             ("code", "test-code"),
         ])
@@ -97,4 +98,84 @@ async fn install_request_from_bigcommerce_succeeds() {
             .contains(&app.base_url),
         "Header location should be set"
     );
+
+    let row = sqlx::query!(
+        r#"
+        SELECT store_hash, access_token, uninstalled, published FROM stores
+        WHERE store_hash = 'STORE_HASH'
+        "#
+    )
+    .fetch_one(&app.db_pool)
+    .await
+    .unwrap();
+
+    assert_eq!(row.access_token, "ACCESS_TOKEN");
+    assert_eq!(row.store_hash, "STORE_HASH");
+}
+
+#[tokio::test]
+async fn load_request_succeeds() {
+    let app = spawn_app().await;
+
+    let client = reqwest::ClientBuilder::new()
+        .redirect(reqwest::redirect::Policy::none())
+        .build()
+        .unwrap();
+
+    let response = client
+        .get(&format!("{}/bigcommerce/load", &app.address))
+        .query(&[("signed_payload_jwt", &app.generate_bc_jwt_token())])
+        .send()
+        .await
+        .expect("Failed to execute the request");
+
+    assert_eq!(response.status().as_u16(), 302);
+    assert!(
+        response
+            .headers()
+            .get("location")
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .contains(&app.base_url),
+        "Header location should be set"
+    );
+}
+
+#[tokio::test]
+async fn uninstall_request_succeeds() {
+    let app = spawn_app().await;
+
+    let client = reqwest::ClientBuilder::new()
+        .redirect(reqwest::redirect::Policy::none())
+        .build()
+        .unwrap();
+
+    let store = BCStore {
+        store_hash: "test-store".to_string(),
+        access_token: "test-token".to_string(),
+    };
+    save_store_credentials(&store, &app.db_pool)
+        .await
+        .expect("Failed to initialize store");
+
+    let response = client
+        .get(&format!("{}/bigcommerce/uninstall", &app.address))
+        .query(&[("signed_payload_jwt", &app.generate_bc_jwt_token())])
+        .send()
+        .await
+        .expect("Failed to execute the request");
+
+    let row = sqlx::query!(
+        r#"
+        SELECT uninstalled FROM stores
+        WHERE store_hash = 'test-store'
+        "#
+    )
+    .fetch_one(&app.db_pool)
+    .await
+    .unwrap();
+
+    assert_eq!(row.uninstalled, true);
+    assert_eq!(response.status().as_u16(), 200);
 }

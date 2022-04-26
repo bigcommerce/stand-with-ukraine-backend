@@ -4,6 +4,7 @@
 		"actix",
 		"httpauth",
 		"jsonwebtoken",
+		"nanos",
 		"opentelemetry",
 		"reqwest",
 		"rstest",

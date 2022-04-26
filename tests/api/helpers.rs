@@ -1,10 +1,13 @@
+use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
 use once_cell::sync::Lazy;
+use secrecy::{ExposeSecret, Secret};
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use swu_app::{
     configuration::{get_configuration, DatabaseSettings, JWTSecret},
     startup::{get_connection_pool, Application},
     telemetry::{get_subscriber, init_subscriber},
 };
+use time::{Duration, OffsetDateTime};
 use uuid::Uuid;
 use wiremock::MockServer;
 
@@ -29,6 +32,7 @@ pub struct TestApp {
     pub bigcommerce_server: MockServer,
     pub jwt_secret: JWTSecret,
     pub base_url: String,
+    pub bc_secret: Secret<String>,
 }
 
 pub async fn spawn_app() -> TestApp {
@@ -62,6 +66,7 @@ pub async fn spawn_app() -> TestApp {
         bigcommerce_server,
         db_pool: get_connection_pool(&configuration.database),
         jwt_secret: JWTSecret(configuration.application.jwt_secret),
+        bc_secret: Secret::from(configuration.bigcommerce.client_secret),
         base_url: configuration.application.base_url,
     };
 
@@ -86,4 +91,27 @@ async fn configure_database(config: &DatabaseSettings) -> PgPool {
         .expect("Failed to migrate the database.");
 
     connection_pool
+}
+
+impl TestApp {
+    pub fn generate_bc_jwt_token(&self) -> String {
+        let exp = ((OffsetDateTime::now_utc() + Duration::minutes(30)).unix_timestamp()) as i64;
+        let claims = serde_json::json!( {
+            "user": {
+                "id": 1,
+                "email": "test@test.com".to_string(),
+            },
+            "owner": {
+                "id": 1,
+                "email": "test@test.com"
+
+            },
+            "store_hash": "test-store",
+            "exp": exp,
+        });
+        let header = Header::new(Algorithm::HS256);
+        let key = EncodingKey::from_secret(self.bc_secret.expose_secret().as_bytes());
+
+        encode(&header, &claims, &key).unwrap()
+    }
 }

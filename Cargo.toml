@@ -50,6 +50,7 @@ features = [
 	"time",
 	"migrate",
 	"offline",
+	"json",
 ]
 
 [dependencies.reqwest]

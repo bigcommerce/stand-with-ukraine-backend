@@ -1,3 +1,3 @@
 mod api;
-mod auth;
+mod bigcommerce_oauth;
 mod helpers;

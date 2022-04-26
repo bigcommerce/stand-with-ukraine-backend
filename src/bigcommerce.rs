@@ -2,7 +2,6 @@ use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
 use reqwest::Client;
 use secrecy::{ExposeSecret, Secret};
 use serde_json::json;
-use time::{Duration, OffsetDateTime};
 
 use crate::authentication::AuthenticationError;
 
@@ -14,7 +13,7 @@ pub struct BCClient {
     http_client: Client,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize)]
 pub struct BCUser {
     pub id: i32,
     pub email: String,
@@ -32,8 +31,8 @@ impl BCOAuthResponse {
     pub fn get_bigcommerce_store(&self) -> Result<BCStore, anyhow::Error> {
         let store_hash = self
             .context
-            .splitn(2, "/")
-            .next()
+            .split_once('/')
+            .map(|x| x.1)
             .ok_or_else(|| anyhow::anyhow!("Context did not have correct format"))?;
 
         Ok(BCStore {
@@ -78,7 +77,7 @@ impl BCClient {
             .post(self.get_oauth2_url())
             .json(&json!({
                 "client_id": self.client_id,
-                "client_Secret": self.client_secret.expose_secret(),
+                "client_secret": self.client_secret.expose_secret(),
                 "redirect_uri": callback_url,
                 "grant_type": "authorization_code",
                 "code": code,
@@ -153,16 +152,9 @@ impl BCClient {
 
     pub fn decode_jwt(&self, token: &str) -> Result<BCClaims, AuthenticationError> {
         let key = DecodingKey::from_secret(self.client_secret.expose_secret().as_bytes());
-        let validation = Validation::new(Algorithm::HS512);
-        let decoded = decode::<BCClaims>(&token, &key, &validation)
+        let validation = Validation::new(Algorithm::HS256);
+        let decoded = decode::<BCClaims>(token, &key, &validation)
             .map_err(|e| AuthenticationError::InvalidTokenError(e.into()))?;
-
-        let expire_window = OffsetDateTime::now_utc() + Duration::minutes(1);
-        if (decoded.claims.timestamp as i64) < expire_window.unix_timestamp() {
-            return Err(AuthenticationError::InvalidTokenError(anyhow::anyhow!(
-                "Expired token"
-            )));
-        }
 
         Ok(decoded.claims)
     }
@@ -181,12 +173,11 @@ pub struct BCScript {
     pub channel_id: i16,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize)]
 pub struct BCClaims {
     pub user: BCUser,
     pub owner: BCUser,
     pub store_hash: String,
-    pub timestamp: f64,
 }
 
 #[derive(serde::Serialize)]

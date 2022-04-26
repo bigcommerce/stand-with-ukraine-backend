@@ -38,7 +38,7 @@ where
 {
     let key = DecodingKey::from_secret(secret.as_ref().expose_secret().as_bytes());
     let validation = Validation::new(Algorithm::HS512);
-    let decoded = decode::<Claims>(&token, &key, &validation).map_err(|e| {
+    let decoded = decode::<Claims>(token, &key, &validation).map_err(|e| {
         print!("{}", e);
         AuthenticationError::InvalidTokenError(e.into())
     })?;
@@ -60,13 +60,11 @@ pub async fn validate_jwt_bearer_token(
     };
 
     match decode_token(credentials.token(), jwt_secret.as_ref()) {
-        Ok(_) => return Ok(req),
-        Err(err) => {
-            return Err(Error::from(AuthenticationError::InvalidTokenError(
-                err.into(),
-            )))
-        }
-    };
+        Ok(_) => Ok(req),
+        Err(err) => Err(Error::from(AuthenticationError::InvalidTokenError(
+            err.into(),
+        ))),
+    }
 }
 
 #[derive(thiserror::Error, Debug)]

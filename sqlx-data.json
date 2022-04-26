@@ -1,3 +1,69 @@
 {
-  "db": "PostgreSQL"
+  "db": "PostgreSQL",
+  "54e2091f634d5802a42d9efdc96812be100a2e3c3b1a6cf07faf47c3a070bc8b": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Varchar",
+          "Varchar",
+          "Timestamptz"
+        ]
+      }
+    },
+    "query": "\n        INSERT INTO stores (id, store_hash, access_token, installed_at) \n        VALUES ($1, $2, $3, $4)\n        ON CONFLICT (store_hash) DO UPDATE set access_token = $2, installed_at = $4;\n        "
+  },
+  "691ba7bf897c87e83aa9a09bf5cb79e9994cadc7429df20c97a4404f31b6f5d8": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Jsonb",
+          "Text"
+        ]
+      }
+    },
+    "query": "\n        UPDATE stores\n        SET published = true, widget_configuration = $1\n        WHERE store_hash = $2;\n        "
+  },
+  "9f9a27a24eb386efa467214ef3b9aec2d96111c7263f9fd03e66872596806104": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "\n        UPDATE stores\n        SET uninstalled = true, published = false \n        WHERE store_hash = $1;\n        "
+  },
+  "ea92a0d130fec78ee1f88cc529ee67d1d1247d174c45d586e5f9ccd56cdaeeb0": {
+    "describe": {
+      "columns": [
+        {
+          "name": "access_token",
+          "ordinal": 0,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "store_hash",
+          "ordinal": 1,
+          "type_info": "Varchar"
+        }
+      ],
+      "nullable": [
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "\n        SELECT access_token, store_hash FROM stores WHERE store_hash = $1\n        "
+  }
 }

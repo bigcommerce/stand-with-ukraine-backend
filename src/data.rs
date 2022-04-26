@@ -39,3 +39,40 @@ pub async fn get_store_credentials(
 
     Ok(store)
 }
+
+#[tracing::instrument(name = "Mark store as uninstalled", skip(store_hash, pool))]
+pub async fn set_store_as_uninstalled(store_hash: &str, pool: &PgPool) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"
+        UPDATE stores
+        SET uninstalled = true, published = false 
+        WHERE store_hash = $1;
+        "#,
+        store_hash,
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+#[tracing::instrument(name = "Save widget configuration", skip(store_hash, pool))]
+pub async fn save_widget_configuration(
+    store_hash: &str,
+    widget_configuration: &str,
+    pool: &PgPool,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"
+        UPDATE stores
+        SET published = true, widget_configuration = $1
+        WHERE store_hash = $2;
+        "#,
+        serde_json::Value::from(widget_configuration),
+        store_hash,
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}

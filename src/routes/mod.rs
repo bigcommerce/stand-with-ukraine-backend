@@ -16,14 +16,16 @@ pub fn routes(cfg: &mut web::ServiceConfig) {
             .app_data(bearer_auth_config)
             .wrap(auth_validator)
             .wrap(Cors::permissive())
-            .route("/health_check", web::get().to(api::health_check)),
+            .route("/health_check", web::get().to(api::health_check))
+            .route("/save", web::post().to(api::save_widget_configuration))
+            .route("/publish", web::post().to(api::publish_widget))
+            .route("/remove", web::delete().to(api::remove_widget)),
     );
 
     cfg.service(
         web::scope("/bigcommerce")
             .route("/install", web::get().to(bigcommerce_oauth::install))
             .route("/uninstall", web::get().to(bigcommerce_oauth::uninstall))
-            .route("/load", web::get().to(bigcommerce_oauth::load))
-            .route("/logout", web::get().to(bigcommerce_oauth::logout)),
+            .route("/load", web::get().to(bigcommerce_oauth::load)),
     );
 }
