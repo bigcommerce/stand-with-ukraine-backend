@@ -72,8 +72,7 @@ impl BCClient {
         scope: &str,
         context: &str,
     ) -> Result<BCOAuthResponse, reqwest::Error> {
-        Ok(self
-            .http_client
+        self.http_client
             .post(self.get_oauth2_url())
             .json(&json!({
                 "client_id": self.client_id,
@@ -87,7 +86,7 @@ impl BCClient {
             .send()
             .await?
             .json()
-            .await?)
+            .await
     }
 
     fn get_scripts_route(&self, store_hash: &str) -> String {
