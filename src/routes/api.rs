@@ -1,5 +1,7 @@
 use actix_web::{http::StatusCode, HttpResponse, ResponseError};
 
+use crate::authentication::AuthClaims;
+
 pub async fn health_check() -> HttpResponse {
     HttpResponse::Ok().finish()
 }
@@ -18,7 +20,9 @@ impl ResponseError for SaveOrPublishError {
     }
 }
 
-pub async fn save_widget_configuration() -> Result<HttpResponse, SaveOrPublishError> {
+pub async fn save_widget_configuration(
+    _auth: AuthClaims,
+) -> Result<HttpResponse, SaveOrPublishError> {
     Ok(HttpResponse::Ok().finish())
 }
 

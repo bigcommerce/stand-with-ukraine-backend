@@ -81,7 +81,6 @@ pub async fn install(
 pub struct LoadQuery {
     signed_payload_jwt: String,
 }
-
 #[derive(thiserror::Error, Debug)]
 pub enum LoadError {
     #[error("Invalid credentials.")]
@@ -110,12 +109,17 @@ pub async fn load(
     base_url: web::Data<ApplicationBaseUrl>,
     jwt_secret: web::Data<JWTSecret>,
 ) -> Result<HttpResponse, LoadError> {
-    let store = bigcommerce_client
+    let claims = bigcommerce_client
         .decode_jwt(&query.signed_payload_jwt)
         .context("Failed to decode bigcommerce jwt")
         .map_err(LoadError::InvalidCredentials)?;
 
-    let jwt = create_jwt(&store.store_hash, jwt_secret.as_ref())
+    let store_hash = claims
+        .get_store_hash()
+        .context("Failed to get store_hash from jwt")
+        .map_err(LoadError::UnexpectedError)?;
+
+    let jwt = create_jwt(store_hash, jwt_secret.as_ref())
         .context("Failed to encode jwt token")
         .map_err(LoadError::UnexpectedError)?;
 
@@ -130,12 +134,17 @@ pub async fn uninstall(
     bigcommerce_client: web::Data<BCClient>,
     db_pool: web::Data<PgPool>,
 ) -> Result<HttpResponse, LoadError> {
-    let store = bigcommerce_client
+    let claims = bigcommerce_client
         .decode_jwt(&query.signed_payload_jwt)
         .context("Failed to decode bigcommerce jwt")
         .map_err(LoadError::InvalidCredentials)?;
 
-    set_store_as_uninstalled(&store.store_hash, &db_pool)
+    let store_hash = claims
+        .get_store_hash()
+        .context("Failed to get store_hash from jwt")
+        .map_err(LoadError::UnexpectedError)?;
+
+    set_store_as_uninstalled(store_hash, &db_pool)
         .await
         .context("Failed to mark store as uninstalled")
         .map_err(LoadError::UnexpectedError)?;

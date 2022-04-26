@@ -3,6 +3,7 @@ use once_cell::sync::Lazy;
 use secrecy::{ExposeSecret, Secret};
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use swu_app::{
+    authentication::{create_jwt, AuthClaims},
     configuration::{get_configuration, DatabaseSettings, JWTSecret},
     startup::{get_connection_pool, Application},
     telemetry::{get_subscriber, init_subscriber},
@@ -113,5 +114,9 @@ impl TestApp {
         let key = EncodingKey::from_secret(self.bc_secret.expose_secret().as_bytes());
 
         encode(&header, &claims, &key).unwrap()
+    }
+
+    pub fn generate_local_jwt_token(&self) -> String {
+        create_jwt("test-store", &self.jwt_secret).unwrap()
     }
 }

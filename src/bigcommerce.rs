@@ -178,7 +178,16 @@ pub struct BCScript {
 pub struct BCClaims {
     pub user: BCUser,
     pub owner: BCUser,
-    pub store_hash: String,
+    pub sub: String,
+}
+
+impl BCClaims {
+    pub fn get_store_hash(&self) -> Result<&str, anyhow::Error> {
+        self.sub
+            .split_once('/')
+            .map(|x| x.1)
+            .ok_or_else(|| anyhow::anyhow!("Context did not have correct format"))
+    }
 }
 
 #[derive(serde::Serialize)]
