@@ -50,7 +50,17 @@ static_sites:
     github:
       branch: main
       deploy_on_push: true
-      repo: bc-micah/stand-with-ukraine-dashboard
+      repo: swu-bc/stand-with-ukraine-dashboard
     routes:
       - path: /
     catchall_document: index.html
+  - name: swu-widget
+    build_command: npm run build:widget
+    environment_slug: node-js
+    output_dir: dist
+    github:
+      branch: master
+      deploy_on_push: true
+      repo: swu-bc/stand-with-ukraine-widget
+    routes:
+      - path: /widget

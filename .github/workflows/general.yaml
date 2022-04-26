@@ -243,7 +243,7 @@ jobs:
         run: |
           echo $PATTERN
           doctl apps spec get $DIGITALOCEAN_APP_ID > $SPEC_FILE
-          sed -i '' $PATTERN $SPEC_FILE
+          sed -i '' "${PATTERN}" $SPEC_FILE
           doctl apps spec validate $SPEC_FILE
           doctl apps update $DIGITALOCEAN_APP_ID --spec $SPEC_FILE
 
