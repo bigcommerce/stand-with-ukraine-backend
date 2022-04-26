@@ -14,7 +14,7 @@ env:
   SQLX_VERSION: 0.5.11
   SQLX_DATABASE: postgres
   SQLX_TLS: rustls
-
+  IMAGE: registry.digitalocean.com/stand-with-ukraine/app
 jobs:
   fmt:
     name: fmt
@@ -207,10 +207,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-multi-buildx
 
+      - name: Prepare
+        id: prep
+        run: |
+          TAG=$(echo $GITHUB_SHA | head -c7)
+          echo ::set-output name=tagged_image::${IMAGE}:${TAG}
+          echo ::set-output name=tag::${TAG}
+
       - name: Login to digitalocean docker registry
         id: docker-auth
         run: |
-          doctl registry login --expiry-seconds 1200
+          doctl registry login --expiry-seconds 600
 
       - name: Build production image
         uses: docker/build-push-action@v2
@@ -219,7 +226,7 @@ jobs:
           builder: ${{ steps.buildx.outputs.name }}
           target: runtime
           push: true
-          tags: registry.digitalocean.com/stand-with-ukraine/app:latest
+          tags: ${{ steps.prep.outputs.tagged_image }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
 
@@ -228,11 +235,17 @@ jobs:
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
-      - name: Deploy to digital ocean
+      - name: Update Digital Ocean Deployment
         env:
           DIGITALOCEAN_APP_ID: ${{ secrets.DIGITALOCEAN_APP_ID }}
+          SPEC_FILE: 'deployment.yaml'
+          TAG: ${{ steps.prep.outputs.tag }}
         run: |
-          doctl app create-deployment $DIGITALOCEAN_APP_ID --force-rebuild
+          doctl apps spec get $DO_APP_ID > $SPEC_FILE
+          echo "Setting tag $TAG"
+          sed -i '' "s/tag: [a-z0-9]*$/tag: $TAG/g" $SPEC_FILE
+          doctl apps spec validate $SPEC_FILE
+          doctl apps update $DIGITALOCEAN_APP_ID --spec $SPEC_FILE
 
   coverage:
     name: coverage
