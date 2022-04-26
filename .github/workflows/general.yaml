@@ -181,8 +181,8 @@ jobs:
     environment: production
 
     permissions:
-      contents: "read"
-      id-token: "write"
+      contents: 'read'
+      id-token: 'write'
 
     steps:
       - name: Checkout
@@ -227,6 +227,12 @@ jobs:
         run: |
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+      - name: Deploy to digital ocean
+        env:
+          DIGITALOCEAN_APP_ID: ${{ secrets.DIGITALOCEAN_APP_ID }}
+        run: |
+          doctl app create-deployment $DIGITALOCEAN_APP_ID --force-rebuild
 
   coverage:
     name: coverage
@@ -292,4 +298,4 @@ jobs:
       - name: Run cargo-tarpaulin
         uses: actions-rs/tarpaulin@v0.1
         with:
-          args: "--ignore-tests --avoid-cfg-tarpaulin"
+          args: '--ignore-tests --avoid-cfg-tarpaulin'
