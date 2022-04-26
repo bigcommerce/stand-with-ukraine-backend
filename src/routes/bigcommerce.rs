@@ -7,7 +7,7 @@ use crate::{
     authentication::create_jwt,
     bigcommerce::BCClient,
     configuration::{ApplicationBaseUrl, JWTSecret},
-    data::{save_store_credentials, set_store_as_uninstalled},
+    data::{write_store_as_uninstalled, write_store_credentials},
 };
 
 #[derive(serde::Deserialize)]
@@ -63,7 +63,7 @@ pub async fn install(
         .get_bigcommerce_store()
         .map_err(InstallError::UnexpectedError)?;
 
-    save_store_credentials(&store, &db_pool)
+    write_store_credentials(&store, &db_pool)
         .await
         .context("Failed to store credentials in database")
         .map_err(InstallError::UnexpectedError)?;
@@ -144,7 +144,7 @@ pub async fn uninstall(
         .context("Failed to get store_hash from jwt")
         .map_err(LoadError::UnexpectedError)?;
 
-    set_store_as_uninstalled(store_hash, &db_pool)
+    write_store_as_uninstalled(store_hash, &db_pool)
         .await
         .context("Failed to mark store as uninstalled")
         .map_err(LoadError::UnexpectedError)?;

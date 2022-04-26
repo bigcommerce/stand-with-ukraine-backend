@@ -1,19 +1,24 @@
 {
   "db": "PostgreSQL",
-  "54e2091f634d5802a42d9efdc96812be100a2e3c3b1a6cf07faf47c3a070bc8b": {
+  "3411e71ceec7b03612394da030bf96bfa364790f0c82c57ac45015f8b31cbb27": {
     "describe": {
-      "columns": [],
-      "nullable": [],
+      "columns": [
+        {
+          "name": "widget_configuration",
+          "ordinal": 0,
+          "type_info": "Jsonb"
+        }
+      ],
+      "nullable": [
+        false
+      ],
       "parameters": {
         "Left": [
-          "Uuid",
-          "Varchar",
-          "Varchar",
-          "Timestamptz"
+          "Text"
         ]
       }
     },
-    "query": "\n        INSERT INTO stores (id, store_hash, access_token, installed_at) \n        VALUES ($1, $2, $3, $4)\n        ON CONFLICT (store_hash) DO UPDATE set access_token = $2, installed_at = $4;\n        "
+    "query": "\n        SELECT widget_configuration FROM stores\n        WHERE store_hash = $1;\n        "
   },
   "691ba7bf897c87e83aa9a09bf5cb79e9994cadc7429df20c97a4404f31b6f5d8": {
     "describe": {
@@ -39,6 +44,21 @@
       }
     },
     "query": "\n        UPDATE stores\n        SET uninstalled = true, published = false \n        WHERE store_hash = $1;\n        "
+  },
+  "af6e181247f7b17a473be8e19ef4e96699c6a8949bef209bcf5c651e30758c3b": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Varchar",
+          "Varchar",
+          "Timestamptz"
+        ]
+      }
+    },
+    "query": "\n        INSERT INTO stores (id, store_hash, access_token, installed_at, uninstalled) \n        VALUES ($1, $2, $3, $4, false)\n        ON CONFLICT (store_hash) DO UPDATE set access_token = $2, installed_at = $4, uninstalled = false;\n        "
   },
   "ea92a0d130fec78ee1f88cc529ee67d1d1247d174c45d586e5f9ccd56cdaeeb0": {
     "describe": {

@@ -11,6 +11,7 @@
 		"libpq",
 		"nanos",
 		"opentelemetry",
+		"razom",
 		"reqwest",
 		"rstest",
 		"rustfmt",

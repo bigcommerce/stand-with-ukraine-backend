@@ -1,15 +1,16 @@
+use anyhow::Context;
 use sqlx::{types::time::OffsetDateTime, PgPool};
 use uuid::Uuid;
 
 use crate::bigcommerce::BCStore;
 
-#[tracing::instrument(name = "Save store in database", skip(store, pool))]
-pub async fn save_store_credentials(store: &BCStore, pool: &PgPool) -> Result<(), sqlx::Error> {
+#[tracing::instrument(name = "Write store credentials to database", skip(store, pool))]
+pub async fn write_store_credentials(store: &BCStore, pool: &PgPool) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
-        INSERT INTO stores (id, store_hash, access_token, installed_at) 
-        VALUES ($1, $2, $3, $4)
-        ON CONFLICT (store_hash) DO UPDATE set access_token = $2, installed_at = $4;
+        INSERT INTO stores (id, store_hash, access_token, installed_at, uninstalled) 
+        VALUES ($1, $2, $3, $4, false)
+        ON CONFLICT (store_hash) DO UPDATE set access_token = $2, installed_at = $4, uninstalled = false;
         "#,
         Uuid::new_v4(),
         store.store_hash,
@@ -22,8 +23,8 @@ pub async fn save_store_credentials(store: &BCStore, pool: &PgPool) -> Result<()
     Ok(())
 }
 
-#[tracing::instrument(name = "Get store credentials from database", skip(store_hash, pool))]
-pub async fn get_store_credentials(
+#[tracing::instrument(name = "Read store credentials from database", skip(store_hash, pool))]
+pub async fn read_store_credentials(
     store_hash: &str,
     pool: &PgPool,
 ) -> Result<BCStore, anyhow::Error> {
@@ -40,8 +41,14 @@ pub async fn get_store_credentials(
     Ok(store)
 }
 
-#[tracing::instrument(name = "Mark store as uninstalled", skip(store_hash, pool))]
-pub async fn set_store_as_uninstalled(store_hash: &str, pool: &PgPool) -> Result<(), sqlx::Error> {
+#[tracing::instrument(
+    name = "Write store is uninstalled in database",
+    skip(store_hash, pool)
+)]
+pub async fn write_store_as_uninstalled(
+    store_hash: &str,
+    pool: &PgPool,
+) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
         UPDATE stores
@@ -56,23 +63,65 @@ pub async fn set_store_as_uninstalled(store_hash: &str, pool: &PgPool) -> Result
     Ok(())
 }
 
-#[tracing::instrument(name = "Save widget configuration", skip(store_hash, pool))]
-pub async fn save_widget_configuration(
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+pub struct WidgetConfiguration {
+    pub style: String,
+    pub placement: String,
+    pub charity_selections: Vec<String>,
+    pub modal_title: String,
+    pub modal_body: String,
+}
+
+#[tracing::instrument(
+    name = "Write widget configuration to database",
+    skip(store_hash, db_pool)
+)]
+pub async fn write_widget_configuration(
     store_hash: &str,
-    widget_configuration: &str,
-    pool: &PgPool,
-) -> Result<(), sqlx::Error> {
+    widget_configuration: &WidgetConfiguration,
+    db_pool: &PgPool,
+) -> Result<(), anyhow::Error> {
+    let widget_configuration =
+        serde_json::value::to_value(widget_configuration).context("Convert to json value")?;
+
     sqlx::query!(
         r#"
         UPDATE stores
         SET published = true, widget_configuration = $1
         WHERE store_hash = $2;
         "#,
-        serde_json::Value::from(widget_configuration),
+        widget_configuration,
         store_hash,
     )
-    .execute(pool)
-    .await?;
+    .execute(db_pool)
+    .await
+    .context("Save configuration to database")?;
 
     Ok(())
+}
+
+#[tracing::instrument(
+    name = "Read widget configuration from database",
+    skip(store_hash, db_pool)
+)]
+pub async fn read_widget_configuration(
+    store_hash: &str,
+    db_pool: &PgPool,
+) -> Result<WidgetConfiguration, anyhow::Error> {
+    let row = sqlx::query!(
+        r#"
+        SELECT widget_configuration FROM stores
+        WHERE store_hash = $1;
+        "#,
+        store_hash,
+    )
+    .fetch_one(db_pool)
+    .await
+    .context("Save configuration to database")?;
+
+    let widget_configuration: WidgetConfiguration =
+        serde_json::value::from_value(row.widget_configuration)
+            .context("Parse database json to application format")?;
+
+    Ok(widget_configuration)
 }

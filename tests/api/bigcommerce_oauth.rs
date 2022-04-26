@@ -1,6 +1,6 @@
 use crate::helpers::spawn_app;
 use serde_json::json;
-use swu_app::{bigcommerce::BCStore, data::save_store_credentials};
+use swu_app::{bigcommerce::BCStore, data::write_store_credentials};
 use wiremock::{
     matchers::{method, path},
     Mock, ResponseTemplate,
@@ -155,7 +155,7 @@ async fn uninstall_request_succeeds() {
         store_hash: "test-store".to_string(),
         access_token: "test-token".to_string(),
     };
-    save_store_credentials(&store, &app.db_pool)
+    write_store_credentials(&store, &app.db_pool)
         .await
         .expect("Failed to initialize store");
 

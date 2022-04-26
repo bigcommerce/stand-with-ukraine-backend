@@ -12,9 +12,16 @@ pub fn routes(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/api/v1")
             .app_data(bearer_auth_config)
-            .route("/save", web::post().to(api::save_widget_configuration))
+            .route(
+                "/configuration",
+                web::post().to(api::save_widget_configuration),
+            )
+            .route(
+                "/configuration",
+                web::get().to(api::get_widget_configuration),
+            )
             .route("/publish", web::post().to(api::publish_widget))
-            .route("/remove", web::delete().to(api::remove_widget)),
+            .route("/publish", web::delete().to(api::remove_widget)),
     );
 
     cfg.service(

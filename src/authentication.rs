@@ -13,9 +13,9 @@ use crate::configuration::JWTSecret;
 
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub struct AuthClaims {
-    sub: String,
-    role: String,
-    exp: i64,
+    pub sub: String,
+    pub role: String,
+    pub exp: i64,
 }
 
 impl FromRequest for AuthClaims {
