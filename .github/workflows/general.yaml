@@ -241,9 +241,8 @@ jobs:
           SPEC_FILE: 'deployment.yaml'
           PATTERN: 's/tag: [a-z0-9]*$/tag: ${{ steps.prep.outputs.tag }}/g'
         run: |
-          echo $PATTERN
           doctl apps spec get $DIGITALOCEAN_APP_ID > $SPEC_FILE
-          sed -i '' "${PATTERN}" $SPEC_FILE
+          sed -i "${PATTERN}" $SPEC_FILE
           doctl apps spec validate $SPEC_FILE
           doctl apps update $DIGITALOCEAN_APP_ID --spec $SPEC_FILE
 
