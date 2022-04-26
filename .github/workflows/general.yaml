@@ -11,12 +11,6 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  #GCLOUD_PROJECT: ${{ secrets.GKE_PROJECT }}
-  #GKE_CLUSTER: ${{ secrets.GKE_CLUSTER }}
-  #GKE_ZONE: ${{ secrets.GKE_ZONE }}
-  #DEPLOYMENT_NAME: zero2prod
-  #NAMESPACE: zero2prod
-  #IMAGE: zero2prod
   SQLX_VERSION: 0.5.11
   SQLX_DATABASE: postgres
   SQLX_TLS: rustls

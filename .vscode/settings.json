@@ -2,14 +2,19 @@
 	"cSpell.words": [
 		"abcdefghijklmnopqrstuv",
 		"actix",
+		"clippy",
 		"httpauth",
 		"jsonwebtoken",
+		"libpq",
 		"nanos",
 		"opentelemetry",
 		"reqwest",
 		"rstest",
+		"rustfmt",
+		"rustls",
 		"splitn",
 		"sqlx",
+		"thiserror",
 		"wiremock"
 	]
 }
