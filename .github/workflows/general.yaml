@@ -239,10 +239,11 @@ jobs:
         env:
           DIGITALOCEAN_APP_ID: ${{ secrets.DIGITALOCEAN_APP_ID }}
           SPEC_FILE: 'deployment.yaml'
-          TAG: ${{ steps.prep.outputs.tag }}
+          PATTERN: 's/tag: [a-z0-9]*$/tag: ${{ steps.prep.outputs.tag }}/g'
         run: |
+          echo $PATTERN
           doctl apps spec get $DIGITALOCEAN_APP_ID > $SPEC_FILE
-          sed -i '' "s/tag: [a-z0-9]*$/tag: $TAG/g" $SPEC_FILE
+          sed -i '' $PATTERN $SPEC_FILE
           doctl apps spec validate $SPEC_FILE
           doctl apps update $DIGITALOCEAN_APP_ID --spec $SPEC_FILE
 
