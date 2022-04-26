@@ -2,12 +2,9 @@ name: swu-app
 region: sfo
 services:
   - name: swu-backend
-    dockerfile_path: Dockerfile
-    source_dir: .
-    github:
-      branch: main
-      deploy_on_push: true
-      repo: bc-micah/stand-with-ukraine-backend
+    image:
+      registry_type: DOCR
+      repository: zero2prod
     health_check:
       http_path: /health_check
     http_port: 8000
@@ -39,4 +36,4 @@ databases:
     name: db
     num_nodes: 1
     size: db-s-dev-database
-    version: "14"
+    version: "12"
