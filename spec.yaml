@@ -12,7 +12,10 @@ services:
     instance_count: 1
     instance_size_slug: basic-xxs
     routes:
-      - path: /
+      - path: /api
+        preserve_path_prefix: true
+      - path: /bigcommerce
+        preserve_path_prefix: true
     envs:
       - key: APP__APPLICATION__BASE_URL
         scope: RUN_TIME
@@ -33,8 +36,21 @@ services:
         scope: RUN_TIME
         value: ${db.DATABASE}
 databases:
-  - engine: PG
+  - cluster_name: app-210d7244-906c-4aa1-865a-25b315f07ff0
+    engine: PG
     name: db
     num_nodes: 1
-    size: db-s-dev-database
-    version: "12"
+    size: db-s-1vcpu-2gb
+    version: '14'
+static_sites:
+  - name: swu-dashboard
+    build_command: yarn build
+    environment_slug: node-js
+    output_dir: build
+    github:
+      branch: main
+      deploy_on_push: true
+      repo: bc-micah/stand-with-ukraine-dashboard
+    routes:
+      - path: /
+    catchall_document: index.html

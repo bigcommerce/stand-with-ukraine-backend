@@ -1,5 +1,5 @@
 application:
   host: 0.0.0.0
-  base_url: https://stand-with-ukraine-bc-app.web.app
+  base_url: https://swu-app-yboxh.ondigitalocean.app
 database:
   require_ssl: true
