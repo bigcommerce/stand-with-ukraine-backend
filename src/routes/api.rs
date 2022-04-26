@@ -78,9 +78,9 @@ pub fn generate_script_content(
 ) -> Result<String, serde_json::Error> {
     Ok(format!(
         r#"
-    <script>window.SWU_CONFIG = {};</script>
-    <script src="{}/widget/index.js"></script>
-    "#,
+        <script>window.SWU_CONFIG = {};</script>
+        <script src="{}/widget/index.js"></script>
+        "#,
         serde_json::to_string(widget_configuration)?,
         base_url.0
     ))

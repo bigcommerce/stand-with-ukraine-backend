@@ -1,7 +1,7 @@
 use serde_json::json;
 use swu_app::data::{StoreStatus, WidgetConfiguration};
 use wiremock::{
-    matchers::{method, path},
+    matchers::{header, method, path},
     Mock, ResponseTemplate,
 };
 
@@ -148,6 +148,7 @@ async fn widget_publish_request_succeeds() {
 
     Mock::given(method("POST"))
         .and(path("/stores/test-store/v3/content/scripts"))
+        .and(header("X-Auth-Token", "test-token"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "data": {
                 "uuid": "095be615-a8ad-4c33-8e9c-c7612fbf6c9f",
@@ -175,6 +176,7 @@ async fn widget_publish_request_succeeds() {
 
     Mock::given(method("GET"))
         .and(path("/stores/test-store/v3/content/scripts"))
+        .and(header("X-Auth-Token", "test-token"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
                 "data": [
                   {
@@ -219,6 +221,7 @@ async fn widget_publish_request_succeeds() {
         .and(path(
             "/stores/test-store/v3/content/scripts/095be615-a8ad-4c33-8e9c-c7612fbf6c9f",
         ))
+        .and(header("X-Auth-Token", "test-token"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "status": 204,
             "title": "string",

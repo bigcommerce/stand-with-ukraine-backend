@@ -106,6 +106,7 @@ impl BCClient {
         let BCListScriptsResponse { data } = self
             .http_client
             .get(self.get_scripts_route(&store.store_hash))
+            .header("X-Auth-Token", &store.access_token)
             .send()
             .await
             .map_err(|e| anyhow::anyhow!(e))?
@@ -117,6 +118,7 @@ impl BCClient {
         for script in data {
             self.http_client
                 .delete(self.get_scripts_route_with_id(&store.store_hash, &script.uuid))
+                .header("X-Auth-Token", &store.access_token)
                 .send()
                 .await
                 .map_err(|e| anyhow::anyhow!(e))?;
@@ -133,6 +135,7 @@ impl BCClient {
         self
             .http_client
             .post(self.get_scripts_route(&store.store_hash))
+            .header("X-Auth-Token", &store.access_token)
             .json(&json!({
                     "name": "Stand With Ukraine",
                     "description": "This script displays the stand with ukraine widget on your storefront. Configure it from the Stand With Ukraine app installed on your store.",
