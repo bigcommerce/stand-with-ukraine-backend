@@ -73,7 +73,13 @@ pub async fn install(
         .map_err(InstallError::UnexpectedError)?;
 
     Ok(HttpResponse::Found()
-        .append_header((LOCATION, format!("{}/?token={}", &base_url.0, &jwt)))
+        .append_header((
+            LOCATION,
+            format!(
+                "{}/?token={}&store-id={}",
+                &base_url.0, &jwt, &store.store_hash
+            ),
+        ))
         .finish())
 }
 
@@ -124,7 +130,10 @@ pub async fn load(
         .map_err(LoadError::UnexpectedError)?;
 
     Ok(HttpResponse::Found()
-        .append_header((LOCATION, format!("{}/?token={}", &base_url.0, &jwt)))
+        .append_header((
+            LOCATION,
+            format!("{}/?token={}&store-id={}", &base_url.0, &jwt, &store_hash),
+        ))
         .finish())
 }
 
