@@ -20,6 +20,21 @@
     },
     "query": "\n        SELECT widget_configuration FROM stores\n        WHERE store_hash = $1;\n        "
   },
+  "35833749ad67699144caa47279ed17f87a5195221445417d51509530a4c5b3dd": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Varchar",
+          "Varchar",
+          "Timestamptz"
+        ]
+      }
+    },
+    "query": "\n        INSERT INTO stores (id, store_hash, access_token, installed_at, uninstalled) \n        VALUES ($1, $2, $3, $4, false)\n        ON CONFLICT (store_hash) DO UPDATE set access_token = $3, installed_at = $4, uninstalled = false;\n        "
+  },
   "56233a8901131d539dcb562b66d0e2d3bfe6226dbc6cc05f7efb7b1f85e12c01": {
     "describe": {
       "columns": [
@@ -77,21 +92,6 @@
       }
     },
     "query": "\n        UPDATE stores\n        SET published = $1\n        WHERE store_hash = $2;\n        "
-  },
-  "af6e181247f7b17a473be8e19ef4e96699c6a8949bef209bcf5c651e30758c3b": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": [
-          "Uuid",
-          "Varchar",
-          "Varchar",
-          "Timestamptz"
-        ]
-      }
-    },
-    "query": "\n        INSERT INTO stores (id, store_hash, access_token, installed_at, uninstalled) \n        VALUES ($1, $2, $3, $4, false)\n        ON CONFLICT (store_hash) DO UPDATE set access_token = $2, installed_at = $4, uninstalled = false;\n        "
   },
   "ea92a0d130fec78ee1f88cc529ee67d1d1247d174c45d586e5f9ccd56cdaeeb0": {
     "describe": {

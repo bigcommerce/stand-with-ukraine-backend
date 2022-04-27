@@ -10,7 +10,7 @@ pub async fn write_store_credentials(store: &BCStore, pool: &PgPool) -> Result<(
         r#"
         INSERT INTO stores (id, store_hash, access_token, installed_at, uninstalled) 
         VALUES ($1, $2, $3, $4, false)
-        ON CONFLICT (store_hash) DO UPDATE set access_token = $2, installed_at = $4, uninstalled = false;
+        ON CONFLICT (store_hash) DO UPDATE set access_token = $3, installed_at = $4, uninstalled = false;
         "#,
         Uuid::new_v4(),
         store.store_hash,
