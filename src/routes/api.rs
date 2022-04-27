@@ -165,3 +165,24 @@ pub async fn remove_widget(
 
     Ok(HttpResponse::Ok().finish())
 }
+
+pub async fn preview_widget(
+    auth: AuthClaims,
+    db_pool: web::Data<PgPool>,
+    bigcommerce_client: web::Data<BCClient>,
+) -> Result<HttpResponse, PublishError> {
+    let store_hash = auth.sub.as_str();
+
+    let store = read_store_credentials(store_hash, &db_pool)
+        .await
+        .context("Failed to get store credentials")
+        .map_err(PublishError::UnexpectedError)?;
+
+    let store_information = bigcommerce_client
+        .get_store_information(&store)
+        .await
+        .context("Failed to get store information")
+        .map_err(PublishError::UnexpectedError)?;
+
+    Ok(HttpResponse::Ok().json(store_information))
+}

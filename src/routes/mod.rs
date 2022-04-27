@@ -22,7 +22,8 @@ pub fn routes(cfg: &mut web::ServiceConfig) {
             )
             .route("/publish", web::post().to(api::publish_widget))
             .route("/publish", web::get().to(api::get_published_status))
-            .route("/publish", web::delete().to(api::remove_widget)),
+            .route("/publish", web::delete().to(api::remove_widget))
+            .route("/preview", web::get().to(api::preview_widget)),
     );
 
     cfg.service(

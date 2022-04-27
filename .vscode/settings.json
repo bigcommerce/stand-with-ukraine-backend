@@ -16,6 +16,7 @@
 		"rstest",
 		"rustfmt",
 		"rustls",
+		"sitewidehttps",
 		"splitn",
 		"sqlx",
 		"thiserror",

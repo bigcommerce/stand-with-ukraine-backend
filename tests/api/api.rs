@@ -1,5 +1,8 @@
 use serde_json::json;
-use swu_app::data::{StoreStatus, WidgetConfiguration};
+use swu_app::{
+    bigcommerce::BCStoreInformationResponse,
+    data::{StoreStatus, WidgetConfiguration},
+};
 use wiremock::{
     matchers::{header, method, path},
     Mock, ResponseTemplate,
@@ -253,4 +256,100 @@ async fn widget_publish_request_succeeds() {
         .expect("Invalid response format");
 
     assert_eq!(response.published, true);
+}
+
+#[tokio::test]
+async fn widget_preview_request_succeeds() {
+    let app = spawn_app().await;
+
+    sqlx::query!(
+        r#"
+        INSERT INTO stores (id, store_hash, access_token, installed_at, uninstalled) 
+        VALUES (gen_random_uuid(), 'test-store', 'test-token', '2021-04-20 00:00:00-07'::timestamptz, false)
+        "#,
+    )
+    .execute(&app.db_pool)
+    .await
+    .unwrap();
+
+    let store_url = "https://my-awesome.stor";
+    let store_information_response = json!({
+      "id": "abc123",
+      "domain": "my-awesome.store",
+      "secure_url": store_url,
+      "control_panel_base_url": "https://store-{store_hash}.mybigcommerce.com",
+      "status": "live",
+      "name": "BigCommerce",
+      "first_name": "Jane",
+      "last_name": "Doe",
+      "address": "BigCommerce",
+      "country": "United States",
+      "country_code": "US",
+      "phone": "",
+      "admin_email": "jane.does@example.com",
+      "order_email": "info@janedoes.mybigcommerce.com",
+      "favicon_url": "https://cdn8.bigcommerce.com/r-8816ba2f48b0bcf4bec0c1a954c00e0fc36b/img/bc_favicon.ico",
+      "timezone": {
+        "name": "America/Chicago",
+        "raw_offset": -21600,
+        "dst_offset": -18000,
+        "dst_correction": true,
+        "date_format": {
+          "display": "M jS Y",
+          "export": "M jS Y",
+          "extended_display": "M jS Y @ g:i A"
+        }
+      },
+      "language": "en",
+      "currency": "USD",
+      "currency_symbol": "$",
+      "decimal_separator": ".",
+      "thousands_separator": ",",
+      "decimal_places": 2,
+      "currency_symbol_location": "left",
+      "weight_units": "Ounces",
+      "dimension_units": "Inches",
+      "dimension_decimal_places": 2,
+      "dimension_decimal_token": ".",
+      "dimension_thousands_token": ",",
+      "plan_name": "Standard",
+      "plan_level": "Standard",
+      "industry": "",
+      "logo": {
+        "url": "https://cdn8.bigcommerce.com/s-{store_hash}/product_images/screen_shot_2018-05-15_at_12.22.26_pm__05547_1529512135.png"
+      },
+      "is_price_entered_with_tax": false,
+      "active_comparison_modules": [],
+      "features": {
+        "stencil_enabled": true,
+        "sitewidehttps_enabled": false,
+        "facebook_catalog_id": "",
+        "checkout_type": "optimized"
+      }
+    });
+
+    Mock::given(method("GET"))
+        .and(path("/stores/test-store/v2/store"))
+        .and(header("X-Auth-Token", "test-token"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(store_information_response))
+        .named("BigCommerce oauth token request")
+        .expect(1)
+        .mount(&app.bigcommerce_server)
+        .await;
+
+    let client = reqwest::ClientBuilder::new()
+        .redirect(reqwest::redirect::Policy::none())
+        .build()
+        .unwrap();
+    let response = client
+        .get(&format!("{}/api/v1/preview", &app.address))
+        .bearer_auth(app.generate_local_jwt_token())
+        .send()
+        .await
+        .expect("Failed to execute the request")
+        .json::<BCStoreInformationResponse>()
+        .await
+        .expect("Failed to deserialize response");
+
+    assert_eq!(response.secure_url, store_url);
 }

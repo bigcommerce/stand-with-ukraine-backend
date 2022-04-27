@@ -98,6 +98,10 @@ impl BCClient {
         )
     }
 
+    fn get_store_information_route(&self, store_hash: &str) -> String {
+        format!("{}/stores/{}/v2/store", self.api_base_url, store_hash)
+    }
+
     fn get_scripts_route_with_id(&self, store_hash: &str, script_id: &str) -> String {
         format!("{}/{}", self.get_scripts_route(store_hash), script_id)
     }
@@ -162,11 +166,32 @@ impl BCClient {
 
         Ok(decoded.claims)
     }
+
+    pub async fn get_store_information(
+        &self,
+        store: &BCStore,
+    ) -> Result<BCStoreInformationResponse, anyhow::Error> {
+        self.http_client
+            .get(self.get_store_information_route(&store.store_hash))
+            .header("X-Auth-Token", &store.access_token)
+            .send()
+            .await
+            .map_err(|e| anyhow::anyhow!(e))?
+            .error_for_status()?
+            .json::<BCStoreInformationResponse>()
+            .await
+            .map_err(|e| anyhow::anyhow!(e))
+    }
 }
 
 #[derive(serde::Deserialize)]
 pub struct BCListScriptsResponse {
     pub data: Vec<BCScript>,
+}
+
+#[derive(serde::Deserialize, serde::Serialize)]
+pub struct BCStoreInformationResponse {
+    pub secure_url: String,
 }
 
 #[derive(serde::Deserialize)]
