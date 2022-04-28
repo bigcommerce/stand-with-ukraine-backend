@@ -50,7 +50,21 @@ impl BCClient {
         client_secret: Secret<String>,
         timeout: std::time::Duration,
     ) -> Self {
-        let http_client = Client::builder().timeout(timeout).build().unwrap();
+        use reqwest::header;
+        let mut headers = header::HeaderMap::new();
+        headers.insert(
+            "Accept",
+            header::HeaderValue::from_static("application/json"),
+        );
+        headers.insert(
+            "Content-Type",
+            header::HeaderValue::from_static("application/json"),
+        );
+        let http_client = Client::builder()
+            .timeout(timeout)
+            .default_headers(headers)
+            .build()
+            .unwrap();
 
         Self {
             api_base_url,

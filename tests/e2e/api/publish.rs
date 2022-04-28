@@ -136,6 +136,7 @@ async fn widget_preview_request_succeeds() {
     Mock::given(method("GET"))
         .and(path("/stores/test-store/v2/store"))
         .and(header("X-Auth-Token", "test-token"))
+        .and(header("Accept", "application/json"))
         .respond_with(ResponseTemplate::new(200).set_body_json(store_information_response))
         .named("BigCommerce get store information")
         .expect(1)
