@@ -37,7 +37,8 @@ impl ResponseError for InstallError {
 
 #[tracing::instrument(
     name = "Process install request",
-    skip(query, bigcommerce_client, base_url, db_pool, jwt_secret), fields(context=tracing::field::Empty, user_email=tracing::field::Empty)
+    skip(query, bigcommerce_client, base_url, db_pool, jwt_secret),
+    fields(context=tracing::field::Empty, user_email=tracing::field::Empty)
 )]
 pub async fn install(
     query: web::Query<InstallQuery>,
@@ -137,7 +138,10 @@ pub async fn load(
         .finish())
 }
 
-#[tracing::instrument(name = "Process uninstall request", skip(query, bigcommerce_client, db_pool), fields(store_hash=tracing::field::Empty, user_email=tracing::field::Empty))]
+#[tracing::instrument(
+    name = "Process uninstall request",
+    skip(query, bigcommerce_client, db_pool)
+)]
 pub async fn uninstall(
     query: web::Query<LoadQuery>,
     bigcommerce_client: web::Data<BCClient>,

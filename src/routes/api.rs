@@ -35,16 +35,11 @@ pub async fn save_widget_configuration(
     widget_configuration: web::Json<WidgetConfiguration>,
     db_pool: web::Data<PgPool>,
 ) -> Result<HttpResponse, ConfigurationError> {
-    let err = write_widget_configuration(auth.sub.as_str(), &widget_configuration, &db_pool).await;
+    write_widget_configuration(auth.sub.as_str(), &widget_configuration, &db_pool)
+        .await
+        .map_err(ConfigurationError::UnexpectedError)?;
 
-    match err {
-        Err(e) => {
-            dbg!(e);
-
-            Err(ConfigurationError::UnexpectedError(anyhow::anyhow!("test")))
-        }
-        Ok(_) => Ok(HttpResponse::Ok().finish()),
-    }
+    Ok(HttpResponse::Ok().finish())
 }
 
 pub async fn get_widget_configuration(
@@ -72,15 +67,12 @@ impl ResponseError for PublishError {
     }
 }
 
-pub fn generate_script_content(
+fn generate_script_content(
     widget_configuration: &WidgetConfiguration,
     base_url: &ApplicationBaseUrl,
 ) -> Result<String, serde_json::Error> {
     Ok(format!(
-        r#"
-        <script>window.SWU_CONFIG = {};</script>
-        <script src="{}/widget/index.js"></script>
-        "#,
+        r#"<script>window.SWU_CONFIG={};</script><script src="{}/widget/index.js"></script>"#,
         serde_json::to_string(widget_configuration)?,
         base_url.0
     ))
@@ -109,7 +101,7 @@ pub async fn publish_widget(
     bigcommerce_client
         .remove_scripts(&store)
         .await
-        .context("Failed to remove scripts.")
+        .context("Failed to remove existing scripts.")
         .map_err(PublishError::UnexpectedError)?;
 
     bigcommerce_client
