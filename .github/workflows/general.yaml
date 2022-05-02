@@ -206,9 +206,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-multi-buildx
 
-      - name: Calculate SHA
-        id: vars
-        run: echo "::set-output name=sha_short::${GITHUB_SHA::7}"
+      - name: Generate Image Tag
+        id: tag
+        run: echo "::set-output name=sha::sha-${GITHUB_SHA::7}"
 
       - name: Docker Image Metadata
         id: meta
@@ -246,7 +246,7 @@ jobs:
         env:
           DIGITALOCEAN_APP_ID: ${{ secrets.DIGITALOCEAN_APP_ID }}
           SPEC_FILE: 'deployment.yaml'
-          PATTERN: 's/tag: [a-z0-9]*$/tag: ${{ steps.vars.outputs.sha_short }}/g'
+          PATTERN: 's/tag: [a-z0-9]*$/tag: ${{ steps.tag.outputs.sha }}/g'
         run: |
           doctl apps spec get $DIGITALOCEAN_APP_ID > $SPEC_FILE
           sed -i "${PATTERN}" $SPEC_FILE
