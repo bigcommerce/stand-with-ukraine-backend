@@ -2,7 +2,7 @@ name: Clean up
 
 on:
   schedule:
-    - cron: "0 0 * * *"
+    - cron: '0 0 * * *'
 
 jobs:
   clean_up:
@@ -15,6 +15,14 @@ jobs:
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
-      - name: Do clean up using doctl
+      - name: Delete old tags
         run: |
-          doctl registry garbage-collection start --include-untagged-manifests registry.digitalocean.com/stand-with-ukraine
+          REPOSITORY=stand-with-ukraine
+          LEAVE_LAST=10
+          TAGS=$(doctl registry repository lt $REPOSITORY --format Tag,UpdatedAt | tail -n +2 | sort -rk2 | awk '{print $REPOSITORY}' | grep -v latest | tail -n +$LEAVE_LAST | tr '\n' ' ')
+          [[ -n $TAGS ]] && doctl registry repository dt $REPOSITORY $TAGS --force
+          echo Tags removed: $TAGS
+
+      - name: Clean up garbage
+        run: |
+          doctl registry garbage-collection start registry.digitalocean.com/stand-with-ukraine --include-untagged-manifests --force

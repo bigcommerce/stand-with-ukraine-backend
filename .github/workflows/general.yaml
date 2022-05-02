@@ -14,7 +14,6 @@ env:
   SQLX_VERSION: 0.5.11
   SQLX_DATABASE: postgres
   SQLX_TLS: rustls
-  IMAGE: registry.digitalocean.com/stand-with-ukraine/app
 jobs:
   fmt:
     name: fmt
@@ -207,12 +206,19 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-multi-buildx
 
-      - name: Prepare
-        id: prep
-        run: |
-          TAG=$(echo $GITHUB_SHA | head -c7)
-          echo ::set-output name=tagged_image::${IMAGE}:${TAG}
-          echo ::set-output name=tag::${TAG}
+      - name: Calculate SHA
+        id: vars
+        run: echo "::set-output name=sha_short::${GITHUB_SHA::7}"
+
+      - name: Docker Image Metadata
+        id: meta
+        uses: docker/metadata-action@v3
+        with:
+          images: |
+            registry.digitalocean.com/stand-with-ukraine/app
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha
 
       - name: Login to digitalocean docker registry
         id: docker-auth
@@ -225,8 +231,9 @@ jobs:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           target: runtime
-          push: true
-          tags: ${{ steps.prep.outputs.tagged_image }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
 
@@ -239,7 +246,7 @@ jobs:
         env:
           DIGITALOCEAN_APP_ID: ${{ secrets.DIGITALOCEAN_APP_ID }}
           SPEC_FILE: 'deployment.yaml'
-          PATTERN: 's/tag: [a-z0-9]*$/tag: ${{ steps.prep.outputs.tag }}/g'
+          PATTERN: 's/tag: [a-z0-9]*$/tag: ${{ steps.vars.outputs.sha_short }}/g'
         run: |
           doctl apps spec get $DIGITALOCEAN_APP_ID > $SPEC_FILE
           sed -i "${PATTERN}" $SPEC_FILE
