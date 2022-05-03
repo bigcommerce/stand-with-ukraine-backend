@@ -25,7 +25,7 @@ jobs:
 
       - name: Delete old tags and do garbage-collection
         run: |
-          TAGS=$((doctl registry repository lt $REPOSITORY --format Tag,UpdatedAt | tail -n +2 | sort -rk2 | awk '{print $REPOSITORY}' | grep -v latest | tail -n +$IMAGE_BUFFER | tr '\n' ' '))
+          TAGS=$(doctl registry repository lt $REPOSITORY --format Tag,UpdatedAt | tail -n +2 | sort -rk2 | awk '{print $REPOSITORY}' | grep -v latest | tail -n +$IMAGE_BUFFER | tr '\n' ' ')
           [[ -n $TAGS ]] && doctl registry repository dt $REPOSITORY $TAGS --force
           echo "Tags removed: $TAGS"
           doctl registry garbage-collection start $REGISTRY --include-untagged-manifests --force
