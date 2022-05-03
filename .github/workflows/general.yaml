@@ -248,6 +248,9 @@ jobs:
           SPEC_FILE: 'deployment.yaml'
           PATTERN: 's/tag: [a-z0-9]*$/tag: ${{ steps.tag.outputs.sha }}/g'
         run: |
+          echo "::add-mask::${{ secrets.APP__APPLICATION__JWT_TOKEN }}" 
+          echo "::add-mask::${{ secrets.APP__BIGCOMMERCE__CLIENT_ID }}" 
+          echo "::add-mask::${{ secrets.APP__BIGCOMMERCE__CLIENT_SECRET }}" 
           doctl apps spec get $DIGITALOCEAN_APP_ID > $SPEC_FILE
           sed -i "${PATTERN}" $SPEC_FILE
           doctl apps spec validate $SPEC_FILE
