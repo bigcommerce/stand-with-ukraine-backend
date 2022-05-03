@@ -4,6 +4,7 @@
 		"actix",
 		"Buildx",
 		"clippy",
+		"cobertura",
 		"DOCR",
 		"doctl",
 		"httpauth",
