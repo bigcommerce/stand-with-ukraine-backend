@@ -21,6 +21,7 @@
 		"splitn",
 		"sqlx",
 		"thiserror",
+		"timestamptz",
 		"wiremock"
 	]
 }

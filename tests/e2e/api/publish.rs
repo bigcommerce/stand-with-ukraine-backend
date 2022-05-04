@@ -13,15 +13,7 @@ use crate::helpers::spawn_app;
 async fn widget_publish_request_succeeds() {
     let app = spawn_app().await;
 
-    sqlx::query!(
-        r#"
-        INSERT INTO stores (id, store_hash, access_token, installed_at, uninstalled) 
-        VALUES (gen_random_uuid(), 'test-store', 'test-token', '2021-04-20 00:00:00-07'::timestamptz, false)
-        "#,
-    )
-    .execute(&app.db_pool)
-    .await
-    .unwrap();
+    app.insert_test_store().await;
 
     let configuration = WidgetConfiguration {
         style: "blue".to_string(),
@@ -161,4 +153,61 @@ async fn widget_preview_request_succeeds() {
         response.secure_url,
         "https://test-store-t85.mybigcommerce.com"
     );
+}
+
+#[tokio::test]
+async fn widget_remove_request_succeeds() {
+    let app = spawn_app().await;
+
+    app.insert_test_store().await;
+
+    let get_scripts_response: serde_json::Value =
+        serde_json::from_str(include_str!("fixtures/get_scripts.json"))
+            .expect("Failed to parse file");
+
+    Mock::given(method("GET"))
+        .and(path("/stores/test-store/v3/content/scripts"))
+        .and(header("X-Auth-Token", "test-token"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(get_scripts_response))
+        .named("BigCommerce get scripts request")
+        .expect(1)
+        .mount(&app.bigcommerce_server)
+        .await;
+
+    let delete_script_response: serde_json::Value =
+        serde_json::from_str(include_str!("fixtures/delete_script.json"))
+            .expect("Failed to parse file");
+
+    Mock::given(method("DELETE"))
+        .and(path(
+            "/stores/test-store/v3/content/scripts/095be615-a8ad-4c33-8e9c-c7612fbf6c9f",
+        ))
+        .and(header("X-Auth-Token", "test-token"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(delete_script_response))
+        .named("BigCommerce delete script request")
+        .expect(1)
+        .mount(&app.bigcommerce_server)
+        .await;
+
+    let client = reqwest::Client::new();
+    let response = client
+        .delete(&format!("{}/api/v1/publish", &app.address))
+        .bearer_auth(app.generate_local_jwt_token())
+        .send()
+        .await
+        .expect("Failed to execute the request");
+
+    assert!(response.status().is_success());
+
+    let response = client
+        .get(&format!("{}/api/v1/publish", &app.address))
+        .bearer_auth(app.generate_local_jwt_token())
+        .send()
+        .await
+        .expect("Failed to execute the request")
+        .json::<StoreStatus>()
+        .await
+        .expect("Invalid response format");
+
+    assert_eq!(response.published, false);
 }

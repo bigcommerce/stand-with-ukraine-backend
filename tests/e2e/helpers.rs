@@ -123,4 +123,16 @@ impl TestApp {
     pub fn generate_local_jwt_token(&self) -> String {
         create_jwt("test-store", &self.jwt_secret).unwrap()
     }
+
+    pub async fn insert_test_store(&self) {
+        sqlx::query!(
+            r#"
+            INSERT INTO stores (id, store_hash, access_token, installed_at, uninstalled) 
+            VALUES (gen_random_uuid(), 'test-store', 'test-token', '2021-04-20 00:00:00-07'::timestamptz, false)
+            "#,
+        )
+        .execute(&self.db_pool)
+        .await
+        .unwrap();
+    }
 }

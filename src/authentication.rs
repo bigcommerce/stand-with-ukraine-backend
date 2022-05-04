@@ -1,10 +1,9 @@
 use actix_utils::future::{ready, Ready};
 use actix_web::{
-    dev::{Payload, ServiceRequest},
-    http::StatusCode,
-    web, Error, FromRequest, HttpRequest, HttpResponse, ResponseError,
+    dev::Payload, error::ParseError, http::StatusCode, web, FromRequest, HttpRequest, HttpResponse,
+    ResponseError,
 };
-use actix_web_httpauth::{extractors::bearer::BearerAuth, headers::authorization};
+use actix_web_httpauth::headers::authorization;
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use secrecy::{ExposeSecret, Secret};
 use time::{Duration, OffsetDateTime};
@@ -34,16 +33,14 @@ impl FromRequest for AuthClaims {
 
         let bearer = match <authorization::Authorization::<authorization::Bearer> as actix_web::http::header::Header>::parse(req) {
             Ok(auth) => auth.into_scheme(),
-            Err(_) => {
-                return ready(Err(AuthenticationError::InvalidTokenError(anyhow::anyhow!(
-                    "No token provided"
-                ))))
+            Err(err) => {
+                return ready(Err(AuthenticationError::NoTokenProvided(err)))
             }
         };
 
         let claims = match decode_token(bearer.token(), jwt_secret.as_ref()) {
             Ok(claims) => claims,
-            Err(err) => return ready(Err(AuthenticationError::InvalidTokenError(err.into()))),
+            Err(err) => return ready(Err(err)),
         };
 
         ready(Ok(claims))
@@ -75,39 +72,19 @@ where
 {
     let key = DecodingKey::from_secret(secret.as_ref().expose_secret().as_bytes());
     let validation = Validation::new(Algorithm::HS512);
-    let decoded = decode::<AuthClaims>(token, &key, &validation).map_err(|e| {
-        print!("{}", e);
-        AuthenticationError::InvalidTokenError(e.into())
-    })?;
+    let decoded = decode::<AuthClaims>(token, &key, &validation)
+        .map_err(AuthenticationError::InvalidTokenError)?;
 
     Ok(decoded.claims)
 }
 
-pub async fn validate_jwt_bearer_token(
-    req: ServiceRequest,
-    credentials: BearerAuth,
-) -> Result<ServiceRequest, Error> {
-    let jwt_secret = match req.app_data::<web::Data<JWTSecret>>() {
-        Some(val) => val,
-        None => {
-            return Err(Error::from(AuthenticationError::UnexpectedError(
-                anyhow::anyhow!("Invalid configuration"),
-            )))
-        }
-    };
-
-    match decode_token(credentials.token(), jwt_secret.as_ref()) {
-        Ok(_) => Ok(req),
-        Err(err) => Err(Error::from(AuthenticationError::InvalidTokenError(
-            err.into(),
-        ))),
-    }
-}
-
 #[derive(thiserror::Error, Debug)]
 pub enum AuthenticationError {
+    #[error("No Bearer Token")]
+    NoTokenProvided(#[source] ParseError),
+
     #[error("Token is invalid.")]
-    InvalidTokenError(#[source] anyhow::Error),
+    InvalidTokenError(#[source] jsonwebtoken::errors::Error),
 
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
@@ -117,6 +94,7 @@ impl ResponseError for AuthenticationError {
     fn error_response(&self) -> HttpResponse {
         match self {
             Self::UnexpectedError(_) => HttpResponse::new(StatusCode::INTERNAL_SERVER_ERROR),
+            Self::NoTokenProvided(_) => HttpResponse::new(StatusCode::UNAUTHORIZED),
             Self::InvalidTokenError(_) => HttpResponse::new(StatusCode::UNAUTHORIZED),
         }
     }

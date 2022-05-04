@@ -176,7 +176,7 @@ impl BCClient {
         let key = DecodingKey::from_secret(self.client_secret.expose_secret().as_bytes());
         let validation = Validation::new(Algorithm::HS256);
         let decoded = decode::<BCClaims>(token, &key, &validation)
-            .map_err(|e| AuthenticationError::InvalidTokenError(e.into()))?;
+            .map_err(AuthenticationError::InvalidTokenError)?;
 
         Ok(decoded.claims)
     }
