@@ -175,7 +175,7 @@ impl BCClient {
         let script = generate_script_body(&script.name, &script.html);
 
         self.http_client
-            .post(self.get_scripts_route(&&store.store_hash))
+            .post(self.get_scripts_route(&store.store_hash))
             .header("X-Auth-Token", &store.access_token)
             .json(&script)
             .send()
