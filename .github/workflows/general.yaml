@@ -320,11 +320,11 @@ jobs:
       - name: Run cargo-tarpaulin
         uses: actions-rs/tarpaulin@v0.1
         with:
-          out-type: Html
+          out-type: Xml
           args: '--ignore-tests --avoid-cfg-tarpaulin -- --test-threads 1'
 
-      - name: Archive code coverage results
-        uses: actions/upload-artifact@v1
+      - name: Upload to codecov.io
+        uses: codecov/codecov-action@v2
         with:
-          name: code-coverage-report
-          path: tarpaulin-report.html
+          token: ${{secrets.CODECOV_TOKEN}}
+          fail_ci_if_error: true

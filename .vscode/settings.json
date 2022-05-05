@@ -5,6 +5,7 @@
 		"Buildx",
 		"clippy",
 		"cobertura",
+		"codecov",
 		"DOCR",
 		"doctl",
 		"httpauth",
