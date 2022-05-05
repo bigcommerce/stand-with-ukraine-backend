@@ -44,55 +44,42 @@ async fn widget_publish_request_succeeds() {
 
     assert_eq!(response.published, false);
 
-    let create_scripts_response: serde_json::Value =
-        serde_json::from_str(include_str!("fixtures/create_script.json"))
-            .expect("Failed to parse file");
+    // first publish - should use create request to bc
+    {
+        let get_scripts_response: serde_json::Value =
+            serde_json::from_str(include_str!("fixtures/get_scripts.json"))
+                .expect("Failed to parse file");
+        let _get_guard = Mock::given(method("GET"))
+            .and(path("/stores/test-store/v3/content/scripts"))
+            .and(header("X-Auth-Token", "test-token"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(&get_scripts_response))
+            .named("BigCommerce get scripts request")
+            .expect(1)
+            .mount_as_scoped(&app.bigcommerce_server)
+            .await;
 
-    Mock::given(method("POST"))
-        .and(path("/stores/test-store/v3/content/scripts"))
-        .and(header("X-Auth-Token", "test-token"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(create_scripts_response))
-        .named("BigCommerce create script request")
-        .expect(1)
-        .mount(&app.bigcommerce_server)
-        .await;
+        let create_scripts_response: serde_json::Value =
+            serde_json::from_str(include_str!("fixtures/create_script.json"))
+                .expect("Failed to parse file");
 
-    let get_scripts_response: serde_json::Value =
-        serde_json::from_str(include_str!("fixtures/get_scripts.json"))
-            .expect("Failed to parse file");
+        let _create_guard = Mock::given(method("POST"))
+            .and(path("/stores/test-store/v3/content/scripts"))
+            .and(header("X-Auth-Token", "test-token"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(&create_scripts_response))
+            .named("BigCommerce create script request")
+            .expect(1)
+            .mount_as_scoped(&app.bigcommerce_server)
+            .await;
 
-    Mock::given(method("GET"))
-        .and(path("/stores/test-store/v3/content/scripts"))
-        .and(header("X-Auth-Token", "test-token"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(get_scripts_response))
-        .named("BigCommerce get scripts request")
-        .expect(1)
-        .mount(&app.bigcommerce_server)
-        .await;
+        let response = client
+            .post(&format!("{}/api/v1/publish", &app.address))
+            .bearer_auth(app.generate_local_jwt_token())
+            .send()
+            .await
+            .expect("Failed to execute the request");
 
-    let delete_script_response: serde_json::Value =
-        serde_json::from_str(include_str!("fixtures/delete_script.json"))
-            .expect("Failed to parse file");
-
-    Mock::given(method("DELETE"))
-        .and(path(
-            "/stores/test-store/v3/content/scripts/095be615-a8ad-4c33-8e9c-c7612fbf6c9f",
-        ))
-        .and(header("X-Auth-Token", "test-token"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(delete_script_response))
-        .named("BigCommerce delete script request")
-        .expect(1)
-        .mount(&app.bigcommerce_server)
-        .await;
-
-    let response = client
-        .post(&format!("{}/api/v1/publish", &app.address))
-        .bearer_auth(app.generate_local_jwt_token())
-        .send()
-        .await
-        .expect("Failed to execute the request");
-
-    assert!(response.status().is_success());
+        assert!(response.status().is_success());
+    }
 
     let response = client
         .get(&format!("{}/api/v1/publish", &app.address))
@@ -105,6 +92,46 @@ async fn widget_publish_request_succeeds() {
         .expect("Invalid response format");
 
     assert_eq!(response.published, true);
+
+    // second publish - should use put request to bc to update existing script
+    {
+        let get_scripts_response: serde_json::Value =
+            serde_json::from_str(include_str!("fixtures/get_scripts_existing.json"))
+                .expect("Failed to parse file");
+        let _get_guard = Mock::given(method("GET"))
+            .and(path("/stores/test-store/v3/content/scripts"))
+            .and(header("X-Auth-Token", "test-token"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(&get_scripts_response))
+            .named("BigCommerce get scripts request")
+            .expect(1)
+            .mount_as_scoped(&app.bigcommerce_server)
+            .await;
+
+        let update_scripts_response: serde_json::Value =
+            serde_json::from_str(include_str!("fixtures/create_script.json"))
+                .expect("Failed to parse file");
+
+        let _update_guard = Mock::given(method("PUT"))
+            .and(path(format!(
+                "/stores/test-store/v3/content/scripts/{}",
+                get_scripts_response["data"][0]["uuid"].as_str().unwrap()
+            )))
+            .and(header("X-Auth-Token", "test-token"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(&update_scripts_response))
+            .named("BigCommerce update script request")
+            .expect(1)
+            .mount_as_scoped(&app.bigcommerce_server)
+            .await;
+
+        let response = client
+            .post(&format!("{}/api/v1/publish", &app.address))
+            .bearer_auth(app.generate_local_jwt_token())
+            .send()
+            .await
+            .expect("Failed to execute the request");
+
+        assert!(response.status().is_success());
+    }
 }
 
 #[tokio::test]

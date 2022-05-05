@@ -120,26 +120,45 @@ impl BCClient {
         format!("{}/{}", self.get_scripts_route(store_hash), script_id)
     }
 
-    pub async fn remove_scripts(&self, store: &BCStore) -> Result<(), anyhow::Error> {
-        let BCListScriptsResponse { data } = self
-            .http_client
+    pub async fn get_all_scripts(
+        &self,
+        store: &BCStore,
+    ) -> Result<BCListScriptsResponse, reqwest::Error> {
+        self.http_client
             .get(self.get_scripts_route(&store.store_hash))
             .header("X-Auth-Token", &store.access_token)
             .send()
-            .await
-            .map_err(|e| anyhow::anyhow!(e))?
+            .await?
             .error_for_status()?
             .json::<BCListScriptsResponse>()
             .await
-            .map_err(|e| anyhow::anyhow!(e))?;
+    }
 
-        for script in data {
+    pub async fn get_script_with_name(
+        &self,
+        store: &BCStore,
+        name: &str,
+    ) -> Result<Option<BCScript>, reqwest::Error> {
+        let scripts = self.get_all_scripts(store).await?;
+
+        for script in scripts.data {
+            if script.name == name {
+                return Ok(Some(script));
+            }
+        }
+
+        Ok(None)
+    }
+
+    pub async fn remove_all_scripts(&self, store: &BCStore) -> Result<(), reqwest::Error> {
+        let scripts = self.get_all_scripts(store).await?;
+
+        for script in scripts.data {
             self.http_client
                 .delete(self.get_scripts_route_with_id(&store.store_hash, &script.uuid))
                 .header("X-Auth-Token", &store.access_token)
                 .send()
-                .await
-                .map_err(|e| anyhow::anyhow!(e))?;
+                .await?;
         }
 
         Ok(())
@@ -148,26 +167,38 @@ impl BCClient {
     pub async fn create_script(
         &self,
         store: &BCStore,
-        script_content: &String,
-    ) -> Result<(), anyhow::Error> {
-        self
-            .http_client
+        script_name: &str,
+        script_content: &str,
+    ) -> Result<(), reqwest::Error> {
+        let script = generate_script_body(script_name, script_content);
+
+        self.http_client
             .post(self.get_scripts_route(&store.store_hash))
             .header("X-Auth-Token", &store.access_token)
-            .json(&json!({
-                    "name": "Stand With Ukraine",
-                    "description": "This script displays the stand with ukraine widget on your storefront. Configure it from the Stand With Ukraine app installed on your store.",
-                    "kind": "script_tag",
-                    "html": script_content,
-                    "load_method": "default",
-                    "location": "footer",
-                    "visibility": "storefront",
-                    "consent_category": "essential",
-                    "auto_uninstall": true,
-                    "enabled": true,
-            }))
+            .json(&script)
             .send()
-            .await.map_err(|e| anyhow::anyhow!(e))?.error_for_status()?;
+            .await?
+            .error_for_status()?;
+
+        Ok(())
+    }
+
+    pub async fn update_script(
+        &self,
+        store: &BCStore,
+        script_uuid: &str,
+        script_name: &str,
+        script_content: &str,
+    ) -> Result<(), reqwest::Error> {
+        let script = generate_script_body(script_name, script_content);
+
+        self.http_client
+            .put(self.get_scripts_route_with_id(&store.store_hash, script_uuid))
+            .header("X-Auth-Token", &store.access_token)
+            .json(&script)
+            .send()
+            .await?
+            .error_for_status()?;
 
         Ok(())
     }
@@ -184,17 +215,15 @@ impl BCClient {
     pub async fn get_store_information(
         &self,
         store: &BCStore,
-    ) -> Result<BCStoreInformationResponse, anyhow::Error> {
+    ) -> Result<BCStoreInformationResponse, reqwest::Error> {
         self.http_client
             .get(self.get_store_information_route(&store.store_hash))
             .header("X-Auth-Token", &store.access_token)
             .send()
-            .await
-            .map_err(|e| anyhow::anyhow!(e))?
+            .await?
             .error_for_status()?
             .json::<BCStoreInformationResponse>()
             .await
-            .map_err(|e| anyhow::anyhow!(e))
     }
 }
 
@@ -214,6 +243,7 @@ pub struct BCScript {
     pub api_client_id: String,
     pub enabled: bool,
     pub channel_id: i16,
+    pub name: String,
 }
 
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -236,4 +266,19 @@ impl BCClaims {
 pub struct BCStore {
     pub store_hash: String,
     pub access_token: String,
+}
+
+fn generate_script_body(script_name: &str, script_content: &str) -> serde_json::Value {
+    json!({
+        "name": script_name,
+        "description": "This script displays the stand with ukraine widget on your storefront. Configure it from the Stand With Ukraine app installed on your store.",
+        "kind": "script_tag",
+        "html": script_content,
+        "load_method": "default",
+        "location": "footer",
+        "visibility": "storefront",
+        "consent_category": "essential",
+        "auto_uninstall": true,
+        "enabled": true,
+    })
 }

@@ -4,7 +4,7 @@ use reqwest::header::LOCATION;
 use sqlx::PgPool;
 
 use crate::{
-    authentication::create_jwt,
+    authentication::{create_jwt, AuthenticationError},
     bigcommerce::BCClient,
     configuration::{ApplicationBaseUrl, JWTSecret},
     data::{write_store_as_uninstalled, write_store_credentials},
@@ -20,7 +20,7 @@ pub struct InstallQuery {
 #[derive(thiserror::Error, Debug)]
 pub enum InstallError {
     #[error("Invalid credentials.")]
-    InvalidCredentials(#[source] anyhow::Error),
+    InvalidCredentials(#[source] reqwest::Error),
 
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
@@ -52,7 +52,6 @@ pub async fn install(
     let oauth_credentials = bigcommerce_client
         .authorize_oauth_install(&base_url.0, &query.code, &query.scope, &query.context)
         .await
-        .context("Failed to validate install query")
         .map_err(InstallError::InvalidCredentials)?;
 
     tracing::Span::current().record(
@@ -91,7 +90,7 @@ pub struct LoadQuery {
 #[derive(thiserror::Error, Debug)]
 pub enum LoadError {
     #[error("Invalid credentials.")]
-    InvalidCredentials(#[source] anyhow::Error),
+    InvalidCredentials(#[source] AuthenticationError),
 
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
@@ -118,16 +117,14 @@ pub async fn load(
 ) -> Result<HttpResponse, LoadError> {
     let claims = bigcommerce_client
         .decode_jwt(&query.signed_payload_jwt)
-        .context("Failed to decode bigcommerce jwt")
         .map_err(LoadError::InvalidCredentials)?;
 
     let store_hash = claims
         .get_store_hash()
-        .context("Failed to get store_hash from jwt")
         .map_err(LoadError::UnexpectedError)?;
 
     let jwt = create_jwt(store_hash, jwt_secret.as_ref())
-        .context("Failed to encode jwt token")
+        .context("Failed to encode token")
         .map_err(LoadError::UnexpectedError)?;
 
     Ok(HttpResponse::Found()
@@ -149,17 +146,15 @@ pub async fn uninstall(
 ) -> Result<HttpResponse, LoadError> {
     let claims = bigcommerce_client
         .decode_jwt(&query.signed_payload_jwt)
-        .context("Failed to decode bigcommerce jwt")
         .map_err(LoadError::InvalidCredentials)?;
 
     let store_hash = claims
         .get_store_hash()
-        .context("Failed to get store_hash from jwt")
         .map_err(LoadError::UnexpectedError)?;
 
     write_store_as_uninstalled(store_hash, &db_pool)
         .await
-        .context("Failed to mark store as uninstalled")
+        .context("Failed to set store as uninstalled")
         .map_err(LoadError::UnexpectedError)?;
 
     Ok(HttpResponse::Ok().finish())

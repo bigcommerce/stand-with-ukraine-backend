@@ -78,6 +78,7 @@ fn generate_script_content(
     ))
 }
 
+const MAIN_SCRIPT_NAME: &'static str = "Stand With Ukraine";
 pub async fn publish_widget(
     auth: AuthClaims,
     db_pool: web::Data<PgPool>,
@@ -98,17 +99,23 @@ pub async fn publish_widget(
         .context("Failed to get store credentials")
         .map_err(PublishError::UnexpectedError)?;
 
-    bigcommerce_client
-        .remove_scripts(&store)
+    let existing_script = bigcommerce_client
+        .get_script_with_name(&store, &MAIN_SCRIPT_NAME)
         .await
         .context("Failed to remove existing scripts.")
         .map_err(PublishError::UnexpectedError)?;
 
-    bigcommerce_client
-        .create_script(&store, &script_content)
-        .await
-        .context("Failed to create script in BigCommerce")
-        .map_err(PublishError::UnexpectedError)?;
+    match existing_script {
+        Some(script) => bigcommerce_client
+            .update_script(&store, &script.uuid, MAIN_SCRIPT_NAME, &script_content)
+            .await
+            .context("Failed to update existing script in BigCommerce"),
+        None => bigcommerce_client
+            .create_script(&store, MAIN_SCRIPT_NAME, &script_content)
+            .await
+            .context("Failed to create new script in BigCommerce"),
+    }
+    .map_err(PublishError::UnexpectedError)?;
 
     write_store_published(store_hash, true, &db_pool)
         .await
@@ -145,7 +152,7 @@ pub async fn remove_widget(
         .map_err(PublishError::UnexpectedError)?;
 
     bigcommerce_client
-        .remove_scripts(&store)
+        .remove_all_scripts(&store)
         .await
         .context("Failed to remove scripts in BigCommerce")
         .map_err(PublishError::UnexpectedError)?;
