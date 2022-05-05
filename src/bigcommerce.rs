@@ -1,5 +1,6 @@
+use anyhow::Context;
 use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
-use reqwest::Client;
+use reqwest::{header, Client};
 use secrecy::{ExposeSecret, Secret};
 use serde_json::json;
 
@@ -40,7 +41,7 @@ impl BCOAuthResponse {
 
         Ok(BCStore {
             store_hash: store_hash.to_string(),
-            access_token: self.access_token.expose_secret().to_string(),
+            access_token: self.access_token.clone(),
         })
     }
 }
@@ -53,7 +54,6 @@ impl BCClient {
         client_secret: Secret<String>,
         timeout: std::time::Duration,
     ) -> Self {
-        use reqwest::header;
         let mut headers = header::HeaderMap::new();
         headers.insert(
             "Accept",
@@ -126,22 +126,24 @@ impl BCClient {
     pub async fn get_all_scripts(
         &self,
         store: &BCStore,
-    ) -> Result<BCListScriptsResponse, reqwest::Error> {
+    ) -> Result<BCListScriptsResponse, anyhow::Error> {
         self.http_client
             .get(self.get_scripts_route(&store.store_hash))
-            .header("X-Auth-Token", &store.access_token)
+            .headers(store.get_api_headers()?)
             .send()
-            .await?
+            .await
+            .context("get all scripts request")?
             .error_for_status()?
             .json::<BCListScriptsResponse>()
             .await
+            .context("parse get all scripts response")
     }
 
     pub async fn try_get_script_with_name(
         &self,
         store: &BCStore,
         name: &str,
-    ) -> Result<Option<BCScript>, reqwest::Error> {
+    ) -> Result<Option<BCScript>, anyhow::Error> {
         let scripts = self.get_all_scripts(store).await?;
 
         for script in scripts.data {
@@ -153,15 +155,16 @@ impl BCClient {
         Ok(None)
     }
 
-    pub async fn remove_all_scripts(&self, store: &BCStore) -> Result<(), reqwest::Error> {
+    pub async fn remove_all_scripts(&self, store: &BCStore) -> Result<(), anyhow::Error> {
         let scripts = self.get_all_scripts(store).await?;
 
         for script in scripts.data {
             self.http_client
                 .delete(self.get_scripts_route_with_id(&store.store_hash, &script.uuid))
-                .header("X-Auth-Token", &store.access_token)
+                .headers(store.get_api_headers()?)
                 .send()
-                .await?;
+                .await
+                .context("delete script request")?;
         }
 
         Ok(())
@@ -171,15 +174,14 @@ impl BCClient {
         &self,
         store: &BCStore,
         script: &AppScript,
-    ) -> Result<(), reqwest::Error> {
-        let script = generate_script_body(&script.name, &script.html);
-
+    ) -> Result<(), anyhow::Error> {
         self.http_client
             .post(self.get_scripts_route(&store.store_hash))
-            .header("X-Auth-Token", &store.access_token)
-            .json(&script)
+            .headers(store.get_api_headers()?)
+            .json(&script.generate_script_body())
             .send()
-            .await?
+            .await
+            .context("create script request")?
             .error_for_status()?;
 
         Ok(())
@@ -190,15 +192,14 @@ impl BCClient {
         store: &BCStore,
         script_uuid: &str,
         script: &AppScript,
-    ) -> Result<(), reqwest::Error> {
-        let script = generate_script_body(&script.name, &script.html);
-
+    ) -> Result<(), anyhow::Error> {
         self.http_client
             .put(self.get_scripts_route_with_id(&store.store_hash, script_uuid))
-            .header("X-Auth-Token", &store.access_token)
-            .json(&script)
+            .headers(store.get_api_headers()?)
+            .json(&script.generate_script_body())
             .send()
-            .await?
+            .await
+            .context("update script request")?
             .error_for_status()?;
 
         Ok(())
@@ -216,15 +217,17 @@ impl BCClient {
     pub async fn get_store_information(
         &self,
         store: &BCStore,
-    ) -> Result<BCStoreInformationResponse, reqwest::Error> {
+    ) -> Result<BCStoreInformationResponse, anyhow::Error> {
         self.http_client
             .get(self.get_store_information_route(&store.store_hash))
-            .header("X-Auth-Token", &store.access_token)
+            .headers(store.get_api_headers()?)
             .send()
-            .await?
+            .await
+            .context("get store information request")?
             .error_for_status()?
             .json::<BCStoreInformationResponse>()
             .await
+            .context("parse store information response")
     }
 }
 
@@ -263,44 +266,61 @@ impl BCClaims {
     }
 }
 
-#[derive(serde::Serialize)]
 pub struct BCStore {
     pub store_hash: String,
-    pub access_token: String,
+    pub access_token: Secret<String>,
 }
 
-fn generate_script_body(name: &str, html: &str) -> serde_json::Value {
-    json!({
-        "name": name,
-        "description": "This script displays the stand with ukraine widget on your storefront. Configure it from the Stand With Ukraine app installed on your store.",
-        "kind": "script_tag",
-        "html": html,
-        "load_method": "default",
-        "location": "footer",
-        "visibility": "storefront",
-        "consent_category": "essential",
-        "auto_uninstall": true,
-        "enabled": true,
-    })
+impl BCStore {
+    pub fn get_api_headers(&self) -> Result<header::HeaderMap, anyhow::Error> {
+        let mut headers = header::HeaderMap::new();
+
+        headers.insert(
+            "X-Auth-Token",
+            self.access_token
+                .expose_secret()
+                .parse()
+                .context("Failed to set header value")?,
+        );
+
+        Ok(headers)
+    }
 }
 
 pub struct AppScript {
     pub name: String,
+    pub description: String,
     pub html: String,
 }
 
 impl AppScript {
-    pub fn generate_main_script(
+    pub fn new_main_script(
         widget_configuration: &WidgetConfiguration,
         base_url: &ApplicationBaseUrl,
     ) -> Result<Self, serde_json::Error> {
         Ok(Self {
-            name: "Stand With Ukraine".to_string(),
-            html: format!(
-                r#"<script>window.SWU_CONFIG={};</script><script src="{}/widget/index.js"></script>"#,
-                serde_json::to_string(widget_configuration)?,
-                base_url.0
-            ),
+        name: "Stand With Ukraine".to_string(),
+        description: "This script displays the stand with ukraine widget on your storefront. Configure it from the Stand With Ukraine app installed on your store.".to_string(),
+        html: format!(
+            r#"<script>window.SWU_CONFIG={};</script><script src="{}/widget/index.js"></script>"#,
+            serde_json::to_string(widget_configuration)?,
+            base_url.0
+        ),
+        })
+    }
+
+    fn generate_script_body(&self) -> serde_json::Value {
+        json!({
+            "name": self.name,
+            "description": self.description,
+            "html": self.html,
+            "kind": "script_tag",
+            "load_method": "default",
+            "location": "footer",
+            "visibility": "storefront",
+            "consent_category": "essential",
+            "auto_uninstall": true,
+            "enabled": true,
         })
     }
 }

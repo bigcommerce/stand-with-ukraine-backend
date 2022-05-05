@@ -78,30 +78,26 @@ pub async fn publish_widget(
         .await
         .map_err(PublishError::UnexpectedError)?;
 
-    let script = AppScript::generate_main_script(&widget_configuration, &base_url)
+    let script = AppScript::new_main_script(&widget_configuration, &base_url)
         .context("Failed to generate script content")
         .map_err(PublishError::UnexpectedError)?;
 
     let store = read_store_credentials(store_hash, &db_pool)
         .await
-        .context("Failed to get store credentials")
         .map_err(PublishError::UnexpectedError)?;
 
     let existing_script = bigcommerce_client
         .try_get_script_with_name(&store, &script.name)
         .await
-        .context("Failed to remove existing scripts.")
         .map_err(PublishError::UnexpectedError)?;
 
     match existing_script {
-        Some(existing_script) => bigcommerce_client
-            .update_script(&store, &existing_script.uuid, &script)
-            .await
-            .context("Failed to update existing script in BigCommerce"),
-        None => bigcommerce_client
-            .create_script(&store, &script)
-            .await
-            .context("Failed to create new script in BigCommerce"),
+        Some(existing_script) => {
+            bigcommerce_client
+                .update_script(&store, &existing_script.uuid, &script)
+                .await
+        }
+        None => bigcommerce_client.create_script(&store, &script).await,
     }
     .map_err(PublishError::UnexpectedError)?;
 

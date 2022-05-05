@@ -1,4 +1,5 @@
 use anyhow::Context;
+use secrecy::{ExposeSecret, Secret};
 use sqlx::{types::time::OffsetDateTime, PgPool};
 use uuid::Uuid;
 
@@ -14,7 +15,7 @@ pub async fn write_store_credentials(store: &BCStore, pool: &PgPool) -> Result<(
         "#,
         Uuid::new_v4(),
         store.store_hash,
-        store.access_token,
+        store.access_token.expose_secret(),
         OffsetDateTime::now_utc()
     )
     .execute(pool)
@@ -28,8 +29,7 @@ pub async fn read_store_credentials(
     store_hash: &str,
     pool: &PgPool,
 ) -> Result<BCStore, anyhow::Error> {
-    let store = sqlx::query_as!(
-        BCStore,
+    let row = sqlx::query!(
         r#"
         SELECT access_token, store_hash FROM stores WHERE store_hash = $1
         "#,
@@ -38,7 +38,10 @@ pub async fn read_store_credentials(
     .fetch_one(pool)
     .await?;
 
-    Ok(store)
+    Ok(BCStore {
+        access_token: Secret::from(row.access_token),
+        store_hash: row.store_hash,
+    })
 }
 
 #[tracing::instrument(

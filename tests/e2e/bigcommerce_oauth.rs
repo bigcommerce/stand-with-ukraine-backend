@@ -1,4 +1,5 @@
 use crate::helpers::spawn_app;
+use secrecy::Secret;
 use serde_json::json;
 use swu_app::{bigcommerce::BCStore, data::write_store_credentials};
 use wiremock::{
@@ -153,7 +154,7 @@ async fn uninstall_request_succeeds() {
 
     let store = BCStore {
         store_hash: "test-store".to_string(),
-        access_token: "test-token".to_string(),
+        access_token: Secret::from("test-token".to_string()),
     };
     write_store_credentials(&store, &app.db_pool)
         .await
