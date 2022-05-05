@@ -3,7 +3,10 @@ use reqwest::Client;
 use secrecy::{ExposeSecret, Secret};
 use serde_json::json;
 
-use crate::authentication::AuthenticationError;
+use crate::{
+    authentication::AuthenticationError, configuration::ApplicationBaseUrl,
+    data::WidgetConfiguration,
+};
 
 pub struct BCClient {
     api_base_url: String,
@@ -134,7 +137,7 @@ impl BCClient {
             .await
     }
 
-    pub async fn get_script_with_name(
+    pub async fn try_get_script_with_name(
         &self,
         store: &BCStore,
         name: &str,
@@ -167,13 +170,12 @@ impl BCClient {
     pub async fn create_script(
         &self,
         store: &BCStore,
-        script_name: &str,
-        script_content: &str,
+        script: &AppScript,
     ) -> Result<(), reqwest::Error> {
-        let script = generate_script_body(script_name, script_content);
+        let script = generate_script_body(&script.name, &script.html);
 
         self.http_client
-            .post(self.get_scripts_route(&store.store_hash))
+            .post(self.get_scripts_route(&&store.store_hash))
             .header("X-Auth-Token", &store.access_token)
             .json(&script)
             .send()
@@ -187,10 +189,9 @@ impl BCClient {
         &self,
         store: &BCStore,
         script_uuid: &str,
-        script_name: &str,
-        script_content: &str,
+        script: &AppScript,
     ) -> Result<(), reqwest::Error> {
-        let script = generate_script_body(script_name, script_content);
+        let script = generate_script_body(&script.name, &script.html);
 
         self.http_client
             .put(self.get_scripts_route_with_id(&store.store_hash, script_uuid))
@@ -268,12 +269,12 @@ pub struct BCStore {
     pub access_token: String,
 }
 
-fn generate_script_body(script_name: &str, script_content: &str) -> serde_json::Value {
+fn generate_script_body(name: &str, html: &str) -> serde_json::Value {
     json!({
-        "name": script_name,
+        "name": name,
         "description": "This script displays the stand with ukraine widget on your storefront. Configure it from the Stand With Ukraine app installed on your store.",
         "kind": "script_tag",
-        "html": script_content,
+        "html": html,
         "load_method": "default",
         "location": "footer",
         "visibility": "storefront",
@@ -281,4 +282,25 @@ fn generate_script_body(script_name: &str, script_content: &str) -> serde_json::
         "auto_uninstall": true,
         "enabled": true,
     })
+}
+
+pub struct AppScript {
+    pub name: String,
+    pub html: String,
+}
+
+impl AppScript {
+    pub fn generate_main_script(
+        widget_configuration: &WidgetConfiguration,
+        base_url: &ApplicationBaseUrl,
+    ) -> Result<Self, serde_json::Error> {
+        Ok(Self {
+            name: "Stand With Ukraine".to_string(),
+            html: format!(
+                r#"<script>window.SWU_CONFIG={};</script><script src="{}/widget/index.js"></script>"#,
+                serde_json::to_string(widget_configuration)?,
+                base_url.0
+            ),
+        })
+    }
 }

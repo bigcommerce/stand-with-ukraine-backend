@@ -4,7 +4,7 @@ use sqlx::PgPool;
 
 use crate::{
     authentication::AuthClaims,
-    bigcommerce::BCClient,
+    bigcommerce::{AppScript, BCClient},
     configuration::ApplicationBaseUrl,
     data::{
         read_store_credentials, read_store_published, read_widget_configuration,
@@ -67,18 +67,6 @@ impl ResponseError for PublishError {
     }
 }
 
-fn generate_script_content(
-    widget_configuration: &WidgetConfiguration,
-    base_url: &ApplicationBaseUrl,
-) -> Result<String, serde_json::Error> {
-    Ok(format!(
-        r#"<script>window.SWU_CONFIG={};</script><script src="{}/widget/index.js"></script>"#,
-        serde_json::to_string(widget_configuration)?,
-        base_url.0
-    ))
-}
-
-const MAIN_SCRIPT_NAME: &'static str = "Stand With Ukraine";
 pub async fn publish_widget(
     auth: AuthClaims,
     db_pool: web::Data<PgPool>,
@@ -90,7 +78,7 @@ pub async fn publish_widget(
         .await
         .map_err(PublishError::UnexpectedError)?;
 
-    let script_content = generate_script_content(&widget_configuration, &base_url)
+    let script = AppScript::generate_main_script(&widget_configuration, &base_url)
         .context("Failed to generate script content")
         .map_err(PublishError::UnexpectedError)?;
 
@@ -100,18 +88,18 @@ pub async fn publish_widget(
         .map_err(PublishError::UnexpectedError)?;
 
     let existing_script = bigcommerce_client
-        .get_script_with_name(&store, &MAIN_SCRIPT_NAME)
+        .try_get_script_with_name(&store, &script.name)
         .await
         .context("Failed to remove existing scripts.")
         .map_err(PublishError::UnexpectedError)?;
 
     match existing_script {
-        Some(script) => bigcommerce_client
-            .update_script(&store, &script.uuid, MAIN_SCRIPT_NAME, &script_content)
+        Some(existing_script) => bigcommerce_client
+            .update_script(&store, &existing_script.uuid, &script)
             .await
             .context("Failed to update existing script in BigCommerce"),
         None => bigcommerce_client
-            .create_script(&store, MAIN_SCRIPT_NAME, &script_content)
+            .create_script(&store, &script)
             .await
             .context("Failed to create new script in BigCommerce"),
     }
