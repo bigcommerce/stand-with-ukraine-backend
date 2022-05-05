@@ -246,7 +246,7 @@ jobs:
         env:
           DIGITALOCEAN_APP_ID: ${{ secrets.DIGITALOCEAN_APP_ID }}
           SPEC_FILE: 'deployment.yaml'
-          PATTERN: 's/tag: [a-z0-9]*$/tag: ${{ steps.tag.outputs.sha }}/g'
+          PATTERN: 's/tag: sha\-[a-z0-9]*$/tag: ${{ steps.tag.outputs.sha }}/g'
         run: |
           echo "::add-mask::${{ secrets.APP__APPLICATION__JWT_TOKEN }}" 
           echo "::add-mask::${{ secrets.APP__BIGCOMMERCE__CLIENT_ID }}" 
