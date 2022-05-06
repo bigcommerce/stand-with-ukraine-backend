@@ -4,6 +4,7 @@ use secrecy::{ExposeSecret, Secret};
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use swu_app::{
     authentication::create_jwt,
+    bigcommerce::BCUser,
     configuration::{get_configuration, DatabaseSettings, JWTSecret},
     startup::{get_connection_pool, Application},
     telemetry::{get_subscriber, init_subscriber},
@@ -96,10 +97,20 @@ async fn configure_database(config: &DatabaseSettings) -> PgPool {
 
 impl TestApp {
     pub fn generate_bc_jwt_token(&self) -> String {
-        self.generate_bc_jwt_token_with_sub("store/test-store")
+        let user = BCUser {
+            id: 1,
+            email: "test@test.com".to_string(),
+        };
+
+        self.generate_bc_jwt_token_with_params("store/test-store", &user, &user)
     }
 
-    pub fn generate_bc_jwt_token_with_sub(&self, sub: &str) -> String {
+    pub fn generate_bc_jwt_token_with_params(
+        &self,
+        sub: &str,
+        owner: &BCUser,
+        user: &BCUser,
+    ) -> String {
         let now = OffsetDateTime::now_utc();
         let expiration = now + Duration::minutes(30);
         let claims = serde_json::json!( {
@@ -107,14 +118,8 @@ impl TestApp {
             "iat": now.unix_timestamp(),
             "exp": expiration.unix_timestamp(),
             "sub": sub,
-            "user": {
-                "id": 1,
-                "email": "test@test.com"
-            },
-            "owner": {
-                "id": 1,
-                "email": "test@test.com"
-            },
+            "user": user,
+            "owner": owner,
             "url": "/",
             "channel_id": null
         });

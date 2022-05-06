@@ -145,6 +145,12 @@ pub async fn uninstall(
         .decode_jwt(&query.signed_payload_jwt)
         .map_err(LoadError::InvalidCredentials)?;
 
+    if !claims.is_owner() {
+        return Err(LoadError::InvalidCredentials(
+            AuthenticationError::UnexpectedError(anyhow::anyhow!("User is not owner")),
+        ));
+    }
+
     let store_hash = claims
         .get_store_hash()
         .map_err(LoadError::UnexpectedError)?;

@@ -1,6 +1,9 @@
 use crate::{helpers::spawn_app, mocks::get_oauth2_token_mock};
 use secrecy::Secret;
-use swu_app::{bigcommerce::BCStore, data::write_store_credentials};
+use swu_app::{
+    bigcommerce::{BCStore, BCUser},
+    data::write_store_credentials,
+};
 
 #[tokio::test]
 async fn install_request_fails_without_bigcommerce_response() {
@@ -138,11 +141,16 @@ async fn load_request_fails_with_bad_token() {
 
     assert!(response.status().is_client_error());
 
+    let user = BCUser {
+        id: 1,
+        email: "user@test.com".to_string(),
+    };
+
     let response = client
         .get(&format!("{}/bigcommerce/load", &app.address))
         .query(&[(
             "signed_payload_jwt",
-            app.generate_bc_jwt_token_with_sub("bad-hash"),
+            app.generate_bc_jwt_token_with_params("bad-hash", &user, &user),
         )])
         .send()
         .await
@@ -216,4 +224,54 @@ async fn uninstall_request_succeeds() {
 
     assert_eq!(row.uninstalled, true);
     assert_eq!(response.status().as_u16(), 200);
+}
+
+#[tokio::test]
+async fn uninstall_request_fails_with_non_owner() {
+    let app = spawn_app().await;
+
+    let client = reqwest::ClientBuilder::new()
+        .redirect(reqwest::redirect::Policy::none())
+        .build()
+        .unwrap();
+
+    let store = BCStore {
+        store_hash: "test-store".to_string(),
+        access_token: Secret::from("test-token".to_string()),
+    };
+    write_store_credentials(&store, &app.db_pool)
+        .await
+        .expect("Failed to initialize store");
+
+    let owner = BCUser {
+        id: 1,
+        email: "owner@test.com".to_string(),
+    };
+    let user = BCUser {
+        id: 2,
+        email: "user@test.com".to_string(),
+    };
+
+    let response = client
+        .get(&format!("{}/bigcommerce/uninstall", &app.address))
+        .query(&[(
+            "signed_payload_jwt",
+            &app.generate_bc_jwt_token_with_params("test-store", &owner, &user),
+        )])
+        .send()
+        .await
+        .expect("Failed to execute the request");
+
+    let row = sqlx::query!(
+        r#"
+        SELECT uninstalled FROM stores
+        WHERE store_hash = 'test-store'
+        "#
+    )
+    .fetch_one(&app.db_pool)
+    .await
+    .unwrap();
+
+    assert_eq!(row.uninstalled, false);
+    assert!(response.status().is_client_error());
 }

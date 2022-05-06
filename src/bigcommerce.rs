@@ -264,6 +264,10 @@ impl BCClaims {
             .map(|x| x.1)
             .ok_or_else(|| anyhow::anyhow!("Context did not have correct format"))
     }
+
+    pub fn is_owner(&self) -> bool {
+        self.owner.id == self.user.id && self.owner.email == self.user.email
+    }
 }
 
 pub struct BCStore {
