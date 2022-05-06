@@ -103,7 +103,7 @@ impl ResponseError for AuthenticationError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    // use rstest::*;
+    use actix_web::{http::header::AUTHORIZATION, test::TestRequest, web::Data};
 
     #[test]
     fn should_encode_and_decode_jwt_in_correct_format() {
@@ -125,5 +125,50 @@ mod tests {
             claims.exp > (OffsetDateTime::now_utc() + Duration::minutes(30)).unix_timestamp(),
             "Expiration should be more than 30 mins"
         )
+    }
+
+    #[actix_web::test]
+    async fn auth_claims_extractor_fails_without_jwt_secret() {
+        let req = TestRequest::default()
+            .insert_header((AUTHORIZATION, "test-token"))
+            .to_http_request();
+        let mut payload = Payload::None;
+
+        let err = AuthClaims::from_request(&req, &mut payload)
+            .await
+            .unwrap_err();
+
+        assert_eq!(err.to_string(), "Invalid configuration");
+    }
+
+    #[actix_web::test]
+    async fn auth_claims_extractor_fails_with_no_header() {
+        let jwt_secret = Data::new(JWTSecret(Secret::from("test-token".to_string())));
+        let req = TestRequest::default()
+            .app_data(jwt_secret.clone())
+            .to_http_request();
+        let mut payload = Payload::None;
+
+        let err = AuthClaims::from_request(&req, &mut payload)
+            .await
+            .unwrap_err();
+
+        assert_eq!(err.to_string(), "No Bearer Token");
+    }
+
+    #[actix_web::test]
+    async fn auth_claims_extractor_fails_with_bad_token() {
+        let jwt_secret = Data::new(JWTSecret(Secret::from("test-secret".to_string())));
+        let req = TestRequest::default()
+            .app_data(jwt_secret.clone())
+            .insert_header((AUTHORIZATION, "Bearer test-token"))
+            .to_http_request();
+        let mut payload = Payload::None;
+
+        let err = AuthClaims::from_request(&req, &mut payload)
+            .await
+            .unwrap_err();
+
+        assert_eq!(err.to_string(), "Token is invalid.");
     }
 }

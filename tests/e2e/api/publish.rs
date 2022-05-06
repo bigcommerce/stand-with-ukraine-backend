@@ -10,6 +10,39 @@ use wiremock::{
 use crate::helpers::spawn_app;
 
 #[tokio::test]
+async fn widget_publish_request_fails_without_token_or_with_invalid_token() {
+    let app = spawn_app().await;
+
+    let configuration = WidgetConfiguration {
+        style: "blue".to_string(),
+        placement: "top-left".to_string(),
+        charity_selections: vec!["razom".to_string()],
+        modal_title: "Title!".to_string(),
+        modal_body: "Body!".to_string(),
+    };
+
+    let client = reqwest::Client::new();
+    let response = client
+        .post(&format!("{}/api/v1/configuration", &app.address))
+        .json(&configuration)
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(response.status().as_u16(), 401);
+
+    let response = client
+        .post(&format!("{}/api/v1/configuration", &app.address))
+        .bearer_auth("test-token")
+        .json(&configuration)
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(response.status().as_u16(), 401);
+}
+
+#[tokio::test]
 async fn widget_publish_request_succeeds() {
     let app = spawn_app().await;
 
