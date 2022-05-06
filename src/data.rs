@@ -142,12 +142,13 @@ pub async fn write_widget_configuration(
         r#"
         UPDATE stores
         SET widget_configuration = $1
-        WHERE store_hash = $2;
+        WHERE store_hash = $2
+        RETURNING id
         "#,
         widget_configuration,
         store_hash,
     )
-    .execute(db_pool)
+    .fetch_one(db_pool)
     .await
     .context("Save configuration to database")?;
 

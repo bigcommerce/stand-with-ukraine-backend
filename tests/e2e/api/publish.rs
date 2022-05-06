@@ -168,6 +168,30 @@ async fn widget_publish_request_succeeds() {
 }
 
 #[tokio::test]
+async fn widget_publish_request_fails_without_configuration_saved() {
+    let app = spawn_app().await;
+
+    app.insert_test_store().await;
+
+    let client = reqwest::Client::new();
+    client
+        .post(&format!("{}/api/v1/configuration", &app.address))
+        .bearer_auth(app.generate_local_jwt_token())
+        .send()
+        .await
+        .expect("Failed to execute the request");
+
+    let response = client
+        .post(&format!("{}/api/v1/publish", &app.address))
+        .bearer_auth(app.generate_local_jwt_token())
+        .send()
+        .await
+        .expect("Failed to execute the request");
+
+    assert_eq!(response.status().as_u16(), 500);
+}
+
+#[tokio::test]
 async fn widget_preview_request_succeeds() {
     let app = spawn_app().await;
 

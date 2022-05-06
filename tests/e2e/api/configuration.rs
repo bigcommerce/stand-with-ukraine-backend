@@ -3,20 +3,58 @@ use swu_app::data::WidgetConfiguration;
 use crate::helpers::spawn_app;
 
 #[tokio::test]
-async fn save_and_read_widget_configuration() {
+async fn save_widget_configuration_fails_with_invalid_config() {
     let app = spawn_app().await;
 
     let client = reqwest::Client::new();
 
-    sqlx::query!(
-        r#"
-        INSERT INTO stores (id, store_hash, access_token, installed_at, uninstalled) 
-        VALUES (gen_random_uuid(), 'test-store', 'test-token', '2021-04-20 00:00:00-07'::timestamptz, false)
-        "#,
-    )
-    .execute(&app.db_pool)
-    .await
-    .unwrap();
+    let configuration = serde_json::json!({
+        "bad": "value"
+    });
+
+    let response = client
+        .post(&format!("{}/api/v1/configuration", &app.address))
+        .bearer_auth(app.generate_local_jwt_token())
+        .json(&configuration)
+        .send()
+        .await
+        .expect("Failed to execute the request");
+
+    assert!(response.status().is_client_error());
+}
+
+#[tokio::test]
+async fn save_widget_configuration_fails_when_store_not_defined() {
+    let app = spawn_app().await;
+
+    let client = reqwest::Client::new();
+
+    let configuration = WidgetConfiguration {
+        style: "blue".to_string(),
+        placement: "top-left".to_string(),
+        charity_selections: vec!["razom".to_string()],
+        modal_title: "Title!".to_string(),
+        modal_body: "Body!".to_string(),
+    };
+
+    let response = client
+        .post(&format!("{}/api/v1/configuration", &app.address))
+        .bearer_auth(app.generate_local_jwt_token())
+        .json(&configuration)
+        .send()
+        .await
+        .expect("Failed to execute the request");
+
+    assert!(response.status().is_server_error());
+}
+
+#[tokio::test]
+async fn save_and_read_widget_configuration() {
+    let app = spawn_app().await;
+
+    app.insert_test_store().await;
+
+    let client = reqwest::Client::new();
 
     let configuration = WidgetConfiguration {
         style: "blue".to_string(),

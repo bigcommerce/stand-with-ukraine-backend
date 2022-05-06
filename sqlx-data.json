@@ -55,19 +55,6 @@
     },
     "query": "\n        SELECT published FROM stores\n        WHERE store_hash = $1;\n        "
   },
-  "7a1730c7c73eb4345511ab5efdb398cbc0ee56bfad6b20571b8ab0ecf70d22fd": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": [
-          "Jsonb",
-          "Text"
-        ]
-      }
-    },
-    "query": "\n        UPDATE stores\n        SET widget_configuration = $1\n        WHERE store_hash = $2;\n        "
-  },
   "9f9a27a24eb386efa467214ef3b9aec2d96111c7263f9fd03e66872596806104": {
     "describe": {
       "columns": [],
@@ -118,5 +105,26 @@
       }
     },
     "query": "\n        SELECT access_token, store_hash FROM stores WHERE store_hash = $1\n        "
+  },
+  "f61338aa051a3a81e92b5c91fbc48d3c5a45fe3deca0c6532fb8cc9a719579da": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Jsonb",
+          "Text"
+        ]
+      }
+    },
+    "query": "\n        UPDATE stores\n        SET widget_configuration = $1\n        WHERE store_hash = $2\n        RETURNING id\n        "
   }
 }
