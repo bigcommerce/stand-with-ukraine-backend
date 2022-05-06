@@ -96,13 +96,17 @@ async fn configure_database(config: &DatabaseSettings) -> PgPool {
 
 impl TestApp {
     pub fn generate_bc_jwt_token(&self) -> String {
+        self.generate_bc_jwt_token_with_sub("store/test-store")
+    }
+
+    pub fn generate_bc_jwt_token_with_sub(&self, sub: &str) -> String {
         let now = OffsetDateTime::now_utc();
         let expiration = now + Duration::minutes(30);
         let claims = serde_json::json!( {
             "iss": "bc",
             "iat": now.unix_timestamp(),
             "exp": expiration.unix_timestamp(),
-            "sub": "stores/test-store",
+            "sub": sub,
             "user": {
                 "id": 1,
                 "email": "test@test.com"

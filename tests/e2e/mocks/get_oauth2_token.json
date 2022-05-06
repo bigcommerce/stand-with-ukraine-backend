@@ -1,0 +1,9 @@
+{
+  "access_token": "ACCESS_TOKEN",
+  "scope": "store_v2_orders",
+  "user": {
+    "id": 24654,
+    "email": "merchant@mybigcommerce.com"
+  },
+  "context": "stores/STORE_HASH"
+}

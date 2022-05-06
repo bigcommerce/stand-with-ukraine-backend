@@ -19,9 +19,6 @@ pub struct InstallQuery {
 
 #[derive(thiserror::Error, Debug)]
 pub enum InstallError {
-    #[error("Invalid credentials.")]
-    InvalidCredentials(#[source] reqwest::Error),
-
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
 }
@@ -30,7 +27,6 @@ impl ResponseError for InstallError {
     fn error_response(&self) -> HttpResponse {
         match self {
             Self::UnexpectedError(_) => HttpResponse::new(StatusCode::INTERNAL_SERVER_ERROR),
-            Self::InvalidCredentials(_) => HttpResponse::new(StatusCode::UNAUTHORIZED),
         }
     }
 }
@@ -52,7 +48,8 @@ pub async fn install(
     let oauth_credentials = bigcommerce_client
         .authorize_oauth_install(&base_url.0, &query.code, &query.scope, &query.context)
         .await
-        .map_err(InstallError::InvalidCredentials)?;
+        .context("Failed to validate credentials")
+        .map_err(InstallError::UnexpectedError)?;
 
     tracing::Span::current().record(
         "user_email",
