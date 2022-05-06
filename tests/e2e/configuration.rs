@@ -49,6 +49,22 @@ async fn save_widget_configuration_fails_when_store_not_defined() {
 }
 
 #[tokio::test]
+async fn read_widget_configuration_fails_with_no_store() {
+    let app = spawn_app().await;
+
+    let client = reqwest::Client::new();
+
+    let response = client
+        .get(&format!("{}/api/v1/configuration", &app.address))
+        .bearer_auth(app.generate_local_jwt_token())
+        .send()
+        .await
+        .expect("Failed to execute the request");
+
+    assert!(response.status().is_server_error());
+}
+
+#[tokio::test]
 async fn save_and_read_widget_configuration() {
     let app = spawn_app().await;
 
