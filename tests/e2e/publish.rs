@@ -1,10 +1,7 @@
-use swu_app::{
-    bigcommerce::BCStoreInformationResponse,
-    data::{StoreStatus, WidgetConfiguration},
-};
+use swu_app::{bigcommerce::BCStoreInformationResponse, data::StoreStatus};
 
 use crate::{
-    helpers::spawn_app,
+    helpers::{create_test_server_client_no_redirect, get_widget_configuration, spawn_app},
     mocks::{
         create_script_mock, delete_script_mock, get_scripts_mock, get_store_information_mock,
         update_script_mock,
@@ -15,28 +12,21 @@ use crate::{
 async fn widget_publish_request_fails_without_token_or_with_invalid_token() {
     let app = spawn_app().await;
 
-    let configuration = WidgetConfiguration {
-        style: "blue".to_string(),
-        placement: "top-left".to_string(),
-        charity_selections: vec!["razom".to_string()],
-        modal_title: "Title!".to_string(),
-        modal_body: "Body!".to_string(),
-    };
-
-    let client = reqwest::Client::new();
-    let response = client
-        .post(&format!("{}/api/v1/configuration", &app.address))
-        .json(&configuration)
+    let response = app
+        .test_client
+        .post(&app.test_server_url("/api/v1/configuration"))
+        .json(&get_widget_configuration())
         .send()
         .await
         .unwrap();
 
     assert!(response.status().is_client_error());
 
-    let response = client
-        .post(&format!("{}/api/v1/configuration", &app.address))
+    let response = app
+        .test_client
+        .post(&app.test_server_url("/api/v1/configuration"))
         .bearer_auth("test-token")
-        .json(&configuration)
+        .json(&get_widget_configuration())
         .send()
         .await
         .unwrap();
@@ -50,25 +40,17 @@ async fn widget_publish_request_succeeds() {
 
     app.insert_test_store().await;
 
-    let configuration = WidgetConfiguration {
-        style: "blue".to_string(),
-        placement: "top-left".to_string(),
-        charity_selections: vec!["razom".to_string()],
-        modal_title: "Title!".to_string(),
-        modal_body: "Body!".to_string(),
-    };
-
-    let client = reqwest::Client::new();
-    client
-        .post(&format!("{}/api/v1/configuration", &app.address))
+    app.test_client
+        .post(&app.test_server_url("/api/v1/configuration"))
         .bearer_auth(app.generate_local_jwt_token())
-        .json(&configuration)
+        .json(&get_widget_configuration())
         .send()
         .await
         .expect("Failed to execute the request");
 
-    let response = client
-        .get(&format!("{}/api/v1/publish", &app.address))
+    let response = app
+        .test_client
+        .get(&app.test_server_url("/api/v1/publish"))
         .bearer_auth(app.generate_local_jwt_token())
         .send()
         .await
@@ -91,8 +73,9 @@ async fn widget_publish_request_succeeds() {
             .mount_as_scoped(&app.bigcommerce_server)
             .await;
 
-        let response = client
-            .post(&format!("{}/api/v1/publish", &app.address))
+        let response = app
+            .test_client
+            .post(&app.test_server_url("/api/v1/publish"))
             .bearer_auth(app.generate_local_jwt_token())
             .send()
             .await
@@ -101,8 +84,9 @@ async fn widget_publish_request_succeeds() {
         assert!(response.status().is_success());
     }
 
-    let response = client
-        .get(&format!("{}/api/v1/publish", &app.address))
+    let response = app
+        .test_client
+        .get(&app.test_server_url("/api/v1/publish"))
         .bearer_auth(app.generate_local_jwt_token())
         .send()
         .await
@@ -125,8 +109,9 @@ async fn widget_publish_request_succeeds() {
             .mount_as_scoped(&app.bigcommerce_server)
             .await;
 
-        let response = client
-            .post(&format!("{}/api/v1/publish", &app.address))
+        let response = app
+            .test_client
+            .post(&app.test_server_url("/api/v1/publish"))
             .bearer_auth(app.generate_local_jwt_token())
             .send()
             .await
@@ -142,16 +127,16 @@ async fn widget_publish_request_fails_without_configuration_saved() {
 
     app.insert_test_store().await;
 
-    let client = reqwest::Client::new();
-    client
-        .post(&format!("{}/api/v1/configuration", &app.address))
+    app.test_client
+        .post(&app.test_server_url("/api/v1/configuration"))
         .bearer_auth(app.generate_local_jwt_token())
         .send()
         .await
         .expect("Failed to execute the request");
 
-    let response = client
-        .post(&format!("{}/api/v1/publish", &app.address))
+    let response = app
+        .test_client
+        .post(&app.test_server_url("/api/v1/publish"))
         .bearer_auth(app.generate_local_jwt_token())
         .send()
         .await
@@ -166,25 +151,17 @@ async fn widget_publish_request_fails_without_bigcommerce_server_response() {
 
     app.insert_test_store().await;
 
-    let configuration = WidgetConfiguration {
-        style: "blue".to_string(),
-        placement: "top-left".to_string(),
-        charity_selections: vec!["razom".to_string()],
-        modal_title: "Title!".to_string(),
-        modal_body: "Body!".to_string(),
-    };
-
-    let client = reqwest::Client::new();
-    client
-        .post(&format!("{}/api/v1/configuration", &app.address))
+    app.test_client
+        .post(&app.test_server_url("/api/v1/configuration"))
         .bearer_auth(app.generate_local_jwt_token())
-        .json(&configuration)
+        .json(&get_widget_configuration())
         .send()
         .await
         .expect("Failed to execute the request");
 
-    let response = client
-        .post(&format!("{}/api/v1/publish", &app.address))
+    let response = app
+        .test_client
+        .post(&app.test_server_url("/api/v1/publish"))
         .bearer_auth(app.generate_local_jwt_token())
         .send()
         .await
@@ -197,9 +174,9 @@ async fn widget_publish_request_fails_without_bigcommerce_server_response() {
 async fn get_published_status_fails_without_store() {
     let app = spawn_app().await;
 
-    let client = reqwest::Client::new();
-    let response = client
-        .get(&format!("{}/api/v1/publish", &app.address))
+    let response = app
+        .test_client
+        .get(&app.test_server_url("/api/v1/publish"))
         .bearer_auth(app.generate_local_jwt_token())
         .send()
         .await
@@ -212,9 +189,9 @@ async fn get_published_status_fails_without_store() {
 async fn widget_preview_request_fails_without_store() {
     let app = spawn_app().await;
 
-    let client = reqwest::Client::new();
-    let response = client
-        .get(&format!("{}/api/v1/preview", &app.address))
+    let response = app
+        .test_client
+        .get(&app.test_server_url("/api/v1/preview"))
         .bearer_auth(app.generate_local_jwt_token())
         .send()
         .await
@@ -226,6 +203,7 @@ async fn widget_preview_request_fails_without_store() {
 #[tokio::test]
 async fn widget_preview_request_succeeds() {
     let app = spawn_app().await;
+    let client = create_test_server_client_no_redirect();
 
     app.insert_test_store().await;
 
@@ -234,12 +212,8 @@ async fn widget_preview_request_succeeds() {
         .mount(&app.bigcommerce_server)
         .await;
 
-    let client = reqwest::ClientBuilder::new()
-        .redirect(reqwest::redirect::Policy::none())
-        .build()
-        .unwrap();
     let response = client
-        .get(&format!("{}/api/v1/preview", &app.address))
+        .get(&app.test_server_url("/api/v1/preview"))
         .bearer_auth(app.generate_local_jwt_token())
         .send()
         .await
@@ -258,9 +232,9 @@ async fn widget_preview_request_succeeds() {
 async fn widget_remove_request_fails_without_store() {
     let app = spawn_app().await;
 
-    let client = reqwest::Client::new();
-    let response = client
-        .delete(&format!("{}/api/v1/publish", &app.address))
+    let response = app
+        .test_client
+        .delete(&app.test_server_url("/api/v1/publish"))
         .bearer_auth(app.generate_local_jwt_token())
         .send()
         .await
@@ -285,9 +259,9 @@ async fn widget_remove_request_succeeds() {
         .mount(&app.bigcommerce_server)
         .await;
 
-    let client = reqwest::Client::new();
-    let response = client
-        .delete(&format!("{}/api/v1/publish", &app.address))
+    let response = app
+        .test_client
+        .delete(&app.test_server_url("/api/v1/publish"))
         .bearer_auth(app.generate_local_jwt_token())
         .send()
         .await
@@ -295,8 +269,9 @@ async fn widget_remove_request_succeeds() {
 
     assert!(response.status().is_success());
 
-    let response = client
-        .get(&format!("{}/api/v1/publish", &app.address))
+    let response = app
+        .test_client
+        .get(&app.test_server_url("/api/v1/publish"))
         .bearer_auth(app.generate_local_jwt_token())
         .send()
         .await

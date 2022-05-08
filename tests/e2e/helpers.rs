@@ -1,11 +1,13 @@
 use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
 use once_cell::sync::Lazy;
+use reqwest::Client;
 use secrecy::{ExposeSecret, Secret};
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use swu_app::{
     authentication::create_jwt,
     bigcommerce::BCUser,
     configuration::{get_configuration, DatabaseSettings, JWTSecret},
+    data::WidgetConfiguration,
     startup::{get_connection_pool, Application},
     telemetry::{get_subscriber, init_subscriber},
 };
@@ -35,6 +37,8 @@ pub struct TestApp {
     pub jwt_secret: JWTSecret,
     pub base_url: String,
     pub bc_secret: Secret<String>,
+
+    pub test_client: Client,
 }
 
 pub async fn spawn_app() -> TestApp {
@@ -62,7 +66,7 @@ pub async fn spawn_app() -> TestApp {
     let application_port = application.port();
     let _ = tokio::spawn(application.run_until_stopped());
 
-    let test_app = TestApp {
+    TestApp {
         address: format!("http://127.0.0.1:{}", application_port),
         port: application_port,
         bigcommerce_server,
@@ -70,9 +74,8 @@ pub async fn spawn_app() -> TestApp {
         jwt_secret: JWTSecret(configuration.application.jwt_secret),
         bc_secret: Secret::from(configuration.bigcommerce.client_secret),
         base_url: configuration.application.base_url,
-    };
-
-    test_app
+        test_client: reqwest::Client::new(),
+    }
 }
 
 async fn configure_database(config: &DatabaseSettings) -> PgPool {
@@ -143,5 +146,26 @@ impl TestApp {
         .execute(&self.db_pool)
         .await
         .unwrap();
+    }
+
+    pub fn test_server_url(&self, path: &str) -> String {
+        format!("{}{}", &self.address, path)
+    }
+}
+
+pub fn create_test_server_client_no_redirect() -> Client {
+    reqwest::ClientBuilder::new()
+        .redirect(reqwest::redirect::Policy::none())
+        .build()
+        .unwrap()
+}
+
+pub fn get_widget_configuration() -> WidgetConfiguration {
+    WidgetConfiguration {
+        style: "blue".to_string(),
+        placement: "top-left".to_string(),
+        charity_selections: vec!["razom".to_string()],
+        modal_title: "Title!".to_string(),
+        modal_body: "Body!".to_string(),
     }
 }

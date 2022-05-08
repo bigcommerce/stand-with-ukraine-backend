@@ -4,10 +4,9 @@ use crate::helpers::spawn_app;
 async fn success() {
     let app = spawn_app().await;
 
-    let client = reqwest::Client::new();
-
-    let response = client
-        .get(&format!("{}/health_check", &app.address))
+    let response = app
+        .test_client
+        .get(&app.test_server_url("/health_check"))
         .send()
         .await
         .expect("Failed to execute the request");

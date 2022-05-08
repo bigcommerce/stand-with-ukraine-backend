@@ -1,4 +1,7 @@
-use crate::{helpers::spawn_app, mocks::get_oauth2_token_mock};
+use crate::{
+    helpers::{create_test_server_client_no_redirect, spawn_app},
+    mocks::get_oauth2_token_mock,
+};
 use secrecy::Secret;
 use swu_app::{
     bigcommerce::{BCStore, BCUser},
@@ -8,13 +11,10 @@ use swu_app::{
 #[tokio::test]
 async fn install_request_fails_without_bigcommerce_response() {
     let app = spawn_app().await;
+    let client = create_test_server_client_no_redirect();
 
-    let client = reqwest::ClientBuilder::new()
-        .redirect(reqwest::redirect::Policy::none())
-        .build()
-        .unwrap();
     let response = client
-        .get(&format!("{}/bigcommerce/install", &app.address))
+        .get(&app.test_server_url("/bigcommerce/install"))
         .query(&[
             ("context", "stores/STORE_HASH"),
             ("scope", "test-scope"),
@@ -31,10 +31,9 @@ async fn install_request_fails_without_bigcommerce_response() {
 async fn install_request_fails_without_query_parameters() {
     let app = spawn_app().await;
 
-    let client = reqwest::Client::new();
-
-    let response = client
-        .get(&format!("{}/bigcommerce/install", &app.address))
+    let response = app
+        .test_client
+        .get(app.test_server_url("/bigcommerce/install"))
         .query(&[("context", "test")])
         .send()
         .await
@@ -46,8 +45,9 @@ async fn install_request_fails_without_query_parameters() {
         "Response should complain about missing field"
     );
 
-    let response = client
-        .get(&format!("{}/bigcommerce/install", &app.address))
+    let response = app
+        .test_client
+        .get(&app.test_server_url("/bigcommerce/install"))
         .query(&[("code", "test")])
         .send()
         .await
@@ -59,8 +59,9 @@ async fn install_request_fails_without_query_parameters() {
         "Response should complain about missing field"
     );
 
-    let response = client
-        .get(&format!("{}/bigcommerce/install", &app.address))
+    let response = app
+        .test_client
+        .get(&app.test_server_url("/bigcommerce/install"))
         .query(&[("scope", "test")])
         .send()
         .await
@@ -76,18 +77,15 @@ async fn install_request_fails_without_query_parameters() {
 #[tokio::test]
 async fn install_request_succeeds() {
     let app = spawn_app().await;
+    let client = create_test_server_client_no_redirect();
 
     get_oauth2_token_mock()
         .expect(1)
         .mount(&app.bigcommerce_server)
         .await;
 
-    let client = reqwest::ClientBuilder::new()
-        .redirect(reqwest::redirect::Policy::none())
-        .build()
-        .unwrap();
     let response = client
-        .get(&format!("{}/bigcommerce/install", &app.address))
+        .get(&app.test_server_url("/bigcommerce/install"))
         .query(&[
             ("context", "stores/STORE_HASH"),
             ("scope", "test-scope"),
@@ -126,14 +124,10 @@ async fn install_request_succeeds() {
 #[tokio::test]
 async fn load_request_fails_with_bad_token() {
     let app = spawn_app().await;
-
-    let client = reqwest::ClientBuilder::new()
-        .redirect(reqwest::redirect::Policy::none())
-        .build()
-        .unwrap();
+    let client = create_test_server_client_no_redirect();
 
     let response = client
-        .get(&format!("{}/bigcommerce/load", &app.address))
+        .get(&app.test_server_url("/bigcommerce/load"))
         .query(&[("signed_payload_jwt", "bad-token")])
         .send()
         .await
@@ -147,7 +141,7 @@ async fn load_request_fails_with_bad_token() {
     };
 
     let response = client
-        .get(&format!("{}/bigcommerce/load", &app.address))
+        .get(&app.test_server_url("/bigcommerce/load"))
         .query(&[(
             "signed_payload_jwt",
             app.generate_bc_jwt_token_with_params("bad-hash", &user, &user),
@@ -162,14 +156,10 @@ async fn load_request_fails_with_bad_token() {
 #[tokio::test]
 async fn load_request_succeeds() {
     let app = spawn_app().await;
-
-    let client = reqwest::ClientBuilder::new()
-        .redirect(reqwest::redirect::Policy::none())
-        .build()
-        .unwrap();
+    let client = create_test_server_client_no_redirect();
 
     let response = client
-        .get(&format!("{}/bigcommerce/load", &app.address))
+        .get(&app.test_server_url("/bigcommerce/load"))
         .query(&[("signed_payload_jwt", &app.generate_bc_jwt_token())])
         .send()
         .await
@@ -191,11 +181,7 @@ async fn load_request_succeeds() {
 #[tokio::test]
 async fn uninstall_request_succeeds() {
     let app = spawn_app().await;
-
-    let client = reqwest::ClientBuilder::new()
-        .redirect(reqwest::redirect::Policy::none())
-        .build()
-        .unwrap();
+    let client = create_test_server_client_no_redirect();
 
     let store = BCStore {
         store_hash: "test-store".to_string(),
@@ -206,7 +192,7 @@ async fn uninstall_request_succeeds() {
         .expect("Failed to initialize store");
 
     let response = client
-        .get(&format!("{}/bigcommerce/uninstall", &app.address))
+        .get(&app.test_server_url("/bigcommerce/uninstall"))
         .query(&[("signed_payload_jwt", &app.generate_bc_jwt_token())])
         .send()
         .await
@@ -229,11 +215,7 @@ async fn uninstall_request_succeeds() {
 #[tokio::test]
 async fn uninstall_request_fails_with_non_owner() {
     let app = spawn_app().await;
-
-    let client = reqwest::ClientBuilder::new()
-        .redirect(reqwest::redirect::Policy::none())
-        .build()
-        .unwrap();
+    let client = create_test_server_client_no_redirect();
 
     let store = BCStore {
         store_hash: "test-store".to_string(),
@@ -253,7 +235,7 @@ async fn uninstall_request_fails_with_non_owner() {
     };
 
     let response = client
-        .get(&format!("{}/bigcommerce/uninstall", &app.address))
+        .get(&app.test_server_url("/bigcommerce/uninstall"))
         .query(&[(
             "signed_payload_jwt",
             &app.generate_bc_jwt_token_with_params("test-store", &owner, &user),
