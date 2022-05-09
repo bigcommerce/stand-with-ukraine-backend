@@ -86,6 +86,9 @@ pub struct LoadQuery {
 }
 #[derive(thiserror::Error, Debug)]
 pub enum LoadError {
+    #[error("Not store owner.")]
+    NotStoreOwnerError,
+
     #[error("Invalid credentials.")]
     InvalidCredentials(#[source] AuthenticationError),
 
@@ -96,8 +99,9 @@ pub enum LoadError {
 impl ResponseError for LoadError {
     fn error_response(&self) -> HttpResponse {
         match self {
-            Self::UnexpectedError(_) => HttpResponse::new(StatusCode::INTERNAL_SERVER_ERROR),
+            Self::NotStoreOwnerError => HttpResponse::new(StatusCode::UNAUTHORIZED),
             Self::InvalidCredentials(_) => HttpResponse::new(StatusCode::UNAUTHORIZED),
+            Self::UnexpectedError(_) => HttpResponse::new(StatusCode::INTERNAL_SERVER_ERROR),
         }
     }
 }
@@ -146,9 +150,7 @@ pub async fn uninstall(
         .map_err(LoadError::InvalidCredentials)?;
 
     if !claims.is_owner() {
-        return Err(LoadError::InvalidCredentials(
-            AuthenticationError::UnexpectedError(anyhow::anyhow!("User is not owner")),
-        ));
+        return Err(LoadError::NotStoreOwnerError);
     }
 
     let store_hash = claims

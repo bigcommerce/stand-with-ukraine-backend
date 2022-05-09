@@ -24,11 +24,7 @@ impl FromRequest for AuthClaims {
     fn from_request(req: &HttpRequest, _payload: &mut Payload) -> <Self as FromRequest>::Future {
         let jwt_secret = match req.app_data::<web::Data<JWTSecret>>() {
             Some(val) => val,
-            None => {
-                return ready(Err(AuthenticationError::UnexpectedError(anyhow::anyhow!(
-                    "Invalid configuration"
-                ))))
-            }
+            None => return ready(Err(AuthenticationError::InvalidServerConfiguration)),
         };
 
         let bearer = match <authorization::Authorization::<authorization::Bearer> as actix_web::http::header::Header>::parse(req) {
@@ -86,6 +82,9 @@ pub enum AuthenticationError {
     #[error("Token is invalid.")]
     InvalidTokenError(#[source] jsonwebtoken::errors::Error),
 
+    #[error("Server Configuration Invalid")]
+    InvalidServerConfiguration,
+
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
 }
@@ -93,9 +92,12 @@ pub enum AuthenticationError {
 impl ResponseError for AuthenticationError {
     fn error_response(&self) -> HttpResponse {
         match self {
-            Self::UnexpectedError(_) => HttpResponse::new(StatusCode::INTERNAL_SERVER_ERROR),
-            Self::NoTokenProvided(_) => HttpResponse::new(StatusCode::UNAUTHORIZED),
+            Self::InvalidServerConfiguration => {
+                HttpResponse::new(StatusCode::INTERNAL_SERVER_ERROR)
+            }
             Self::InvalidTokenError(_) => HttpResponse::new(StatusCode::UNAUTHORIZED),
+            Self::NoTokenProvided(_) => HttpResponse::new(StatusCode::UNAUTHORIZED),
+            Self::UnexpectedError(_) => HttpResponse::new(StatusCode::INTERNAL_SERVER_ERROR),
         }
     }
 }
@@ -138,7 +140,7 @@ mod tests {
             .await
             .unwrap_err();
 
-        assert_eq!(err.to_string(), "Invalid configuration");
+        assert_eq!(err.to_string(), "Server Configuration Invalid");
     }
 
     #[actix_web::test]
