@@ -35,6 +35,20 @@
     },
     "query": "\n        INSERT INTO stores (id, store_hash, access_token, installed_at, uninstalled) \n        VALUES ($1, $2, $3, $4, false)\n        ON CONFLICT (store_hash) DO UPDATE set access_token = $3, installed_at = $4, uninstalled = false;\n        "
   },
+  "409a8f47b73ac8957b005d289547f330ce462ac54430a8e681dfc3051092f674": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Varchar",
+          "Varchar",
+          "Timestamptz"
+        ]
+      }
+    },
+    "query": "\n        INSERT INTO charity_visited_events (store_hash, charity, created_at)\n        VALUES ($1, $2, $3);\n        "
+  },
   "56233a8901131d539dcb562b66d0e2d3bfe6226dbc6cc05f7efb7b1f85e12c01": {
     "describe": {
       "columns": [
@@ -54,6 +68,20 @@
       }
     },
     "query": "\n        SELECT published FROM stores\n        WHERE store_hash = $1;\n        "
+  },
+  "5ca043250709b09e58c15542b322ceea22526ff887a41d19e0ca9b57237c22ac": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Varchar",
+          "Varchar",
+          "Timestamptz"
+        ]
+      }
+    },
+    "query": "\n        INSERT INTO widget_events (store_hash, event_type, created_at)\n        VALUES ($1, $2, $3);\n        "
   },
   "9f9a27a24eb386efa467214ef3b9aec2d96111c7263f9fd03e66872596806104": {
     "describe": {

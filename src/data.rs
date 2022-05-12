@@ -180,3 +180,89 @@ pub async fn read_widget_configuration(
 
     Ok(widget_configuration)
 }
+
+#[derive(serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum Charity {
+    Unicef,
+    NewUkraine,
+    Razom,
+}
+
+#[tracing::instrument(
+    name = "Write charity visit event to database",
+    skip(store_hash, charity, db_pool)
+)]
+pub async fn write_charity_visited_event(
+    store_hash: &str,
+    charity: &Charity,
+    db_pool: &PgPool,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"
+        INSERT INTO charity_visited_events (store_hash, charity, created_at)
+        VALUES ($1, $2, $3);
+        "#,
+        store_hash,
+        serde_json::to_string(charity).unwrap(),
+        OffsetDateTime::now_utc(),
+    )
+    .execute(db_pool)
+    .await?;
+
+    Ok(())
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum WidgetEventType {
+    Opened,
+    Collapsed,
+    Closed,
+}
+
+#[tracing::instrument(
+    name = "Write widget event to database",
+    skip(store_hash, db_pool, event_type)
+)]
+pub async fn write_widget_event(
+    store_hash: &str,
+    event_type: &WidgetEventType,
+    db_pool: &PgPool,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"
+        INSERT INTO widget_events (store_hash, event_type, created_at)
+        VALUES ($1, $2, $3);
+        "#,
+        store_hash,
+        serde_json::to_string(event_type).unwrap(),
+        OffsetDateTime::now_utc(),
+    )
+    .execute(db_pool)
+    .await?;
+
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::*;
+
+    #[rstest]
+    #[case(&WidgetEventType::Opened, "opened")]
+    #[case(&WidgetEventType::Collapsed, "collapsed")]
+    #[case(&WidgetEventType::Closed, "closed")]
+    fn widget_event_type_to_string_works(#[case] event: &WidgetEventType, #[case] value: &str) {
+        assert_eq!(serde_variant::to_variant_name(event).unwrap(), value)
+    }
+
+    #[rstest]
+    #[case(&Charity::NewUkraine, "new-ukraine")]
+    #[case(&Charity::Razom, "razom")]
+    #[case(&Charity::Unicef, "unicef")]
+    fn charity_to_string_works(#[case] charity: &Charity, #[case] value: &str) {
+        assert_eq!(serde_variant::to_variant_name(charity).unwrap(), value)
+    }
+}

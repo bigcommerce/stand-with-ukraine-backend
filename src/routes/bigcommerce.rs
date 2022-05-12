@@ -10,15 +10,24 @@ use crate::{
     data::{write_store_as_uninstalled, write_store_credentials},
 };
 
+pub fn register_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/bigcommerce")
+            .route("/install", web::get().to(install))
+            .route("/uninstall", web::get().to(uninstall))
+            .route("/load", web::get().to(load)),
+    );
+}
+
 #[derive(serde::Deserialize)]
-pub struct InstallQuery {
+struct InstallQuery {
     code: String,
     scope: String,
     context: String,
 }
 
 #[derive(thiserror::Error, Debug)]
-pub enum InstallError {
+enum InstallError {
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
 }
@@ -36,7 +45,7 @@ impl ResponseError for InstallError {
     skip(query, bigcommerce_client, base_url, db_pool, jwt_secret),
     fields(context=tracing::field::Empty, user_email=tracing::field::Empty)
 )]
-pub async fn install(
+async fn install(
     query: web::Query<InstallQuery>,
     bigcommerce_client: web::Data<BCClient>,
     base_url: web::Data<ApplicationBaseUrl>,
@@ -81,11 +90,11 @@ pub async fn install(
 }
 
 #[derive(serde::Deserialize)]
-pub struct LoadQuery {
+struct LoadQuery {
     signed_payload_jwt: String,
 }
 #[derive(thiserror::Error, Debug)]
-pub enum LoadError {
+enum LoadError {
     #[error("Not store owner.")]
     NotStoreOwnerError,
 
@@ -110,7 +119,7 @@ impl ResponseError for LoadError {
     name = "Process load request",
     skip(query, bigcommerce_client, base_url, jwt_secret)
 )]
-pub async fn load(
+async fn load(
     query: web::Query<LoadQuery>,
     bigcommerce_client: web::Data<BCClient>,
     base_url: web::Data<ApplicationBaseUrl>,
@@ -140,7 +149,7 @@ pub async fn load(
     name = "Process uninstall request",
     skip(query, bigcommerce_client, db_pool)
 )]
-pub async fn uninstall(
+async fn uninstall(
     query: web::Query<LoadQuery>,
     bigcommerce_client: web::Data<BCClient>,
     db_pool: web::Data<PgPool>,

@@ -20,6 +20,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "actix-cors"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "414360eed71ba2d5435b185ba43ecbe281dfab5df3898286d6b7be8074372c92"
+dependencies = [
+ "actix-utils",
+ "actix-web",
+ "derive_more",
+ "futures-util",
+ "log",
+ "once_cell",
+ "smallvec",
+]
+
+[[package]]
 name = "actix-http"
 version = "3.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2037,6 +2052,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_variant"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5f988d71f968b960b45cf71e3210662f0b23906256c87820077e4f101225c494"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "sha-1"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2330,6 +2354,7 @@ checksum = "6bdef32e8150c2a081110b42772ffe7d7c9032b606bc226c8260fd97e0976601"
 name = "swu-app"
 version = "0.1.0"
 dependencies = [
+ "actix-cors",
  "actix-utils",
  "actix-web",
  "actix-web-httpauth",
@@ -2346,6 +2371,7 @@ dependencies = [
  "serde",
  "serde-aux",
  "serde_json",
+ "serde_variant",
  "sqlx",
  "thiserror",
  "time 0.3.9",

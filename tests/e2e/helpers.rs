@@ -151,6 +151,33 @@ impl TestApp {
     pub fn test_server_url(&self, path: &str) -> String {
         format!("{}{}", &self.address, path)
     }
+
+    pub async fn get_widget_events(&self, store_hash: &str) -> impl Iterator<Item = String> {
+        sqlx::query!(
+            "SELECT event_type FROM widget_events WHERE store_hash = $1;",
+            store_hash
+        )
+        .fetch_all(&self.db_pool)
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|row| row.event_type)
+    }
+
+    pub async fn get_charity_visited_events(
+        &self,
+        store_hash: &str,
+    ) -> impl Iterator<Item = String> {
+        sqlx::query!(
+            "SELECT charity FROM charity_visited_events WHERE store_hash = $1;",
+            store_hash
+        )
+        .fetch_all(&self.db_pool)
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|row| row.charity)
+    }
 }
 
 pub fn create_test_server_client_no_redirect() -> Client {

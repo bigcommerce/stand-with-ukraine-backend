@@ -1,35 +1,15 @@
-use actix_web::web;
-use actix_web_httpauth::extractors::bearer::Config;
+use actix_web::{web, HttpResponse};
 
-mod api;
 mod bigcommerce;
+mod widget;
 
-pub fn routes(cfg: &mut web::ServiceConfig) {
-    let bearer_auth_config = Config::default().realm("api-v1").scope("modify");
+pub async fn health_check() -> HttpResponse {
+    HttpResponse::Ok().finish()
+}
 
-    cfg.service(web::resource("/health_check").route(web::get().to(api::health_check)));
+pub fn register_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(web::resource("/health_check").route(web::get().to(health_check)));
 
-    cfg.service(
-        web::scope("/api/v1")
-            .app_data(bearer_auth_config)
-            .route(
-                "/configuration",
-                web::post().to(api::save_widget_configuration),
-            )
-            .route(
-                "/configuration",
-                web::get().to(api::get_widget_configuration),
-            )
-            .route("/publish", web::post().to(api::publish_widget))
-            .route("/publish", web::get().to(api::get_published_status))
-            .route("/publish", web::delete().to(api::remove_widget))
-            .route("/preview", web::get().to(api::preview_widget)),
-    );
-
-    cfg.service(
-        web::scope("/bigcommerce")
-            .route("/install", web::get().to(bigcommerce::install))
-            .route("/uninstall", web::get().to(bigcommerce::uninstall))
-            .route("/load", web::get().to(bigcommerce::load)),
-    );
+    bigcommerce::register_routes(cfg);
+    widget::register_routes(cfg);
 }

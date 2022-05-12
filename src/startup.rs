@@ -3,7 +3,7 @@ use std::net::TcpListener;
 use crate::{
     bigcommerce::BCClient,
     configuration::{ApplicationBaseUrl, DatabaseSettings, JWTSecret, Settings},
-    routes::routes,
+    routes::register_routes,
 };
 use actix_web::{dev::Server, web::Data, App, HttpServer};
 use secrecy::Secret;
@@ -77,7 +77,7 @@ pub fn run(
             .app_data(base_url.clone())
             .app_data(bigcommerce_client.clone())
             .app_data(jwt_secret.clone())
-            .configure(routes)
+            .configure(register_routes)
     })
     .listen(listener)?
     .run();

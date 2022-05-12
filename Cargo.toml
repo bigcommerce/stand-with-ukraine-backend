@@ -38,6 +38,8 @@ anyhow = "1.0.57"
 jsonwebtoken = "8.1.0"
 actix-web-httpauth = "0.6.0"
 actix-utils = "3.0.0"
+actix-cors = "0.6.1"
+serde_variant = "0.1.1"
 
 [dependencies.sqlx]
 version = "0.5.11"
