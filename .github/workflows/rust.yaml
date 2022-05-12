@@ -1,4 +1,4 @@
-name: Rust
+name: rust
 
 on:
   push:
@@ -14,6 +14,7 @@ env:
   SQLX_VERSION: 0.5.11
   SQLX_DATABASE: postgres
   SQLX_TLS: rustls
+
 jobs:
   fmt:
     name: fmt
@@ -68,7 +69,6 @@ jobs:
             --version=${{ env.SQLX_VERSION }}
             --features=${{ env.SQLX_DATABASE }},${{ env.SQLX_TLS }}
             --no-default-features
-            --locked
 
       - name: Migrate database
         run: |
@@ -123,7 +123,6 @@ jobs:
             --version=${{ env.SQLX_VERSION }}
             --features=${{ env.SQLX_DATABASE }},${{ env.SQLX_TLS }}
             --no-default-features
-            --locked
 
       - name: Migrate database
         run: |
@@ -266,7 +265,6 @@ jobs:
             --version=${{ env.SQLX_VERSION }}
             --features=${{ env.SQLX_DATABASE }},${{ env.SQLX_TLS }}
             --no-default-features
-            --locked
 
       - name: Migrate database
         run: |

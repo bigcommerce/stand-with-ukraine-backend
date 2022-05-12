@@ -1,4 +1,4 @@
-name: Clean up
+name: clean-up
 
 on:
   schedule:
@@ -7,13 +7,12 @@ on:
     paths:
       - '.github/workflows/cleanup-digital-ocean-container-registry.yaml'
 
-env:
-  REGISTRY: stand-with-ukraine
-  REPOSITORY: app
-  IMAGE_BUFFER: 5
-
 jobs:
-  clean_up:
+  digital-ocean:
+    env:
+      REGISTRY: stand-with-ukraine
+      REPOSITORY: app
+      IMAGE_BUFFER: 5
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
