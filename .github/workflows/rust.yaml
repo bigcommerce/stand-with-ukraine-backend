@@ -12,8 +12,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
   SQLX_VERSION: 0.5.11
-  SQLX_DATABASE: postgres
-  SQLX_TLS: rustls
+  SQLX_FEATURES: postgres,rustls
 
 jobs:
   fmt:
@@ -65,7 +64,7 @@ jobs:
           args: >
             sqlx-cli
             --version=${{ env.SQLX_VERSION }}
-            --features=${{ env.SQLX_DATABASE }},${{ env.SQLX_TLS }}
+            --features=${{ env.SQLX_FEATURES }}
             --no-default-features
 
       - name: Migrate database
@@ -117,7 +116,7 @@ jobs:
           args: >
             sqlx-cli
             --version=${{ env.SQLX_VERSION }}
-            --features=${{ env.SQLX_DATABASE }},${{ env.SQLX_TLS }}
+            --features=${{ env.SQLX_FEATURES }}
             --no-default-features
 
       - name: Migrate database
