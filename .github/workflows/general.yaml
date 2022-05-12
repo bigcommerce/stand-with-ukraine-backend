@@ -217,7 +217,7 @@ jobs:
       - name: Login to digitalocean docker registry
         id: docker-auth
         run: |
-          doctl registry login --expiry-seconds 600
+          doctl registry login --expiry-seconds 1200
 
       - name: Build production image
         uses: docker/build-push-action@v2
