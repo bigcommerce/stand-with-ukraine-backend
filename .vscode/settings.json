@@ -10,6 +10,7 @@
 		"doctl",
 		"httpauth",
 		"jsonwebtoken",
+		"lcov",
 		"libpq",
 		"nanos",
 		"nextest",
@@ -24,6 +25,7 @@
 		"splitn",
 		"sqlx",
 		"Swatinem",
+		"taiki",
 		"thiserror",
 		"timestamptz",
 		"wiremock"
