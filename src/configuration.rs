@@ -89,9 +89,9 @@ pub fn get_configuration() -> Result<Settings, ConfigError> {
 
 pub struct ApplicationBaseUrl(pub String);
 
-impl AsRef<str> for ApplicationBaseUrl {
-    fn as_ref(&self) -> &str {
-        &self.0
+impl std::fmt::Display for ApplicationBaseUrl {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 

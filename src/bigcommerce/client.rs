@@ -4,9 +4,12 @@ use reqwest::{header, Client};
 use secrecy::{ExposeSecret, Secret};
 use serde_json::json;
 
-use crate::{
-    authentication::AuthenticationError, configuration::ApplicationBaseUrl,
-    data::WidgetConfiguration,
+use crate::{authentication::AuthenticationError, configuration::ApplicationBaseUrl};
+
+use super::{
+    auth::{BCClaims, BCOAuthResponse},
+    script::{BCListScriptsResponse, BCScriptResponse, Script},
+    store::{BCStore, BCStoreInformationResponse},
 };
 
 pub struct BCClient {
@@ -15,35 +18,6 @@ pub struct BCClient {
     client_id: String,
     client_secret: Secret<String>,
     http_client: Client,
-}
-
-#[derive(serde::Deserialize, serde::Serialize)]
-pub struct BCUser {
-    pub id: i32,
-    pub email: String,
-}
-
-#[derive(serde::Deserialize)]
-pub struct BCOAuthResponse {
-    pub access_token: Secret<String>,
-    pub scope: String,
-    pub user: BCUser,
-    pub context: String,
-}
-
-impl BCOAuthResponse {
-    pub fn get_bigcommerce_store(&self) -> Result<BCStore, anyhow::Error> {
-        let store_hash = self
-            .context
-            .split_once('/')
-            .map(|x| x.1)
-            .ok_or_else(|| anyhow::anyhow!("Context did not have correct format"))?;
-
-        Ok(BCStore {
-            store_hash: store_hash.to_string(),
-            access_token: self.access_token.clone(),
-        })
-    }
 }
 
 impl BCClient {
@@ -84,7 +58,7 @@ impl BCClient {
 
     pub async fn authorize_oauth_install(
         &self,
-        callback_url: &str,
+        callback_url: &ApplicationBaseUrl,
         code: &str,
         scope: &str,
         context: &str,
@@ -128,7 +102,7 @@ impl BCClient {
         store: &BCStore,
     ) -> Result<BCListScriptsResponse, anyhow::Error> {
         self.http_client
-            .get(self.get_scripts_route(&store.store_hash))
+            .get(self.get_scripts_route(store.get_store_hash()))
             .headers(store.get_api_headers()?)
             .send()
             .await
@@ -143,7 +117,7 @@ impl BCClient {
         &self,
         store: &BCStore,
         name: &str,
-    ) -> Result<Option<BCScript>, anyhow::Error> {
+    ) -> Result<Option<BCScriptResponse>, anyhow::Error> {
         let scripts = self.get_all_scripts(store).await?;
 
         for script in scripts.data {
@@ -160,7 +134,7 @@ impl BCClient {
 
         for script in scripts.data {
             self.http_client
-                .delete(self.get_scripts_route_with_id(&store.store_hash, &script.uuid))
+                .delete(self.get_scripts_route_with_id(store.get_store_hash(), &script.uuid))
                 .headers(store.get_api_headers()?)
                 .send()
                 .await
@@ -173,10 +147,10 @@ impl BCClient {
     pub async fn create_script(
         &self,
         store: &BCStore,
-        script: &AppScript,
+        script: &Script,
     ) -> Result<(), anyhow::Error> {
         self.http_client
-            .post(self.get_scripts_route(&store.store_hash))
+            .post(self.get_scripts_route(store.get_store_hash()))
             .headers(store.get_api_headers()?)
             .json(&script.generate_script_body())
             .send()
@@ -191,10 +165,10 @@ impl BCClient {
         &self,
         store: &BCStore,
         script_uuid: &str,
-        script: &AppScript,
+        script: &Script,
     ) -> Result<(), anyhow::Error> {
         self.http_client
-            .put(self.get_scripts_route_with_id(&store.store_hash, script_uuid))
+            .put(self.get_scripts_route_with_id(store.get_store_hash(), script_uuid))
             .headers(store.get_api_headers()?)
             .json(&script.generate_script_body())
             .send()
@@ -219,7 +193,7 @@ impl BCClient {
         store: &BCStore,
     ) -> Result<BCStoreInformationResponse, anyhow::Error> {
         self.http_client
-            .get(self.get_store_information_route(&store.store_hash))
+            .get(self.get_store_information_route(store.get_store_hash()))
             .headers(store.get_api_headers()?)
             .send()
             .await
@@ -228,103 +202,5 @@ impl BCClient {
             .json::<BCStoreInformationResponse>()
             .await
             .context("parse store information response")
-    }
-}
-
-#[derive(serde::Deserialize)]
-pub struct BCListScriptsResponse {
-    pub data: Vec<BCScript>,
-}
-
-#[derive(serde::Deserialize, serde::Serialize)]
-pub struct BCStoreInformationResponse {
-    pub secure_url: String,
-}
-
-#[derive(serde::Deserialize)]
-pub struct BCScript {
-    pub uuid: String,
-    pub api_client_id: String,
-    pub enabled: bool,
-    pub channel_id: i16,
-    pub name: String,
-}
-
-#[derive(serde::Deserialize, serde::Serialize)]
-pub struct BCClaims {
-    pub user: BCUser,
-    pub owner: BCUser,
-    pub sub: String,
-}
-
-impl BCClaims {
-    pub fn get_store_hash(&self) -> Result<&str, anyhow::Error> {
-        self.sub
-            .split_once('/')
-            .map(|x| x.1)
-            .ok_or_else(|| anyhow::anyhow!("Context did not have correct format"))
-    }
-
-    pub fn is_owner(&self) -> bool {
-        self.owner.id == self.user.id && self.owner.email == self.user.email
-    }
-}
-
-pub struct BCStore {
-    pub store_hash: String,
-    pub access_token: Secret<String>,
-}
-
-impl BCStore {
-    pub fn get_api_headers(&self) -> Result<header::HeaderMap, anyhow::Error> {
-        let mut headers = header::HeaderMap::new();
-
-        headers.insert(
-            "X-Auth-Token",
-            self.access_token
-                .expose_secret()
-                .parse()
-                .context("Failed to set header value")?,
-        );
-
-        Ok(headers)
-    }
-}
-
-pub struct AppScript {
-    pub name: String,
-    pub description: String,
-    pub html: String,
-}
-
-impl AppScript {
-    pub fn new_main_script(
-        widget_configuration: &WidgetConfiguration,
-        base_url: &ApplicationBaseUrl,
-    ) -> Result<Self, serde_json::Error> {
-        Ok(Self {
-        name: "Stand With Ukraine".to_string(),
-        description: "This script displays the stand with ukraine widget on your storefront. Configure it from the Stand With Ukraine app installed on your store.".to_string(),
-        html: format!(
-            r#"<script>window.SWU_CONFIG={};</script><script src="{}/widget/index.js"></script>"#,
-            serde_json::to_string(widget_configuration)?,
-            base_url.0
-        ),
-        })
-    }
-
-    fn generate_script_body(&self) -> serde_json::Value {
-        json!({
-            "name": self.name,
-            "description": self.description,
-            "html": self.html,
-            "kind": "script_tag",
-            "load_method": "default",
-            "location": "footer",
-            "visibility": "storefront",
-            "consent_category": "essential",
-            "auto_uninstall": true,
-            "enabled": true,
-        })
     }
 }

@@ -1,4 +1,4 @@
-use swu_app::{bigcommerce::BCStoreInformationResponse, data::StoreStatus};
+use swu_app::{bigcommerce::store::BCStoreInformationResponse, data::StoreStatus};
 
 use crate::{
     helpers::{create_test_server_client_no_redirect, get_widget_configuration, spawn_app},

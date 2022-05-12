@@ -5,7 +5,7 @@ use secrecy::{ExposeSecret, Secret};
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use swu_app::{
     authentication::create_jwt,
-    bigcommerce::BCUser,
+    bigcommerce::auth::BCUser,
     configuration::{get_configuration, DatabaseSettings, JWTSecret},
     data::WidgetConfiguration,
     startup::{get_connection_pool, Application},

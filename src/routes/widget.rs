@@ -1,6 +1,6 @@
 use crate::{
     authentication::AuthClaims,
-    bigcommerce::{AppScript, BCClient},
+    bigcommerce::client::BCClient,
     configuration::ApplicationBaseUrl,
     data::{
         read_store_credentials, read_store_published, read_widget_configuration,
@@ -114,7 +114,8 @@ async fn publish_widget(
         .await
         .map_err(PublishError::UnexpectedError)?;
 
-    let script = AppScript::new_main_script(&widget_configuration, &base_url)
+    let script = widget_configuration
+        .generate_script(&base_url)
         .context("Failed to generate script content")
         .map_err(PublishError::UnexpectedError)?;
 
@@ -123,7 +124,7 @@ async fn publish_widget(
         .map_err(PublishError::UnexpectedError)?;
 
     let existing_script = bigcommerce_client
-        .try_get_script_with_name(&store, &script.name)
+        .try_get_script_with_name(&store, script.get_name())
         .await
         .map_err(PublishError::UnexpectedError)?;
 

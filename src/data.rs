@@ -1,21 +1,24 @@
 use anyhow::Context;
-use secrecy::{ExposeSecret, Secret};
+use secrecy::Secret;
 use sqlx::{types::time::OffsetDateTime, PgPool};
 use uuid::Uuid;
 
-use crate::bigcommerce::BCStore;
+use crate::{
+    bigcommerce::{script::Script, store::BCStore},
+    configuration::ApplicationBaseUrl,
+};
 
 #[tracing::instrument(name = "Write store credentials to database", skip(store, pool))]
 pub async fn write_store_credentials(store: &BCStore, pool: &PgPool) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
-        INSERT INTO stores (id, store_hash, access_token, installed_at, uninstalled) 
+        INSERT INTO stores (id, store_hash, access_token, installed_at, uninstalled)
         VALUES ($1, $2, $3, $4, false)
         ON CONFLICT (store_hash) DO UPDATE set access_token = $3, installed_at = $4, uninstalled = false;
         "#,
         Uuid::new_v4(),
-        store.store_hash,
-        store.access_token.expose_secret(),
+        store.get_store_hash(),
+        store.get_access_token(),
         OffsetDateTime::now_utc()
     )
     .execute(pool)
@@ -38,10 +41,7 @@ pub async fn read_store_credentials(
     .fetch_one(pool)
     .await?;
 
-    Ok(BCStore {
-        access_token: Secret::from(row.access_token),
-        store_hash: row.store_hash,
-    })
+    Ok(BCStore::new(row.store_hash, Secret::from(row.access_token)))
 }
 
 #[tracing::instrument(
@@ -55,7 +55,7 @@ pub async fn write_store_as_uninstalled(
     sqlx::query!(
         r#"
         UPDATE stores
-        SET uninstalled = true, published = false 
+        SET uninstalled = true, published = false
         WHERE store_hash = $1;
         "#,
         store_hash,
@@ -124,6 +124,22 @@ pub struct WidgetConfiguration {
     pub charity_selections: Vec<String>,
     pub modal_title: String,
     pub modal_body: String,
+}
+
+impl WidgetConfiguration {
+    pub fn generate_script(
+        &self,
+        base_url: &ApplicationBaseUrl,
+    ) -> Result<Script, serde_json::Error> {
+        Ok(Script::new(
+         "Stand With Ukraine".to_string(),
+         "This script displays the stand with ukraine widget on your storefront. Configure it from the Stand With Ukraine app installed on your store.".to_string(),
+         format!(
+            r#"<script>window.SWU_CONFIG={};</script><script src="{}/widget/index.js"></script>"#,
+            serde_json::to_string(self)?,
+            base_url
+        )))
+    }
 }
 
 #[tracing::instrument(

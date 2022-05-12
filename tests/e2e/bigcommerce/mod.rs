@@ -4,7 +4,7 @@ use crate::{
 };
 use secrecy::Secret;
 use swu_app::{
-    bigcommerce::{BCStore, BCUser},
+    bigcommerce::{auth::BCUser, store::BCStore},
     data::write_store_credentials,
 };
 
@@ -183,10 +183,10 @@ async fn uninstall_request_succeeds() {
     let app = spawn_app().await;
     let client = create_test_server_client_no_redirect();
 
-    let store = BCStore {
-        store_hash: "test-store".to_string(),
-        access_token: Secret::from("test-token".to_string()),
-    };
+    let store = BCStore::new(
+        "test-store".to_string(),
+        Secret::from("test-token".to_string()),
+    );
     write_store_credentials(&store, &app.db_pool)
         .await
         .expect("Failed to initialize store");
@@ -217,10 +217,10 @@ async fn uninstall_request_fails_with_non_owner() {
     let app = spawn_app().await;
     let client = create_test_server_client_no_redirect();
 
-    let store = BCStore {
-        store_hash: "test-store".to_string(),
-        access_token: Secret::from("test-token".to_string()),
-    };
+    let store = BCStore::new(
+        "test-store".to_string(),
+        Secret::from("test-token".to_string()),
+    );
     write_store_credentials(&store, &app.db_pool)
         .await
         .expect("Failed to initialize store");

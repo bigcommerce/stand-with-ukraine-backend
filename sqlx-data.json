@@ -1,5 +1,20 @@
 {
   "db": "PostgreSQL",
+  "160f46bff52803da4b2d2631f04ded52273f742cd238e638a4c7e6fac7aa03cd": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Varchar",
+          "Varchar",
+          "Timestamptz"
+        ]
+      }
+    },
+    "query": "\n        INSERT INTO stores (id, store_hash, access_token, installed_at, uninstalled)\n        VALUES ($1, $2, $3, $4, false)\n        ON CONFLICT (store_hash) DO UPDATE set access_token = $3, installed_at = $4, uninstalled = false;\n        "
+  },
   "3411e71ceec7b03612394da030bf96bfa364790f0c82c57ac45015f8b31cbb27": {
     "describe": {
       "columns": [
@@ -19,21 +34,6 @@
       }
     },
     "query": "\n        SELECT widget_configuration FROM stores\n        WHERE store_hash = $1;\n        "
-  },
-  "35833749ad67699144caa47279ed17f87a5195221445417d51509530a4c5b3dd": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": [
-          "Uuid",
-          "Varchar",
-          "Varchar",
-          "Timestamptz"
-        ]
-      }
-    },
-    "query": "\n        INSERT INTO stores (id, store_hash, access_token, installed_at, uninstalled) \n        VALUES ($1, $2, $3, $4, false)\n        ON CONFLICT (store_hash) DO UPDATE set access_token = $3, installed_at = $4, uninstalled = false;\n        "
   },
   "409a8f47b73ac8957b005d289547f330ce462ac54430a8e681dfc3051092f674": {
     "describe": {
@@ -83,7 +83,7 @@
     },
     "query": "\n        INSERT INTO widget_events (store_hash, event_type, created_at)\n        VALUES ($1, $2, $3);\n        "
   },
-  "9f9a27a24eb386efa467214ef3b9aec2d96111c7263f9fd03e66872596806104": {
+  "82f438f197114b0bf39ff73fa6e43b2737f111551396ffd53610786519796279": {
     "describe": {
       "columns": [],
       "nullable": [],
@@ -93,7 +93,7 @@
         ]
       }
     },
-    "query": "\n        UPDATE stores\n        SET uninstalled = true, published = false \n        WHERE store_hash = $1;\n        "
+    "query": "\n        UPDATE stores\n        SET uninstalled = true, published = false\n        WHERE store_hash = $1;\n        "
   },
   "a1374c9626cc38c8095d779b57445a161b4ca2a516d5097eeeb6497674218f57": {
     "describe": {

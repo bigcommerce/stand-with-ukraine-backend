@@ -1,7 +1,7 @@
 use std::net::TcpListener;
 
 use crate::{
-    bigcommerce::BCClient,
+    bigcommerce::client::BCClient,
     configuration::{ApplicationBaseUrl, DatabaseSettings, JWTSecret, Settings},
     routes::register_routes,
 };
