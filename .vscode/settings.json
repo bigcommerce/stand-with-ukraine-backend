@@ -12,8 +12,10 @@
 		"jsonwebtoken",
 		"libpq",
 		"nanos",
+		"nextest",
 		"opentelemetry",
 		"razom",
+		"repr",
 		"reqwest",
 		"rstest",
 		"rustfmt",
@@ -21,6 +23,7 @@
 		"sitewidehttps",
 		"splitn",
 		"sqlx",
+		"Swatinem",
 		"thiserror",
 		"timestamptz",
 		"wiremock"

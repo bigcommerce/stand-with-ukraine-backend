@@ -10,7 +10,7 @@ on:
 env:
   REGISTRY: stand-with-ukraine
   REPOSITORY: app
-  IMAGE_BUFFER: 3
+  IMAGE_BUFFER: 5
 
 jobs:
   clean_up:
