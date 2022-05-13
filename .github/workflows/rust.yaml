@@ -81,9 +81,6 @@ jobs:
   test:
     name: test
     runs-on: ubuntu-latest
-    needs:
-      - fmt
-      - lint
     services:
       postgres:
         image: postgres:14
@@ -103,11 +100,11 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-          components: llvm-tools-preview
 
-      - uses: taiki-e/install-action@cargo-llvm-cov
       - uses: taiki-e/install-action@nextest
       - uses: Swatinem/rust-cache@v1
+        with:
+          key: v1
 
       - name: Install sqlx-cli
         uses: actions-rs/cargo@v1
@@ -132,21 +129,15 @@ jobs:
           DB_PORT="${POSTGRES_PORT:=5432}"
           cargo sqlx prepare --database-url postgres://${DB_USER}:${DB_PASSWORD}@localhost:${DB_PORT}/${DB_NAME} --check -- --lib
 
-      - name: Run test and get coverage
-        id: test
-        run: cargo llvm-cov nextest --all-features --workspace --lcov --output-path lcov.info
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: lcov.info
-          fail_ci_if_error: true
+      - name: Run tests
+        run: cargo nextest run
 
   deploy:
     name: deploy
     runs-on: ubuntu-latest
     needs:
+      - fmt
+      - lint
       - test
     environment: production
     if: github.ref == 'refs/heads/main'
@@ -220,10 +211,68 @@ jobs:
           SPEC_FILE: 'deployment.yaml'
           PATTERN: 's/tag: sha\-[a-z0-9]*$/tag: ${{ steps.tag.outputs.sha }}/g'
         run: |
-          echo "::add-mask::${{ secrets.APP__APPLICATION__JWT_TOKEN }}" 
-          echo "::add-mask::${{ secrets.APP__BIGCOMMERCE__CLIENT_ID }}" 
-          echo "::add-mask::${{ secrets.APP__BIGCOMMERCE__CLIENT_SECRET }}" 
+          echo "::add-mask::${{ secrets.APP__APPLICATION__JWT_TOKEN }}"
+          echo "::add-mask::${{ secrets.APP__BIGCOMMERCE__CLIENT_ID }}"
+          echo "::add-mask::${{ secrets.APP__BIGCOMMERCE__CLIENT_SECRET }}"
           doctl apps spec get $DIGITALOCEAN_APP_ID > $SPEC_FILE
           sed -i "${PATTERN}" $SPEC_FILE
           doctl apps spec validate $SPEC_FILE
           doctl apps update $DIGITALOCEAN_APP_ID --spec $SPEC_FILE
+
+  coverage:
+    name: coverage
+    runs-on: ubuntu-latest
+    needs:
+      - fmt
+      - lint
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          components: llvm-tools-preview
+
+      - uses: taiki-e/install-action@cargo-llvm-cov
+      - uses: taiki-e/install-action@nextest
+      - uses: Swatinem/rust-cache@v1
+        with:
+          key: v1
+
+      - name: Install sqlx-cli
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: >
+            sqlx-cli
+            --version=${{ env.SQLX_VERSION }}
+            --features=${{ env.SQLX_FEATURES }}
+            --no-default-features
+
+      - name: Migrate database
+        run: |
+          sudo apt-get install libpq-dev -y
+          SKIP_DOCKER=true ./scripts/init_db.sh
+
+      - name: Get coverage
+        run: cargo llvm-cov nextest --all-features --workspace --lcov --output-path lcov.info
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: lcov.info
+          fail_ci_if_error: true
