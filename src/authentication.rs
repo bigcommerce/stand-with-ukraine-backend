@@ -51,7 +51,7 @@ where
 
     let claims = AuthClaims {
         sub: store_hash.to_owned(),
-        role: "user".to_string(),
+        role: "user".to_owned(),
         exp: expiration.unix_timestamp(),
     };
     let header = Header::new(Algorithm::HS512);
@@ -110,7 +110,7 @@ mod tests {
     #[test]
     fn should_encode_and_decode_jwt_in_correct_format() {
         let store_hash = "test_store";
-        let secret = JWTSecret(Secret::from("abcdefg".to_string()));
+        let secret = JWTSecret(Secret::from("abcdefg".to_owned()));
         let token = create_jwt(store_hash, secret).unwrap();
 
         let parts: Vec<&str> = token.splitn(3, ".").collect();
@@ -119,7 +119,7 @@ mod tests {
         assert!(parts[1].len() > 0);
         assert!(parts[2].len() > 0);
 
-        let secret = JWTSecret(Secret::from("abcdefg".to_string()));
+        let secret = JWTSecret(Secret::from("abcdefg".to_owned()));
         let claims = decode_token(token.as_str(), secret).unwrap();
 
         assert_eq!("test_store", claims.sub);
@@ -145,7 +145,7 @@ mod tests {
 
     #[actix_web::test]
     async fn auth_claims_extractor_fails_with_no_header() {
-        let jwt_secret = Data::new(JWTSecret(Secret::from("test-token".to_string())));
+        let jwt_secret = Data::new(JWTSecret(Secret::from("test-token".to_owned())));
         let req = TestRequest::default()
             .app_data(jwt_secret.clone())
             .to_http_request();
@@ -160,7 +160,7 @@ mod tests {
 
     #[actix_web::test]
     async fn auth_claims_extractor_fails_with_bad_token() {
-        let jwt_secret = Data::new(JWTSecret(Secret::from("test-secret".to_string())));
+        let jwt_secret = Data::new(JWTSecret(Secret::from("test-secret".to_owned())));
         let req = TestRequest::default()
             .app_data(jwt_secret.clone())
             .insert_header((AUTHORIZATION, "Bearer test-token"))

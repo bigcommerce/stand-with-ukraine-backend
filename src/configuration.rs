@@ -72,7 +72,8 @@ pub struct ApplicationSettings {
 
 pub fn get_configuration() -> Result<Settings, ConfigError> {
     let environment: AppEnvironment = std::env::var("APP_ENVIRONMENT")
-        .unwrap_or_else(|_| "local".into())
+        .unwrap_or_else(|_| "local".to_owned())
+        .as_str()
         .try_into()
         .expect("Failed to parse APP_ENVIRONMENT.");
 
@@ -118,10 +119,10 @@ impl AppEnvironment {
     }
 }
 
-impl TryFrom<String> for AppEnvironment {
+impl TryFrom<&str> for AppEnvironment {
     type Error = String;
 
-    fn try_from(s: String) -> Result<Self, Self::Error> {
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
         match s.to_lowercase().as_str() {
             "local" => Ok(Self::Local),
             "production" => Ok(Self::Production),
@@ -141,15 +142,15 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_try_from_environment_fail_unknown() {
-        AppEnvironment::try_from(String::from("unknown")).expect("Should panic");
+        AppEnvironment::try_from("unknown").expect("Should panic");
     }
 
     #[rstest]
-    #[case(AppEnvironment::Local, String::from("local"))]
-    #[case(AppEnvironment::Production, String::from("production"))]
+    #[case(AppEnvironment::Local, "local")]
+    #[case(AppEnvironment::Production, "production")]
     fn try_from_string_into_environment(
         #[case] environment: AppEnvironment,
-        #[case] environment_string: String,
+        #[case] environment_string: &str,
     ) {
         assert_eq!(
             environment,

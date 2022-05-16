@@ -137,7 +137,7 @@ async fn load_request_fails_with_bad_token() {
 
     let user = BCUser {
         id: 1,
-        email: "user@test.com".to_string(),
+        email: "user@test.com".to_owned(),
     };
 
     let response = client
@@ -184,8 +184,8 @@ async fn uninstall_request_succeeds() {
     let client = create_test_server_client_no_redirect();
 
     let store = BCStore::new(
-        "test-store".to_string(),
-        Secret::from("test-token".to_string()),
+        "test-store".to_owned(),
+        Secret::from("test-token".to_owned()),
     );
     write_store_credentials(&store, &app.db_pool)
         .await
@@ -218,8 +218,8 @@ async fn uninstall_request_fails_with_non_owner() {
     let client = create_test_server_client_no_redirect();
 
     let store = BCStore::new(
-        "test-store".to_string(),
-        Secret::from("test-token".to_string()),
+        "test-store".to_owned(),
+        Secret::from("test-token".to_owned()),
     );
     write_store_credentials(&store, &app.db_pool)
         .await
@@ -227,11 +227,11 @@ async fn uninstall_request_fails_with_non_owner() {
 
     let owner = BCUser {
         id: 1,
-        email: "owner@test.com".to_string(),
+        email: "owner@test.com".to_owned(),
     };
     let user = BCUser {
         id: 2,
-        email: "user@test.com".to_string(),
+        email: "user@test.com".to_owned(),
     };
 
     let response = client

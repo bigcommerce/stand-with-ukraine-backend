@@ -25,7 +25,7 @@ impl BCOAuthResponse {
             .ok_or_else(|| anyhow::anyhow!("Context did not have correct format"))?;
 
         Ok(BCStore::new(
-            store_hash.to_string(),
+            store_hash.to_owned(),
             self.access_token.clone(),
         ))
     }

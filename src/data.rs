@@ -132,8 +132,8 @@ impl WidgetConfiguration {
         base_url: &ApplicationBaseUrl,
     ) -> Result<Script, serde_json::Error> {
         Ok(Script::new(
-         "Stand With Ukraine".to_string(),
-         "This script displays the stand with ukraine widget on your storefront. Configure it from the Stand With Ukraine app installed on your store.".to_string(),
+         "Stand With Ukraine".to_owned(),
+         "This script displays the stand with ukraine widget on your storefront. Configure it from the Stand With Ukraine app installed on your store.".to_owned(),
          format!(
             r#"<script>window.SWU_CONFIG={};</script><script src="{}/widget/index.js"></script>"#,
             serde_json::to_string(self)?,

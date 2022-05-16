@@ -102,7 +102,7 @@ impl TestApp {
     pub fn generate_bc_jwt_token(&self) -> String {
         let user = BCUser {
             id: 1,
-            email: "test@test.com".to_string(),
+            email: "test@test.com".to_owned(),
         };
 
         self.generate_bc_jwt_token_with_params("store/test-store", &user, &user)
@@ -139,7 +139,7 @@ impl TestApp {
     pub async fn insert_test_store(&self) {
         sqlx::query!(
             r#"
-            INSERT INTO stores (id, store_hash, access_token, installed_at, uninstalled) 
+            INSERT INTO stores (id, store_hash, access_token, installed_at, uninstalled)
             VALUES (gen_random_uuid(), 'test-store', 'test-token', '2021-04-20 00:00:00-07'::timestamptz, false)
             "#,
         )
@@ -189,10 +189,10 @@ pub fn create_test_server_client_no_redirect() -> Client {
 
 pub fn get_widget_configuration() -> WidgetConfiguration {
     WidgetConfiguration {
-        style: "blue".to_string(),
-        placement: "top-left".to_string(),
-        charity_selections: vec!["razom".to_string()],
-        modal_title: "Title!".to_string(),
-        modal_body: "Body!".to_string(),
+        style: "blue".to_owned(),
+        placement: "top-left".to_owned(),
+        charity_selections: vec!["razom".to_owned()],
+        modal_title: "Title!".to_owned(),
+        modal_body: "Body!".to_owned(),
     }
 }
