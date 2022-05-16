@@ -4,8 +4,9 @@ use crate::{
     configuration::ApplicationBaseUrl,
     data::{
         read_store_credentials, read_store_published, read_widget_configuration,
-        write_charity_visited_event, write_store_published, write_widget_configuration,
-        write_widget_event, Charity, WidgetConfiguration, WidgetEventType,
+        write_charity_visited_event, write_store_published, write_unpublish_feedback,
+        write_widget_configuration, write_widget_event, Charity, WidgetConfiguration,
+        WidgetEventType,
     },
 };
 
@@ -138,11 +139,20 @@ async fn publish_widget(
     Ok(HttpResponse::Ok().finish())
 }
 
-#[tracing::instrument(name = "Remove widget", skip(auth, db_pool, bigcommerce_client))]
+#[derive(serde::Deserialize)]
+struct Feedback {
+    reason: Option<String>,
+}
+
+#[tracing::instrument(
+    name = "Remove widget",
+    skip(auth, db_pool, bigcommerce_client, feedback)
+)]
 async fn remove_widget(
     auth: AuthClaims,
     db_pool: web::Data<PgPool>,
     bigcommerce_client: web::Data<BCClient>,
+    feedback: web::Query<Feedback>,
 ) -> Result<HttpResponse, PublishError> {
     let store_hash = auth.sub.as_str();
 
@@ -161,6 +171,14 @@ async fn remove_widget(
         .await
         .context("Failed to set store as not published")
         .map_err(PublishError::UnexpectedError)?;
+
+    let feedback = feedback.into_inner();
+    if let Some(reason) = feedback.reason {
+        write_unpublish_feedback(store_hash, reason.as_str(), &db_pool)
+            .await
+            .context("Failed to record unpublish feedback")
+            .map_err(PublishError::UnexpectedError)?;
+    }
 
     Ok(HttpResponse::Ok().finish())
 }

@@ -90,6 +90,27 @@ pub async fn write_store_published(
     Ok(())
 }
 
+#[tracing::instrument(name = "Write unpublish feedback to database", skip(store_hash, pool))]
+pub async fn write_unpublish_feedback(
+    store_hash: &str,
+    reason: &str,
+    pool: &PgPool,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"
+        INSERT INTO unpublish_events (store_hash, unpublished_at, reason)
+        VALUES ($1, $2, $3);
+        "#,
+        store_hash,
+        OffsetDateTime::now_utc(),
+        reason
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct StoreStatus {
     pub published: bool,

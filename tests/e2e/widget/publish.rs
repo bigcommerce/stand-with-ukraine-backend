@@ -282,3 +282,55 @@ async fn widget_remove_request_succeeds() {
 
     assert_eq!(response.published, false);
 }
+
+#[tokio::test]
+async fn widget_remove_request_with_feedback_succeeds() {
+    let app = spawn_app().await;
+
+    app.insert_test_store().await;
+
+    get_scripts_mock(false)
+        .expect(1)
+        .mount(&app.bigcommerce_server)
+        .await;
+
+    delete_script_mock()
+        .expect(1)
+        .mount(&app.bigcommerce_server)
+        .await;
+
+    let response = app
+        .test_client
+        .delete(&app.test_server_url("/api/v1/publish"))
+        .query(&[("reason", "I did not like the design!")])
+        .bearer_auth(app.generate_local_jwt_token())
+        .send()
+        .await
+        .expect("Failed to execute the request");
+
+    assert!(response.status().is_success());
+
+    let response = app
+        .test_client
+        .get(&app.test_server_url("/api/v1/publish"))
+        .bearer_auth(app.generate_local_jwt_token())
+        .send()
+        .await
+        .expect("Failed to execute the request")
+        .json::<StoreStatus>()
+        .await
+        .expect("Invalid response format");
+
+    assert_eq!(response.published, false);
+
+    let rows = sqlx::query!(
+        "SELECT reason FROM unpublish_events WHERE store_hash = $1",
+        "test-store"
+    )
+    .fetch_all(&app.db_pool)
+    .await
+    .unwrap();
+
+    assert_eq!(rows.len(), 1);
+    assert_eq!(rows[0].reason, "I did not like the design!");
+}
