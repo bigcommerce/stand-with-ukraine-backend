@@ -9,10 +9,7 @@ use crate::{
     },
 };
 
-use actix_web::{
-    http::{self, StatusCode},
-    web, HttpResponse, ResponseError,
-};
+use actix_web::{http::StatusCode, web, HttpResponse, ResponseError};
 use actix_web_httpauth::extractors::bearer::Config;
 use anyhow::Context;
 use sqlx::PgPool;
@@ -31,12 +28,7 @@ pub fn register_routes(cfg: &mut web::ServiceConfig) {
             .route("/preview", web::get().to(preview_widget)),
     );
 
-    let cors = actix_cors::Cors::default()
-        .send_wildcard()
-        .allowed_methods(vec!["POST"])
-        .allowed_headers(vec![http::header::AUTHORIZATION, http::header::ACCEPT])
-        .allowed_header(http::header::CONTENT_TYPE)
-        .max_age(3600);
+    let cors = actix_cors::Cors::permissive();
 
     cfg.service(
         web::scope("/api/v2")

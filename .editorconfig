@@ -3,13 +3,19 @@ root = true
 [*]
 end_of_line = lf
 charset = utf-8
-trim_trailing_whitespace = true
-insert_final_newline = true
 indent_style = space
 indent_size = 4
 
-[*.md]
-trim_trailing_whitespace = false
+[*.rs]
+trim_trailing_whitespace = true
+insert_final_newline = true
 
-[*.{yml,yaml}]
+[*.{yml,yaml,json,md}]
 indent_size = 2
+# using unset so that existing generated configs don't need to be reformatted
+indent_style = unset
+
+[*.sql]
+indent_size = 4
+# using unset so that existing migrations in place work
+indent_style = unset

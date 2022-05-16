@@ -29,5 +29,6 @@
 		"thiserror",
 		"timestamptz",
 		"wiremock"
-	]
+	],
+	"yaml.format.singleQuote": false
 }

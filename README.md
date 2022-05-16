@@ -22,7 +22,7 @@ The backend is powered by a rust application built using `actix` (HTTP server) a
     - Enable log during testing and pass it through bunyan `TEST_LOG=true cargo test | bunyan`
 
 1. Install dependencies using `cargo install`
-2. Initialize database using `./scripts/init_db.sh`
+2. Initialize database using `CREATE_LOCAL_DB=TRUE ./scripts/init_db.sh`
 
 ## Deployment
 
