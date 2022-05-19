@@ -1,5 +1,6 @@
 application:
   port: 8000
+  lightstep_access_token: "developer"
 database:
   host: "localhost"
   port: 5432

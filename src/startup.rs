@@ -2,8 +2,11 @@ use std::net::TcpListener;
 
 use crate::{
     bigcommerce::client::BCClient,
-    configuration::{ApplicationBaseUrl, DatabaseSettings, JWTSecret, Settings},
+    configuration::{
+        ApplicationBaseUrl, DatabaseSettings, JWTSecret, LightstepAccessToken, Settings,
+    },
     routes::register_routes,
+    telemetry::AppRootSpanBuilder,
 };
 use actix_web::{dev::Server, web::Data, App, HttpServer};
 use secrecy::Secret;
@@ -37,6 +40,7 @@ impl Application {
             db_pool,
             configuration.application.base_url,
             configuration.application.jwt_secret,
+            configuration.application.lightstep_access_token,
             bigcommerce_client,
         )?;
 
@@ -63,20 +67,23 @@ pub fn run(
     db_pool: PgPool,
     base_url: String,
     jwt_secret: Secret<String>,
+    lightstep_access_token: Secret<String>,
     bigcommerce_client: BCClient,
 ) -> Result<Server, std::io::Error> {
     let db_pool = Data::new(db_pool);
     let base_url = Data::new(ApplicationBaseUrl(base_url));
     let bigcommerce_client = Data::new(bigcommerce_client);
     let jwt_secret = Data::new(JWTSecret(jwt_secret));
+    let lightstep_access_token = Data::new(LightstepAccessToken(lightstep_access_token));
 
     let server = HttpServer::new(move || {
         App::new()
-            .wrap(TracingLogger::default())
             .app_data(db_pool.clone())
             .app_data(base_url.clone())
             .app_data(bigcommerce_client.clone())
             .app_data(jwt_secret.clone())
+            .app_data(lightstep_access_token.clone())
+            .wrap(TracingLogger::<AppRootSpanBuilder>::new())
             .configure(register_routes)
     })
     .listen(listener)?

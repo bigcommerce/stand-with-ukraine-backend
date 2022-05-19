@@ -12,6 +12,7 @@
 		"jsonwebtoken",
 		"lcov",
 		"libpq",
+		"lightstep",
 		"nanos",
 		"nextest",
 		"opentelemetry",

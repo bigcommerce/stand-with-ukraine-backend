@@ -10,7 +10,7 @@ indent_size = 4
 trim_trailing_whitespace = true
 insert_final_newline = true
 
-[*.{yml,yaml,json,md}]
+[*.{yml,yaml,json,md,toml}]
 indent_size = 2
 # using unset so that existing generated configs don't need to be reformatted
 indent_style = unset

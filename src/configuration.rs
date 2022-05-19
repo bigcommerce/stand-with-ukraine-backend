@@ -65,6 +65,8 @@ pub struct ApplicationSettings {
     pub base_url: String,
     pub jwt_secret: Secret<String>,
 
+    pub lightstep_access_token: Secret<String>,
+
     pub host: String,
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub port: u16,
@@ -104,7 +106,15 @@ impl AsRef<Secret<String>> for JWTSecret {
     }
 }
 
-#[derive(PartialEq, Eq, Debug)]
+pub struct LightstepAccessToken(pub Secret<String>);
+
+impl AsRef<Secret<String>> for LightstepAccessToken {
+    fn as_ref(&self) -> &Secret<String> {
+        &self.0
+    }
+}
+
+#[derive(Debug, PartialEq)]
 pub enum AppEnvironment {
     Local,
     Production,
