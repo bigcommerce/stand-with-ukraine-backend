@@ -20,6 +20,7 @@ pub struct DatabaseSettings {
     pub database_name: String,
     pub require_ssl: bool,
 
+    pub socket: Option<String>,
     pub host: String,
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub port: u16,
@@ -43,14 +44,15 @@ impl DatabaseSettings {
         } else {
             PgSslMode::Prefer
         };
-        dbg!(ssl_mode);
 
-        PgConnectOptions::new()
-            .host(&self.host)
-            .port(self.port)
-            .username(&self.username)
-            .password(self.password.expose_secret())
-            .ssl_mode(ssl_mode)
+        if let Some(socket) = &self.socket {
+            PgConnectOptions::new().socket(socket)
+        } else {
+            PgConnectOptions::new().host(&self.host).port(self.port)
+        }
+        .username(&self.username)
+        .password(self.password.expose_secret())
+        .ssl_mode(ssl_mode)
     }
 
     pub fn with_db(&self) -> PgConnectOptions {

@@ -219,14 +219,6 @@ jobs:
           --project=${{ secrets.GCP_PROJECT_ID }} \
           --image=${{ secrets.CLOUD_RUN_IMAGE }}:${{ steps.tag.outputs.sha }} \
           --port=${{ secrets.APP__APPLICATION__PORT }} \
-          --set-env-vars=APP__APPLICATION__PORT=${{ secrets.APP__APPLICATION__PORT }} \
-          --set-env-vars=APP__APPLICATION__BASE_URL=${{ secrets.APP__APPLICATION__BASE_URL }} \
-          --set-secrets=APP__DATABASE__DATABASE_NAME=APP__DATABASE__DATABASE_NAME:1 \
-          --set-secrets=APP__DATABASE__PASSWORD=APP__DATABASE__PASSWORD:1 \
-          --set-secrets=APP__DATABASE__USERNAME=APP__DATABASE__USERNAME:1 \
-          --set-secrets=APP__BIGCOMMERCE__CLIENT_SECRET=APP__BIGCOMMERCE__CLIENT_SECRET:1 \
-          --set-secrets=APP__BIGCOMMERCE__CLIENT_ID=APP__BIGCOMMERCE__CLIENT_ID:1 \
-          --set-secrets=APP__APPLICATION__JWT_SECRET=APP__APPLICATION__JWT_SECRET:1 \
           --set-cloudsql-instances=${{ secrets.CLOUD_SQL_DB }} \
           --allow-unauthenticated \
           --concurrency=1000 \
@@ -234,6 +226,16 @@ jobs:
           --max-instances=5 \
           --execution-environment=gen2 \
           --region=us-central1 \
+          --set-env-vars=APP__APPLICATION__PORT=${{ secrets.APP__APPLICATION__PORT }} \
+          --set-env-vars=APP__APPLICATION__BASE_URL=${{ secrets.APP__APPLICATION__BASE_URL }} \
+          --set-env-vars=APP__DATABASE__REQUIRE_SSL=false \
+          --set-secrets=APP__DATABASE__SOCKET=APP__DATABASE__SOCKET:2 \
+          --set-secrets=APP__DATABASE__DATABASE_NAME=APP__DATABASE__DATABASE_NAME:1 \
+          --set-secrets=APP__DATABASE__PASSWORD=APP__DATABASE__PASSWORD:1 \
+          --set-secrets=APP__DATABASE__USERNAME=APP__DATABASE__USERNAME:1 \
+          --set-secrets=APP__BIGCOMMERCE__CLIENT_SECRET=APP__BIGCOMMERCE__CLIENT_SECRET:1 \
+          --set-secrets=APP__BIGCOMMERCE__CLIENT_ID=APP__BIGCOMMERCE__CLIENT_ID:1 \
+          --set-secrets=APP__APPLICATION__JWT_SECRET=APP__APPLICATION__JWT_SECRET:1
 
   coverage:
     name: coverage
