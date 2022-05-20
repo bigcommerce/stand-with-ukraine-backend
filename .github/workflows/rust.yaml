@@ -143,17 +143,26 @@ jobs:
     if: github.ref == 'refs/heads/main'
 
     permissions:
-      contents: 'read'
-      id-token: 'write'
+      contents: "read"
+      id-token: "write"
 
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Install doctl
-        uses: digitalocean/action-doctl@v2
+      - name: Login
+        uses: google-github-actions/auth@v0
         with:
-          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          workload_identity_provider: ${{ secrets.GCP_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_IAM_EMAIL }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v0
+        with:
+          install_components: "beta"
+
+      - name: Use gcloud CLI
+        run: gcloud info
 
       - name: Set up Docker Buildx
         id: buildx
@@ -178,15 +187,14 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: |
-            registry.digitalocean.com/stand-with-ukraine/app
+            ${{ secrets.CLOUD_RUN_IMAGE }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha
 
-      - name: Login to digitalocean docker registry
-        id: docker-auth
+      - name: Login to gcloud artifact registry
         run: |
-          doctl registry login --expiry-seconds 1200
+          gcloud auth configure-docker --quiet us-central1-docker.pkg.dev
 
       - name: Build production image
         uses: docker/build-push-action@v2
@@ -205,19 +213,27 @@ jobs:
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
-      - name: Update Deployment
-        env:
-          DIGITALOCEAN_APP_ID: ${{ secrets.DIGITALOCEAN_APP_ID }}
-          SPEC_FILE: 'deployment.yaml'
-          PATTERN: 's/tag: sha\-[a-z0-9]*$/tag: ${{ steps.tag.outputs.sha }}/g'
+      - name: Deploy Cloud Run
         run: |
-          echo "::add-mask::${{ secrets.APP__APPLICATION__JWT_TOKEN }}"
-          echo "::add-mask::${{ secrets.APP__BIGCOMMERCE__CLIENT_ID }}"
-          echo "::add-mask::${{ secrets.APP__BIGCOMMERCE__CLIENT_SECRET }}"
-          doctl apps spec get $DIGITALOCEAN_APP_ID > $SPEC_FILE
-          sed -i "${PATTERN}" $SPEC_FILE
-          doctl apps spec validate $SPEC_FILE
-          doctl apps update $DIGITALOCEAN_APP_ID --spec $SPEC_FILE
+          gcloud beta run deploy ${{ secrets.CLOUD_RUN_APP }} \
+          --project=${{ secrets.GCP_PROJECT_ID }} \
+          --image=${{ secrets.CLOUD_RUN_IMAGE }}:${{ steps.tag.outputs.sha }} \
+          --port=${{ secrets.APP__APPLICATION__PORT }} \
+          --set-env-vars=APP__APPLICATION__PORT=${{ secrets.APP__APPLICATION__PORT }} \
+          --set-env-vars=APP__APPLICATION__BASE_URL=${{ secrets.APP__APPLICATION__BASE_URL }} \
+          --set-secrets=APP__DATABASE__DATABASE_NAME=APP__DATABASE__DATABASE_NAME:1 \
+          --set-secrets=APP__DATABASE__PASSWORD=APP__DATABASE__PASSWORD:1 \
+          --set-secrets=APP__DATABASE__USERNAME=APP__DATABASE__USERNAME:1 \
+          --set-secrets=APP__BIGCOMMERCE__CLIENT_SECRET=APP__BIGCOMMERCE__CLIENT_SECRET:1 \
+          --set-secrets=APP__BIGCOMMERCE__CLIENT_ID=APP__BIGCOMMERCE__CLIENT_ID:1 \
+          --set-secrets=APP__APPLICATION__JWT_SECRET=APP__APPLICATION__JWT_SECRET:1 \
+          --set-cloudsql-instances=${{ secrets.CLOUD_SQL_DB }} \
+          --allow-unauthenticated \
+          --concurrency=1000 \
+          --min-instances=1 \
+          --max-instances=5 \
+          --execution-environment=gen2 \
+          --region=us-central1 \
 
   coverage:
     name: coverage
