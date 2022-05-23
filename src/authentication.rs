@@ -19,18 +19,18 @@ pub struct AuthClaims {
 
 impl FromRequest for AuthClaims {
     type Future = Ready<Result<Self, Self::Error>>;
-    type Error = AuthenticationError;
+    type Error = Error;
 
     fn from_request(req: &HttpRequest, _payload: &mut Payload) -> <Self as FromRequest>::Future {
         let jwt_secret = match req.app_data::<web::Data<JWTSecret>>() {
             Some(val) => val,
-            None => return ready(Err(AuthenticationError::InvalidServerConfiguration)),
+            None => return ready(Err(Error::InvalidServerConfiguration)),
         };
 
         let bearer = match <authorization::Authorization::<authorization::Bearer> as actix_web::http::header::Header>::parse(req) {
             Ok(auth) => auth.into_scheme(),
             Err(err) => {
-                return ready(Err(AuthenticationError::NoTokenProvided(err)))
+                return ready(Err(Error::NoTokenProvided(err)))
             }
         };
 
@@ -62,20 +62,20 @@ where
 
 pub struct AuthorizedUser(pub String);
 
-pub fn decode_token<S>(token: &str, secret: S) -> Result<AuthClaims, AuthenticationError>
+pub fn decode_token<S>(token: &str, secret: S) -> Result<AuthClaims, Error>
 where
     S: AsRef<Secret<String>>,
 {
     let key = DecodingKey::from_secret(secret.as_ref().expose_secret().as_bytes());
     let validation = Validation::new(Algorithm::HS512);
-    let decoded = decode::<AuthClaims>(token, &key, &validation)
-        .map_err(AuthenticationError::InvalidTokenError)?;
+    let decoded =
+        decode::<AuthClaims>(token, &key, &validation).map_err(Error::InvalidTokenError)?;
 
     Ok(decoded.claims)
 }
 
 #[derive(thiserror::Error, Debug)]
-pub enum AuthenticationError {
+pub enum Error {
     #[error("No Bearer Token")]
     NoTokenProvided(#[source] ParseError),
 
@@ -89,14 +89,15 @@ pub enum AuthenticationError {
     UnexpectedError(#[from] anyhow::Error),
 }
 
-impl ResponseError for AuthenticationError {
+impl ResponseError for Error {
     fn error_response(&self) -> HttpResponse {
         match self {
             Self::InvalidServerConfiguration => {
                 HttpResponse::new(StatusCode::INTERNAL_SERVER_ERROR)
             }
-            Self::InvalidTokenError(_) => HttpResponse::new(StatusCode::UNAUTHORIZED),
-            Self::NoTokenProvided(_) => HttpResponse::new(StatusCode::UNAUTHORIZED),
+            Self::InvalidTokenError(_) | Self::NoTokenProvided(_) => {
+                HttpResponse::new(StatusCode::UNAUTHORIZED)
+            }
             Self::UnexpectedError(_) => HttpResponse::new(StatusCode::INTERNAL_SERVER_ERROR),
         }
     }

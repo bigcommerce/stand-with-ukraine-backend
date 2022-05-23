@@ -4,7 +4,7 @@ use reqwest::{header, Client};
 use secrecy::{ExposeSecret, Secret};
 use serde_json::json;
 
-use crate::{authentication::AuthenticationError, configuration::ApplicationBaseUrl};
+use crate::{authentication::Error, configuration::BaseURL};
 
 use super::{
     auth::{BCClaims, BCOAuthResponse},
@@ -58,7 +58,7 @@ impl BCClient {
 
     pub async fn authorize_oauth_install(
         &self,
-        callback_url: &ApplicationBaseUrl,
+        callback_url: &BaseURL,
         code: &str,
         scope: &str,
         context: &str,
@@ -179,11 +179,11 @@ impl BCClient {
         Ok(())
     }
 
-    pub fn decode_jwt(&self, token: &str) -> Result<BCClaims, AuthenticationError> {
+    pub fn decode_jwt(&self, token: &str) -> Result<BCClaims, Error> {
         let key = DecodingKey::from_secret(self.client_secret.expose_secret().as_bytes());
         let validation = Validation::new(Algorithm::HS256);
-        let decoded = decode::<BCClaims>(token, &key, &validation)
-            .map_err(AuthenticationError::InvalidTokenError)?;
+        let decoded =
+            decode::<BCClaims>(token, &key, &validation).map_err(Error::InvalidTokenError)?;
 
         Ok(decoded.claims)
     }

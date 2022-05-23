@@ -3,9 +3,9 @@ use std::net::TcpListener;
 use crate::{
     bigcommerce::client::BCClient,
     configuration::{
-        ApplicationBaseUrl, DatabaseSettings, JWTSecret, LightstepAccessToken, Settings,
+        BaseURL, Configuration, DatabaseConfiguration, JWTSecret, LightstepAccessToken,
     },
-    routes::register_routes,
+    routes::register,
     telemetry::AppRootSpanBuilder,
 };
 use actix_web::{dev::Server, web::Data, App, HttpServer};
@@ -19,7 +19,7 @@ pub struct Application {
 }
 
 impl Application {
-    pub async fn build(configuration: Settings) -> Result<Self, std::io::Error> {
+    pub async fn build(configuration: Configuration) -> Result<Self, std::io::Error> {
         let db_pool = get_connection_pool(&configuration.database);
         let bigcommerce_client = BCClient::new(
             configuration.bigcommerce.api_base_url,
@@ -47,7 +47,7 @@ impl Application {
         Ok(Self { port, server })
     }
 
-    pub fn port(&self) -> u16 {
+    pub const fn port(&self) -> u16 {
         self.port
     }
 
@@ -56,7 +56,7 @@ impl Application {
     }
 }
 
-pub fn get_connection_pool(configuration: &DatabaseSettings) -> PgPool {
+pub fn get_connection_pool(configuration: &DatabaseConfiguration) -> PgPool {
     PgPoolOptions::new()
         .connect_timeout(std::time::Duration::from_secs(2))
         .connect_lazy_with(configuration.with_db())
@@ -71,7 +71,7 @@ pub fn run(
     bigcommerce_client: BCClient,
 ) -> Result<Server, std::io::Error> {
     let db_pool = Data::new(db_pool);
-    let base_url = Data::new(ApplicationBaseUrl(base_url));
+    let base_url = Data::new(BaseURL(base_url));
     let bigcommerce_client = Data::new(bigcommerce_client);
     let jwt_secret = Data::new(JWTSecret(jwt_secret));
     let lightstep_access_token = Data::new(LightstepAccessToken(lightstep_access_token));
@@ -84,7 +84,7 @@ pub fn run(
             .app_data(jwt_secret.clone())
             .app_data(lightstep_access_token.clone())
             .wrap(TracingLogger::<AppRootSpanBuilder>::new())
-            .configure(register_routes)
+            .configure(register)
     })
     .listen(listener)?
     .run();

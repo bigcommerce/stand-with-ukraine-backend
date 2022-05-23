@@ -7,7 +7,7 @@ pub async fn health_check() -> HttpResponse {
     HttpResponse::Ok().finish()
 }
 
-pub fn register_routes(cfg: &mut web::ServiceConfig) {
+pub fn register(cfg: &mut web::ServiceConfig) {
     cfg.service(web::resource("/health_check").route(web::get().to(health_check)));
 
     bigcommerce::register_routes(cfg);

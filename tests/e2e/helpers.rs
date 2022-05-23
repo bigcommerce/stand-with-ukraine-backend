@@ -6,7 +6,7 @@ use sqlx::{Connection, Executor, PgConnection, PgPool};
 use swu_app::{
     authentication::create_jwt,
     bigcommerce::auth::BCUser,
-    configuration::{get_configuration, DatabaseSettings, JWTSecret},
+    configuration::{Configuration, DatabaseConfiguration, JWTSecret},
     data::WidgetConfiguration,
     startup::{get_connection_pool, Application},
     telemetry::{get_subscriber, init_subscriber},
@@ -48,7 +48,8 @@ pub async fn spawn_app() -> TestApp {
 
     // configuration for this test instance
     let configuration = {
-        let mut c = get_configuration().expect("Failed to read configuration.");
+        let mut c =
+            Configuration::generate_from_environment().expect("Failed to read configuration.");
         c.database.database_name = Uuid::new_v4().to_string();
         c.application.port = 0;
 
@@ -78,7 +79,7 @@ pub async fn spawn_app() -> TestApp {
     }
 }
 
-async fn configure_database(config: &DatabaseSettings) -> PgPool {
+async fn configure_database(config: &DatabaseConfiguration) -> PgPool {
     let mut connection = PgConnection::connect_with(&config.without_db())
         .await
         .expect("Failed to connect to Postgres.");

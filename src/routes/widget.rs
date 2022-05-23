@@ -1,7 +1,7 @@
 use crate::{
     authentication::AuthClaims,
     bigcommerce::client::BCClient,
-    configuration::ApplicationBaseUrl,
+    configuration::BaseURL,
     data::{
         read_store_credentials, read_store_published, read_widget_configuration,
         write_charity_visited_event, write_store_published, write_unpublish_feedback,
@@ -99,7 +99,7 @@ impl ResponseError for PublishError {
 async fn publish_widget(
     auth: AuthClaims,
     db_pool: web::Data<PgPool>,
-    base_url: web::Data<ApplicationBaseUrl>,
+    base_url: web::Data<BaseURL>,
     bigcommerce_client: web::Data<BCClient>,
 ) -> Result<HttpResponse, PublishError> {
     let store_hash = auth.sub.as_str();
@@ -234,7 +234,7 @@ async fn log_charity_event(
     if let Err(error) =
         write_charity_visited_event(event.store_hash.as_str(), &event.charity, &db_pool).await
     {
-        tracing::warn!("Error while saving event {}", error)
+        tracing::warn!("Error while saving event {}", error);
     };
 
     HttpResponse::Ok().finish()
@@ -253,7 +253,7 @@ async fn log_widget_event(
 ) -> HttpResponse {
     if let Err(error) = write_widget_event(event.store_hash.as_str(), &event.event, &db_pool).await
     {
-        tracing::warn!("Error while saving event {}", error)
+        tracing::warn!("Error while saving event {}", error);
     };
 
     HttpResponse::Ok().finish()

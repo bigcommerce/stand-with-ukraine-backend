@@ -4,9 +4,9 @@ use reqwest::header::LOCATION;
 use sqlx::PgPool;
 
 use crate::{
-    authentication::{create_jwt, AuthenticationError},
+    authentication::{create_jwt, Error},
     bigcommerce::client::BCClient,
-    configuration::{ApplicationBaseUrl, JWTSecret},
+    configuration::{BaseURL, JWTSecret},
     data::{write_store_as_uninstalled, write_store_credentials},
 };
 
@@ -48,7 +48,7 @@ impl ResponseError for InstallError {
 async fn install(
     query: web::Query<InstallQuery>,
     bigcommerce_client: web::Data<BCClient>,
-    base_url: web::Data<ApplicationBaseUrl>,
+    base_url: web::Data<BaseURL>,
     db_pool: web::Data<PgPool>,
     jwt_secret: web::Data<JWTSecret>,
 ) -> Result<HttpResponse, InstallError> {
@@ -106,7 +106,7 @@ enum LoadError {
     NotStoreOwnerError,
 
     #[error("Invalid credentials.")]
-    InvalidCredentials(#[source] AuthenticationError),
+    InvalidCredentials(#[source] Error),
 
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
@@ -115,8 +115,9 @@ enum LoadError {
 impl ResponseError for LoadError {
     fn error_response(&self) -> HttpResponse {
         match self {
-            Self::NotStoreOwnerError => HttpResponse::new(StatusCode::UNAUTHORIZED),
-            Self::InvalidCredentials(_) => HttpResponse::new(StatusCode::UNAUTHORIZED),
+            Self::NotStoreOwnerError | Self::InvalidCredentials(_) => {
+                HttpResponse::new(StatusCode::UNAUTHORIZED)
+            }
             Self::UnexpectedError(_) => HttpResponse::new(StatusCode::INTERNAL_SERVER_ERROR),
         }
     }
@@ -129,7 +130,7 @@ impl ResponseError for LoadError {
 async fn load(
     query: web::Query<LoadQuery>,
     bigcommerce_client: web::Data<BCClient>,
-    base_url: web::Data<ApplicationBaseUrl>,
+    base_url: web::Data<BaseURL>,
     jwt_secret: web::Data<JWTSecret>,
 ) -> Result<HttpResponse, LoadError> {
     let claims = bigcommerce_client

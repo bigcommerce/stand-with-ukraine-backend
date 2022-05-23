@@ -19,7 +19,7 @@ pub struct Script {
 }
 
 impl Script {
-    pub fn new(name: String, description: String, html: String) -> Self {
+    pub const fn new(name: String, description: String, html: String) -> Self {
         Self {
             name,
             description,

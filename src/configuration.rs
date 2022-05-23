@@ -7,14 +7,14 @@ use sqlx::{
 };
 
 #[derive(serde::Deserialize, Clone)]
-pub struct Settings {
-    pub database: DatabaseSettings,
-    pub application: ApplicationSettings,
-    pub bigcommerce: BCAppSettings,
+pub struct Configuration {
+    pub database: DatabaseConfiguration,
+    pub application: ApplicationConfiguration,
+    pub bigcommerce: BCAppConfiguration,
 }
 
 #[derive(serde::Deserialize, Clone)]
-pub struct DatabaseSettings {
+pub struct DatabaseConfiguration {
     pub username: String,
     pub password: Secret<String>,
     pub database_name: String,
@@ -27,7 +27,7 @@ pub struct DatabaseSettings {
 }
 
 #[derive(serde::Deserialize, Clone)]
-pub struct BCAppSettings {
+pub struct BCAppConfiguration {
     pub client_id: String,
     pub client_secret: Secret<String>,
 
@@ -37,7 +37,7 @@ pub struct BCAppSettings {
     pub timeout: u16,
 }
 
-impl DatabaseSettings {
+impl DatabaseConfiguration {
     pub fn without_db(&self) -> PgConnectOptions {
         let ssl_mode = if self.require_ssl {
             PgSslMode::Require
@@ -45,14 +45,15 @@ impl DatabaseSettings {
             PgSslMode::Prefer
         };
 
-        if let Some(socket) = &self.socket {
-            PgConnectOptions::new().socket(socket)
-        } else {
-            PgConnectOptions::new().host(&self.host).port(self.port)
-        }
-        .username(&self.username)
-        .password(self.password.expose_secret())
-        .ssl_mode(ssl_mode)
+        self.socket
+            .as_ref()
+            .map_or_else(
+                || PgConnectOptions::new().host(&self.host).port(self.port),
+                |socket| PgConnectOptions::new().socket(socket.as_str()),
+            )
+            .username(&self.username)
+            .password(self.password.expose_secret())
+            .ssl_mode(ssl_mode)
     }
 
     pub fn with_db(&self) -> PgConnectOptions {
@@ -63,7 +64,7 @@ impl DatabaseSettings {
 }
 
 #[derive(serde::Deserialize, Clone)]
-pub struct ApplicationSettings {
+pub struct ApplicationConfiguration {
     pub base_url: String,
     pub jwt_secret: Secret<String>,
 
@@ -74,27 +75,32 @@ pub struct ApplicationSettings {
     pub port: u16,
 }
 
-pub fn get_configuration() -> Result<Settings, ConfigError> {
-    let environment: AppEnvironment = std::env::var("APP_ENVIRONMENT")
-        .unwrap_or_else(|_| "local".to_owned())
-        .as_str()
-        .try_into()
-        .expect("Failed to parse APP_ENVIRONMENT.");
+impl Configuration {
+    pub fn generate_from_environment() -> Result<Self, ConfigError> {
+        let environment: AppEnvironment = std::env::var("APP_ENVIRONMENT")
+            .unwrap_or_else(|_| "local".to_owned())
+            .as_str()
+            .try_into()
+            .expect("Failed to parse APP_ENVIRONMENT.");
 
-    let base_path = std::env::current_dir().expect("Failed to determine the current directory.");
-    let configuration_directory = base_path.join("configuration");
+        let base_path =
+            std::env::current_dir().expect("Failed to determine the current directory.");
+        let configuration_directory = base_path.join("configuration");
 
-    Config::builder()
-        .add_source(File::from(configuration_directory.join("base")).required(true))
-        .add_source(File::from(configuration_directory.join(environment.as_str())).required(true))
-        .add_source(Environment::with_prefix("app").separator("__"))
-        .build()?
-        .try_deserialize()
+        Config::builder()
+            .add_source(File::from(configuration_directory.join("base")).required(true))
+            .add_source(
+                File::from(configuration_directory.join(environment.as_str())).required(true),
+            )
+            .add_source(Environment::with_prefix("app").separator("__"))
+            .build()?
+            .try_deserialize()
+    }
 }
 
-pub struct ApplicationBaseUrl(pub String);
+pub struct BaseURL(pub String);
 
-impl std::fmt::Display for ApplicationBaseUrl {
+impl std::fmt::Display for BaseURL {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{}", self.0)
     }
@@ -123,7 +129,7 @@ pub enum AppEnvironment {
 }
 
 impl AppEnvironment {
-    pub fn as_str(&self) -> &'static str {
+    pub const fn as_str(&self) -> &'static str {
         match self {
             AppEnvironment::Local => "local",
             AppEnvironment::Production => "production",

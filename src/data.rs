@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 use crate::{
     bigcommerce::{script::Script, store::BCStore},
-    configuration::ApplicationBaseUrl,
+    configuration::BaseURL,
 };
 
 #[tracing::instrument(name = "Write store credentials to database", skip(store, pool))]
@@ -148,10 +148,7 @@ pub struct WidgetConfiguration {
 }
 
 impl WidgetConfiguration {
-    pub fn generate_script(
-        &self,
-        base_url: &ApplicationBaseUrl,
-    ) -> Result<Script, serde_json::Error> {
+    pub fn generate_script(&self, base_url: &BaseURL) -> Result<Script, serde_json::Error> {
         Ok(Script::new(
          "Stand With Ukraine".to_owned(),
          "This script displays the stand with ukraine widget on your storefront. Configure it from the Stand With Ukraine app installed on your store.".to_owned(),
