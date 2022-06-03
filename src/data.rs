@@ -96,6 +96,9 @@ pub async fn write_unpublish_feedback(
     reason: &str,
     pool: &PgPool,
 ) -> Result<(), sqlx::Error> {
+    // get at most the first 1000 characters
+    let reason = &reason[0..reason.len().min(1000)];
+
     sqlx::query!(
         r#"
         INSERT INTO unpublish_events (store_hash, unpublished_at, reason)

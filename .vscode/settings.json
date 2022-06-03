@@ -31,6 +31,7 @@
 		"taiki",
 		"thiserror",
 		"timestamptz",
+		"unpublish",
 		"wiremock"
 	],
 	"yaml.format.singleQuote": false
