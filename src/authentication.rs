@@ -47,7 +47,7 @@ pub fn create_jwt<S>(store_hash: &str, secret: S) -> Result<String, jsonwebtoken
 where
     S: AsRef<Secret<String>>,
 {
-    let expiration = OffsetDateTime::now_utc() + Duration::hours(1);
+    let expiration = OffsetDateTime::now_utc() + Duration::days(1);
 
     let claims = AuthClaims {
         sub: store_hash.to_owned(),
