@@ -218,6 +218,7 @@ jobs:
           gcloud beta run deploy ${{ secrets.CLOUD_RUN_APP }} \
           --project=${{ secrets.GCP_PROJECT_ID }} \
           --image=${{ secrets.CLOUD_RUN_IMAGE }}:${{ steps.tag.outputs.sha }} \
+          --service-account=${{ secrets.CLOUD_RUN_SERVICE_ACCOUNT }} \
           --port=${{ secrets.APP__APPLICATION__PORT }} \
           --set-cloudsql-instances=${{ secrets.CLOUD_SQL_DB }} \
           --allow-unauthenticated \
