@@ -224,6 +224,7 @@ pub enum Charity {
     Unicef,
     NewUkraine,
     Razom,
+    MiraAction,
 }
 
 #[tracing::instrument(
@@ -299,6 +300,7 @@ mod tests {
     #[case(&Charity::NewUkraine, "new-ukraine")]
     #[case(&Charity::Razom, "razom")]
     #[case(&Charity::Unicef, "unicef")]
+    #[case(&Charity::MiraAction, "mira-action")]
     fn charity_to_string_works(#[case] charity: &Charity, #[case] value: &str) {
         assert_eq!(serde_variant::to_variant_name(charity).unwrap(), value)
     }
