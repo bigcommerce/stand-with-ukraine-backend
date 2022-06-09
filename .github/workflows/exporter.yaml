@@ -1,4 +1,4 @@
-name: rust
+name: exporter
 
 on:
   push:
@@ -127,13 +127,14 @@ jobs:
           DB_PASSWORD="${POSTGRES_PASSWORD:=password}"
           DB_NAME="${POSTGRES_DB:=swu}"
           DB_PORT="${POSTGRES_PORT:=5432}"
+          cd exporter
           cargo sqlx prepare --database-url postgres://${DB_USER}:${DB_PASSWORD}@localhost:${DB_PORT}/${DB_NAME} --check -- --lib
 
       - name: Run tests
-        run: cargo nextest run
+        run: cargo nextest run -p exporter
 
-  deploy:
-    name: deploy
+  build:
+    name: build
     runs-on: ubuntu-latest
     needs:
       - fmt
@@ -187,7 +188,7 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: |
-            ${{ secrets.CLOUD_RUN_IMAGE }}
+            ${{ secrets.CLOUD_RUN_IMAGE_EXPORTER }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha
@@ -199,8 +200,9 @@ jobs:
       - name: Build production image
         uses: docker/build-push-action@v2
         with:
-          context: .
+          context: app
           builder: ${{ steps.buildx.outputs.name }}
+          file: app/Dockerfile
           target: runtime
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
@@ -212,86 +214,3 @@ jobs:
         run: |
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
-
-      - name: Deploy Cloud Run
-        run: |
-          gcloud beta run deploy ${{ secrets.CLOUD_RUN_APP }} \
-          --project=${{ secrets.GCP_PROJECT_ID }} \
-          --image=${{ secrets.CLOUD_RUN_IMAGE }}:${{ steps.tag.outputs.sha }} \
-          --service-account=${{ secrets.CLOUD_RUN_SERVICE_ACCOUNT }} \
-          --port=${{ secrets.APP__APPLICATION__PORT }} \
-          --set-cloudsql-instances=${{ secrets.CLOUD_SQL_DB }} \
-          --allow-unauthenticated \
-          --concurrency=1000 \
-          --min-instances=1 \
-          --max-instances=5 \
-          --execution-environment=gen2 \
-          --region=us-central1 \
-          --set-env-vars=APP__APPLICATION__PORT=${{ secrets.APP__APPLICATION__PORT }} \
-          --set-env-vars=APP__APPLICATION__BASE_URL=${{ secrets.APP__APPLICATION__BASE_URL }} \
-          --set-env-vars=APP__DATABASE__REQUIRE_SSL=false \
-          --set-secrets=APP__DATABASE__SOCKET=APP__DATABASE__SOCKET:2 \
-          --set-secrets=APP__DATABASE__DATABASE_NAME=APP__DATABASE__DATABASE_NAME:1 \
-          --set-secrets=APP__DATABASE__PASSWORD=APP__DATABASE__PASSWORD:1 \
-          --set-secrets=APP__DATABASE__USERNAME=APP__DATABASE__USERNAME:1 \
-          --set-secrets=APP__BIGCOMMERCE__CLIENT_SECRET=APP__BIGCOMMERCE__CLIENT_SECRET:1 \
-          --set-secrets=APP__BIGCOMMERCE__CLIENT_ID=APP__BIGCOMMERCE__CLIENT_ID:1 \
-          --set-secrets=APP__APPLICATION__JWT_SECRET=APP__APPLICATION__JWT_SECRET:1
-
-  coverage:
-    name: coverage
-    runs-on: ubuntu-latest
-    needs:
-      - fmt
-      - lint
-    services:
-      postgres:
-        image: postgres:14
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: postgres
-        ports:
-          - 5432:5432
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-          components: llvm-tools-preview
-
-      - uses: taiki-e/install-action@cargo-llvm-cov
-      - uses: taiki-e/install-action@nextest
-      - uses: Swatinem/rust-cache@v1
-        with:
-          key: v1
-
-      - name: Install sqlx-cli
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: >
-            sqlx-cli
-            --version=${{ env.SQLX_VERSION }}
-            --features=${{ env.SQLX_FEATURES }}
-            --no-default-features
-
-      - name: Migrate database
-        run: |
-          sudo apt-get install libpq-dev -y
-          SKIP_DOCKER=true ./scripts/init_db.sh
-
-      - name: Get coverage
-        run: cargo llvm-cov nextest --all-features --workspace --lcov --output-path lcov.info
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: lcov.info
-          fail_ci_if_error: true

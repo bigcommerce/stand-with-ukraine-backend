@@ -2,9 +2,7 @@ use std::net::TcpListener;
 
 use crate::{
     bigcommerce::client::BCClient,
-    configuration::{
-        BaseURL, Configuration, DatabaseConfiguration, JWTSecret, LightstepAccessToken,
-    },
+    configuration::{BaseURL, Configuration, Database, JWTSecret, LightstepAccessToken},
     routes::register,
     telemetry::AppRootSpanBuilder,
 };
@@ -56,7 +54,7 @@ impl Application {
     }
 }
 
-pub fn get_connection_pool(configuration: &DatabaseConfiguration) -> PgPool {
+pub fn get_connection_pool(configuration: &Database) -> PgPool {
     PgPoolOptions::new()
         .connect_timeout(std::time::Duration::from_secs(2))
         .connect_lazy_with(configuration.with_db())

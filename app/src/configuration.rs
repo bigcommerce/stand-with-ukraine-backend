@@ -8,13 +8,13 @@ use sqlx::{
 
 #[derive(serde::Deserialize, Clone)]
 pub struct Configuration {
-    pub database: DatabaseConfiguration,
-    pub application: ApplicationConfiguration,
-    pub bigcommerce: BCAppConfiguration,
+    pub database: Database,
+    pub application: Application,
+    pub bigcommerce: BigCommerce,
 }
 
 #[derive(serde::Deserialize, Clone)]
-pub struct DatabaseConfiguration {
+pub struct Database {
     pub username: String,
     pub password: Secret<String>,
     pub database_name: String,
@@ -27,7 +27,7 @@ pub struct DatabaseConfiguration {
 }
 
 #[derive(serde::Deserialize, Clone)]
-pub struct BCAppConfiguration {
+pub struct BigCommerce {
     pub client_id: String,
     pub client_secret: Secret<String>,
 
@@ -37,7 +37,7 @@ pub struct BCAppConfiguration {
     pub timeout: u16,
 }
 
-impl DatabaseConfiguration {
+impl Database {
     pub fn without_db(&self) -> PgConnectOptions {
         let ssl_mode = if self.require_ssl {
             PgSslMode::Require
@@ -64,7 +64,7 @@ impl DatabaseConfiguration {
 }
 
 #[derive(serde::Deserialize, Clone)]
-pub struct ApplicationConfiguration {
+pub struct Application {
     pub base_url: String,
     pub jwt_secret: Secret<String>,
 

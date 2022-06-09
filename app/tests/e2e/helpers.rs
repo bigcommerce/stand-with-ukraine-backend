@@ -6,7 +6,7 @@ use sqlx::{Connection, Executor, PgConnection, PgPool};
 use swu_app::{
     authentication::create_jwt,
     bigcommerce::auth::BCUser,
-    configuration::{Configuration, DatabaseConfiguration, JWTSecret},
+    configuration::{Configuration, Database, JWTSecret},
     data::WidgetConfiguration,
     startup::{get_connection_pool, Application},
     telemetry::{get_subscriber, init_subscriber},
@@ -79,7 +79,7 @@ pub async fn spawn_app() -> TestApp {
     }
 }
 
-async fn configure_database(config: &DatabaseConfiguration) -> PgPool {
+async fn configure_database(config: &Database) -> PgPool {
     let mut connection = PgConnection::connect_with(&config.without_db())
         .await
         .expect("Failed to connect to Postgres.");
@@ -91,7 +91,7 @@ async fn configure_database(config: &DatabaseConfiguration) -> PgPool {
     let connection_pool = PgPool::connect_with(config.with_db())
         .await
         .expect("Failed to connect to Postgres.");
-    sqlx::migrate!("./migrations")
+    sqlx::migrate!("../migrations")
         .run(&connection_pool)
         .await
         .expect("Failed to migrate the database.");

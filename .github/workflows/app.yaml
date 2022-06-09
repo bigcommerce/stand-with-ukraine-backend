@@ -1,0 +1,301 @@
+name: app
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+
+env:
+  CARGO_TERM_COLOR: always
+  SQLX_VERSION: 0.5.11
+  SQLX_FEATURES: postgres,rustls
+
+jobs:
+  fmt:
+    name: fmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          components: rustfmt
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          components: clippy
+          toolchain: stable
+          override: true
+
+      - uses: Swatinem/rust-cache@v1
+
+      - name: Install sqlx-cli
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: >
+            sqlx-cli
+            --version=${{ env.SQLX_VERSION }}
+            --features=${{ env.SQLX_FEATURES }}
+            --no-default-features
+
+      - name: Migrate database
+        run: |
+          sudo apt-get install libpq-dev -y
+          SKIP_DOCKER=true ./scripts/init_db.sh
+
+      - name: Run clippy
+        uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: -- -D warnings
+
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - uses: taiki-e/install-action@nextest
+      - uses: Swatinem/rust-cache@v1
+        with:
+          key: v1
+
+      - name: Install sqlx-cli
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: >
+            sqlx-cli
+            --version=${{ env.SQLX_VERSION }}
+            --features=${{ env.SQLX_FEATURES }}
+            --no-default-features
+
+      - name: Migrate database
+        run: |
+          sudo apt-get install libpq-dev -y
+          SKIP_DOCKER=true ./scripts/init_db.sh
+
+      - name: Check sqlx-data.json is up-to-date
+        run: |
+          DB_USER=${POSTGRES_USER:=postgres}
+          DB_PASSWORD="${POSTGRES_PASSWORD:=password}"
+          DB_NAME="${POSTGRES_DB:=swu}"
+          DB_PORT="${POSTGRES_PORT:=5432}"
+          cd app
+          cargo sqlx prepare --database-url postgres://${DB_USER}:${DB_PASSWORD}@localhost:${DB_PORT}/${DB_NAME} --check -- --lib
+
+      - name: Run tests
+        run: cargo nextest run -p app
+
+  deploy:
+    name: deploy
+    runs-on: ubuntu-latest
+    needs:
+      - fmt
+      - lint
+      - test
+    environment: production
+    if: github.ref == 'refs/heads/main'
+
+    permissions:
+      contents: "read"
+      id-token: "write"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Login
+        uses: google-github-actions/auth@v0
+        with:
+          workload_identity_provider: ${{ secrets.GCP_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_IAM_EMAIL }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v0
+        with:
+          install_components: "beta"
+
+      - name: Use gcloud CLI
+        run: gcloud info
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          install: true
+
+      - name: Cache Docker layers
+        uses: actions/cache@v2
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-multi-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-multi-buildx
+
+      - name: Generate Image Tag
+        id: tag
+        run: echo "::set-output name=sha::sha-${GITHUB_SHA::7}"
+
+      - name: Docker Image Metadata
+        id: meta
+        uses: docker/metadata-action@v3
+        with:
+          images: |
+            ${{ secrets.CLOUD_RUN_IMAGE }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha
+
+      - name: Login to gcloud artifact registry
+        run: |
+          gcloud auth configure-docker --quiet us-central1-docker.pkg.dev
+
+      - name: Build production image
+        uses: docker/build-push-action@v2
+        with:
+          context: app
+          builder: ${{ steps.buildx.outputs.name }}
+          file: app/Dockerfile
+          target: runtime
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
+
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+      # - name: Deploy Cloud Run
+      #   run: |
+      #     gcloud beta run deploy ${{ secrets.CLOUD_RUN_APP }} \
+      #     --project=${{ secrets.GCP_PROJECT_ID }} \
+      #     --image=${{ secrets.CLOUD_RUN_IMAGE }}:${{ steps.tag.outputs.sha }} \
+      #     --service-account=${{ secrets.CLOUD_RUN_SERVICE_ACCOUNT }} \
+      #     --port=${{ secrets.APP__APPLICATION__PORT }} \
+      #     --set-cloudsql-instances=${{ secrets.CLOUD_SQL_DB }} \
+      #     --allow-unauthenticated \
+      #     --concurrency=1000 \
+      #     --min-instances=1 \
+      #     --max-instances=5 \
+      #     --execution-environment=gen2 \
+      #     --region=us-central1 \
+      #     --set-env-vars=APP__APPLICATION__PORT=${{ secrets.APP__APPLICATION__PORT }} \
+      #     --set-env-vars=APP__APPLICATION__BASE_URL=${{ secrets.APP__APPLICATION__BASE_URL }} \
+      #     --set-env-vars=APP__DATABASE__REQUIRE_SSL=false \
+      #     --set-secrets=APP__DATABASE__SOCKET=APP__DATABASE__SOCKET:2 \
+      #     --set-secrets=APP__DATABASE__DATABASE_NAME=APP__DATABASE__DATABASE_NAME:1 \
+      #     --set-secrets=APP__DATABASE__PASSWORD=APP__DATABASE__PASSWORD:1 \
+      #     --set-secrets=APP__DATABASE__USERNAME=APP__DATABASE__USERNAME:1 \
+      #     --set-secrets=APP__BIGCOMMERCE__CLIENT_SECRET=APP__BIGCOMMERCE__CLIENT_SECRET:1 \
+      #     --set-secrets=APP__BIGCOMMERCE__CLIENT_ID=APP__BIGCOMMERCE__CLIENT_ID:1 \
+      #     --set-secrets=APP__APPLICATION__JWT_SECRET=APP__APPLICATION__JWT_SECRET:1
+
+  coverage:
+    name: coverage
+    runs-on: ubuntu-latest
+    needs:
+      - fmt
+      - lint
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          components: llvm-tools-preview
+
+      - uses: taiki-e/install-action@cargo-llvm-cov
+      - uses: taiki-e/install-action@nextest
+      - uses: Swatinem/rust-cache@v1
+        with:
+          key: v1
+
+      - name: Install sqlx-cli
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: >
+            sqlx-cli
+            --version=${{ env.SQLX_VERSION }}
+            --features=${{ env.SQLX_FEATURES }}
+            --no-default-features
+
+      - name: Migrate database
+        run: |
+          sudo apt-get install libpq-dev -y
+          SKIP_DOCKER=true ./scripts/init_db.sh
+
+      - name: Get coverage
+        run: |
+          cd app
+          cargo llvm-cov nextest --all-features --workspace --lcov --output-path lcov.info
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: app/lcov.info
+          fail_ci_if_error: true

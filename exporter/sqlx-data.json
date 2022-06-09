@@ -1,0 +1,262 @@
+{
+  "db": "PostgreSQL",
+  "160f46bff52803da4b2d2631f04ded52273f742cd238e638a4c7e6fac7aa03cd": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Varchar",
+          "Varchar",
+          "Timestamptz"
+        ]
+      }
+    },
+    "query": "\n        INSERT INTO stores (id, store_hash, access_token, installed_at, uninstalled)\n        VALUES ($1, $2, $3, $4, false)\n        ON CONFLICT (store_hash) DO UPDATE set access_token = $3, installed_at = $4, uninstalled = false;\n        "
+  },
+  "16ec0ea056c4c6aba9837b90f4dffba011a700cf45cdf96094bbcad0b20de056": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "store_hash",
+          "ordinal": 1,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "access_token",
+          "ordinal": 2,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "installed_at",
+          "ordinal": 3,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "uninstalled",
+          "ordinal": 4,
+          "type_info": "Bool"
+        },
+        {
+          "name": "published",
+          "ordinal": 5,
+          "type_info": "Bool"
+        },
+        {
+          "name": "widget_configuration",
+          "ordinal": 6,
+          "type_info": "Jsonb"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "SELECT * FROM stores"
+  },
+  "30c2572effa6a53c59b8ec57ea019ea78235a427007c2b62ac7be9f81feb9e3f": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Varchar",
+          "Timestamptz",
+          "Varchar"
+        ]
+      }
+    },
+    "query": "\n        INSERT INTO unpublish_events (store_hash, unpublished_at, reason)\n        VALUES ($1, $2, $3);\n        "
+  },
+  "3411e71ceec7b03612394da030bf96bfa364790f0c82c57ac45015f8b31cbb27": {
+    "describe": {
+      "columns": [
+        {
+          "name": "widget_configuration",
+          "ordinal": 0,
+          "type_info": "Jsonb"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "\n        SELECT widget_configuration FROM stores\n        WHERE store_hash = $1;\n        "
+  },
+  "409a8f47b73ac8957b005d289547f330ce462ac54430a8e681dfc3051092f674": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Varchar",
+          "Varchar",
+          "Timestamptz"
+        ]
+      }
+    },
+    "query": "\n        INSERT INTO charity_visited_events (store_hash, charity, created_at)\n        VALUES ($1, $2, $3);\n        "
+  },
+  "56233a8901131d539dcb562b66d0e2d3bfe6226dbc6cc05f7efb7b1f85e12c01": {
+    "describe": {
+      "columns": [
+        {
+          "name": "published",
+          "ordinal": 0,
+          "type_info": "Bool"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "\n        SELECT published FROM stores\n        WHERE store_hash = $1;\n        "
+  },
+  "5ca043250709b09e58c15542b322ceea22526ff887a41d19e0ca9b57237c22ac": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Varchar",
+          "Varchar",
+          "Timestamptz"
+        ]
+      }
+    },
+    "query": "\n        INSERT INTO widget_events (store_hash, event_type, created_at)\n        VALUES ($1, $2, $3);\n        "
+  },
+  "74167901d241029e7aa5ec3bcd49f7d84fc3cd9043c9a2cfe8dac7a80bdc0ce5": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "store_hash",
+          "ordinal": 1,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "unpublished_at",
+          "ordinal": 2,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "reason",
+          "ordinal": 3,
+          "type_info": "Varchar"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "SELECT * FROM unpublish_events"
+  },
+  "82f438f197114b0bf39ff73fa6e43b2737f111551396ffd53610786519796279": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "\n        UPDATE stores\n        SET uninstalled = true, published = false\n        WHERE store_hash = $1;\n        "
+  },
+  "a1374c9626cc38c8095d779b57445a161b4ca2a516d5097eeeb6497674218f57": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Bool",
+          "Text"
+        ]
+      }
+    },
+    "query": "\n        UPDATE stores\n        SET published = $1\n        WHERE store_hash = $2;\n        "
+  },
+  "ea92a0d130fec78ee1f88cc529ee67d1d1247d174c45d586e5f9ccd56cdaeeb0": {
+    "describe": {
+      "columns": [
+        {
+          "name": "access_token",
+          "ordinal": 0,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "store_hash",
+          "ordinal": 1,
+          "type_info": "Varchar"
+        }
+      ],
+      "nullable": [
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "\n        SELECT access_token, store_hash FROM stores WHERE store_hash = $1\n        "
+  },
+  "f61338aa051a3a81e92b5c91fbc48d3c5a45fe3deca0c6532fb8cc9a719579da": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Jsonb",
+          "Text"
+        ]
+      }
+    },
+    "query": "\n        UPDATE stores\n        SET widget_configuration = $1\n        WHERE store_hash = $2\n        RETURNING id\n        "
+  }
+}
