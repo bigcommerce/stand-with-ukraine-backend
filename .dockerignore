@@ -1,0 +1,15 @@
+target/
+.github/
+.vscode/
+scripts/
+.env
+.gitignore
+.dockerignore
+README.md
+
+app/target/
+app/tests/
+app/Dockerfile
+
+exporter/target/
+exporter/Dockerfile

@@ -56,6 +56,8 @@ jobs:
           override: true
 
       - uses: Swatinem/rust-cache@v1
+        with:
+          key: exporter
 
       - name: Install sqlx-cli
         uses: actions-rs/cargo@v1
@@ -104,7 +106,7 @@ jobs:
       - uses: taiki-e/install-action@nextest
       - uses: Swatinem/rust-cache@v1
         with:
-          key: v1
+          key: exporter
 
       - name: Install sqlx-cli
         uses: actions-rs/cargo@v1
@@ -121,17 +123,10 @@ jobs:
           sudo apt-get install libpq-dev -y
           SKIP_DOCKER=true ./scripts/init_db.sh
 
-      - name: Check sqlx-data.json is up-to-date
-        run: |
-          DB_USER=${POSTGRES_USER:=postgres}
-          DB_PASSWORD="${POSTGRES_PASSWORD:=password}"
-          DB_NAME="${POSTGRES_DB:=swu}"
-          DB_PORT="${POSTGRES_PORT:=5432}"
-          cd exporter
-          cargo sqlx prepare --database-url postgres://${DB_USER}:${DB_PASSWORD}@localhost:${DB_PORT}/${DB_NAME} --check -- --lib
-
       - name: Run tests
-        run: cargo nextest run -p exporter
+        run: |
+          cd exporter
+          cargo nextest run
 
   build:
     name: build
@@ -150,6 +145,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+
+      - name: Exporter Google Sheet Credentials
+        env:
+          EXPORTER_SHEETS_CREDENTIALS: ${{secrets.EXPORTER_SHEETS_CREDENTIALS}}
+        run: |
+          mkdir credentials
+          echo $EXPORTER_SHEETS_CREDENTIALS > credentials/exporter.json
 
       - name: Login
         uses: google-github-actions/auth@v0
@@ -200,9 +202,9 @@ jobs:
       - name: Build production image
         uses: docker/build-push-action@v2
         with:
-          context: app
+          context: .
           builder: ${{ steps.buildx.outputs.name }}
-          file: app/Dockerfile
+          file: exporter/Dockerfile
           target: runtime
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}

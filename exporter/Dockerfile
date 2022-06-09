@@ -4,27 +4,25 @@ RUN apt update && apt install lld clang -y
 
 FROM chef as planner
 COPY . .
-# Compute a lock-like file for our project
 RUN cargo chef prepare  --recipe-path recipe.json
 
 FROM chef as builder
 COPY --from=planner /app/recipe.json recipe.json
-# Build our project dependencies, not our application!
 RUN cargo chef cook --release --recipe-path recipe.json
 COPY . .
 ENV SQLX_OFFLINE true
 # Build our project
-RUN cargo build --release --bin swu-exporter
+RUN cargo build -p swu-exporter --release --bin swu-exporter
 
 FROM debian:bullseye-slim AS runtime
 WORKDIR /app
 RUN apt-get update -y \
     && apt-get install -y --no-install-recommends openssl ca-certificates \
-    # Clean up
     && apt-get autoremove -y \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/*
+# Setup executable and configuration
 COPY --from=builder /app/target/release/swu-exporter swu-exporter
-COPY configuration configuration
-ENV APP_ENVIRONMENT production
+COPY exporter/configuration.yaml exporter/configuration.yaml
+COPY credentials credentials
 ENTRYPOINT ["./swu-exporter"]

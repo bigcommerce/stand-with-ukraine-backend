@@ -15,6 +15,7 @@
 		"lcov",
 		"libpq",
 		"lightstep",
+		"mkdir",
 		"nanos",
 		"nextest",
 		"opentelemetry",

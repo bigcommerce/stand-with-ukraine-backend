@@ -1,7 +1,0 @@
-.env
-.dockerignore
-target/
-deploy/
-tests/
-Dockerfile
-migrations/

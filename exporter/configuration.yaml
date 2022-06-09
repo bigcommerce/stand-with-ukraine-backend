@@ -6,6 +6,5 @@ database:
   database_name: "swu"
   require_ssl: false
 sheets:
-  spreadsheet_id: 1oUe6ibJNGcR8tiYVbPm7STzov1czwKX5QPqIWf2EeJk
   credential_path: credentials/exporter.json
   token_cache_path: credentials/token-cache.json

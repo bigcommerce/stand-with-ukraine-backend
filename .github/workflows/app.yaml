@@ -56,6 +56,8 @@ jobs:
           override: true
 
       - uses: Swatinem/rust-cache@v1
+        with:
+          key: app
 
       - name: Install sqlx-cli
         uses: actions-rs/cargo@v1
@@ -104,7 +106,7 @@ jobs:
       - uses: taiki-e/install-action@nextest
       - uses: Swatinem/rust-cache@v1
         with:
-          key: v1
+          key: app
 
       - name: Install sqlx-cli
         uses: actions-rs/cargo@v1
@@ -131,7 +133,9 @@ jobs:
           cargo sqlx prepare --database-url postgres://${DB_USER}:${DB_PASSWORD}@localhost:${DB_PORT}/${DB_NAME} --check -- --lib
 
       - name: Run tests
-        run: cargo nextest run -p app
+        run: |
+          cd app
+          cargo nextest run
 
   deploy:
     name: deploy
@@ -177,7 +181,7 @@ jobs:
           path: /tmp/.buildx-cache
           key: ${{ runner.os }}-multi-buildx-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-multi-buildx
+            ${{ runner.os }}-multi-buildx-app
 
       - name: Generate Image Tag
         id: tag
@@ -200,7 +204,7 @@ jobs:
       - name: Build production image
         uses: docker/build-push-action@v2
         with:
-          context: app
+          context: .
           builder: ${{ steps.buildx.outputs.name }}
           file: app/Dockerfile
           target: runtime
@@ -215,30 +219,30 @@ jobs:
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
-      # - name: Deploy Cloud Run
-      #   run: |
-      #     gcloud beta run deploy ${{ secrets.CLOUD_RUN_APP }} \
-      #     --project=${{ secrets.GCP_PROJECT_ID }} \
-      #     --image=${{ secrets.CLOUD_RUN_IMAGE }}:${{ steps.tag.outputs.sha }} \
-      #     --service-account=${{ secrets.CLOUD_RUN_SERVICE_ACCOUNT }} \
-      #     --port=${{ secrets.APP__APPLICATION__PORT }} \
-      #     --set-cloudsql-instances=${{ secrets.CLOUD_SQL_DB }} \
-      #     --allow-unauthenticated \
-      #     --concurrency=1000 \
-      #     --min-instances=1 \
-      #     --max-instances=5 \
-      #     --execution-environment=gen2 \
-      #     --region=us-central1 \
-      #     --set-env-vars=APP__APPLICATION__PORT=${{ secrets.APP__APPLICATION__PORT }} \
-      #     --set-env-vars=APP__APPLICATION__BASE_URL=${{ secrets.APP__APPLICATION__BASE_URL }} \
-      #     --set-env-vars=APP__DATABASE__REQUIRE_SSL=false \
-      #     --set-secrets=APP__DATABASE__SOCKET=APP__DATABASE__SOCKET:2 \
-      #     --set-secrets=APP__DATABASE__DATABASE_NAME=APP__DATABASE__DATABASE_NAME:1 \
-      #     --set-secrets=APP__DATABASE__PASSWORD=APP__DATABASE__PASSWORD:1 \
-      #     --set-secrets=APP__DATABASE__USERNAME=APP__DATABASE__USERNAME:1 \
-      #     --set-secrets=APP__BIGCOMMERCE__CLIENT_SECRET=APP__BIGCOMMERCE__CLIENT_SECRET:1 \
-      #     --set-secrets=APP__BIGCOMMERCE__CLIENT_ID=APP__BIGCOMMERCE__CLIENT_ID:1 \
-      #     --set-secrets=APP__APPLICATION__JWT_SECRET=APP__APPLICATION__JWT_SECRET:1
+      - name: Deploy Cloud Run
+        run: |
+          gcloud beta run deploy ${{ secrets.CLOUD_RUN_APP }} \
+          --project=${{ secrets.GCP_PROJECT_ID }} \
+          --image=${{ secrets.CLOUD_RUN_IMAGE }}:${{ steps.tag.outputs.sha }} \
+          --service-account=${{ secrets.CLOUD_RUN_SERVICE_ACCOUNT }} \
+          --port=${{ secrets.APP__APPLICATION__PORT }} \
+          --set-cloudsql-instances=${{ secrets.CLOUD_SQL_DB }} \
+          --allow-unauthenticated \
+          --concurrency=1000 \
+          --min-instances=1 \
+          --max-instances=5 \
+          --execution-environment=gen2 \
+          --region=us-central1 \
+          --set-env-vars=APP__APPLICATION__PORT=${{ secrets.APP__APPLICATION__PORT }} \
+          --set-env-vars=APP__APPLICATION__BASE_URL=${{ secrets.APP__APPLICATION__BASE_URL }} \
+          --set-env-vars=APP__DATABASE__REQUIRE_SSL=false \
+          --set-secrets=APP__DATABASE__SOCKET=APP__DATABASE__SOCKET:2 \
+          --set-secrets=APP__DATABASE__DATABASE_NAME=APP__DATABASE__DATABASE_NAME:1 \
+          --set-secrets=APP__DATABASE__PASSWORD=APP__DATABASE__PASSWORD:1 \
+          --set-secrets=APP__DATABASE__USERNAME=APP__DATABASE__USERNAME:1 \
+          --set-secrets=APP__BIGCOMMERCE__CLIENT_SECRET=APP__BIGCOMMERCE__CLIENT_SECRET:1 \
+          --set-secrets=APP__BIGCOMMERCE__CLIENT_ID=APP__BIGCOMMERCE__CLIENT_ID:1 \
+          --set-secrets=APP__APPLICATION__JWT_SECRET=APP__APPLICATION__JWT_SECRET:1
 
   coverage:
     name: coverage
@@ -271,7 +275,7 @@ jobs:
       - uses: taiki-e/install-action@nextest
       - uses: Swatinem/rust-cache@v1
         with:
-          key: v1
+          key: app
 
       - name: Install sqlx-cli
         uses: actions-rs/cargo@v1
