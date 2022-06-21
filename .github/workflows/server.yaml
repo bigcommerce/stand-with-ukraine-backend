@@ -1,4 +1,4 @@
-name: app
+name: server
 
 on:
   push:
@@ -57,7 +57,7 @@ jobs:
 
       - uses: Swatinem/rust-cache@v1
         with:
-          key: app
+          key: server
 
       - name: Install sqlx-cli
         uses: actions-rs/cargo@v1
@@ -106,7 +106,7 @@ jobs:
       - uses: taiki-e/install-action@nextest
       - uses: Swatinem/rust-cache@v1
         with:
-          key: app
+          key: server
 
       - name: Install sqlx-cli
         uses: actions-rs/cargo@v1
@@ -129,12 +129,12 @@ jobs:
           DB_PASSWORD="${POSTGRES_PASSWORD:=password}"
           DB_NAME="${POSTGRES_DB:=swu}"
           DB_PORT="${POSTGRES_PORT:=5432}"
-          cd app
+          cd apps/server
           cargo sqlx prepare --database-url postgres://${DB_USER}:${DB_PASSWORD}@localhost:${DB_PORT}/${DB_NAME} --check -- --lib
 
       - name: Run tests
         run: |
-          cd app
+          cd apps/server
           cargo nextest run
 
   deploy:
@@ -181,7 +181,7 @@ jobs:
           path: /tmp/.buildx-cache
           key: ${{ runner.os }}-multi-buildx-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-multi-buildx-app
+            ${{ runner.os }}-multi-buildx-server
 
       - name: Generate Image Tag
         id: tag
@@ -206,7 +206,7 @@ jobs:
         with:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
-          file: app/Dockerfile
+          file: apps/server/Dockerfile
           target: runtime
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
@@ -275,7 +275,7 @@ jobs:
       - uses: taiki-e/install-action@nextest
       - uses: Swatinem/rust-cache@v1
         with:
-          key: app
+          key: server
 
       - name: Install sqlx-cli
         uses: actions-rs/cargo@v1
@@ -294,12 +294,12 @@ jobs:
 
       - name: Get coverage
         run: |
-          cd app
+          cd apps/server
           cargo llvm-cov nextest --all-features --workspace --lcov --output-path lcov.info
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: app/lcov.info
+          files: apps/server/lcov.info
           fail_ci_if_error: true

@@ -18,9 +18,10 @@ impl Configuration {
     pub fn generate_from_environment() -> Result<Self, ConfigError> {
         let base_path =
             std::env::current_dir().expect("Failed to determine the current directory.");
+        let configuration_directory = base_path.join("configuration");
 
         Config::builder()
-            .add_source(File::from(base_path.join("exporter").join("configuration")).required(true))
+            .add_source(File::from(configuration_directory.join("base")).required(true))
             .add_source(Environment::with_prefix("EXPORTER").separator("__"))
             .build()?
             .try_deserialize()

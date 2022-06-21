@@ -1,7 +1,7 @@
 # Stand With Ukraine App
 
 [![codecov](https://codecov.io/gh/swu-bc/stand-with-ukraine-backend/branch/main/graph/badge.svg?token=6EN9JQRHPQ)](https://codecov.io/gh/swu-bc/stand-with-ukraine-backend)
-[![app](https://github.com/swu-bc/stand-with-ukraine-backend/actions/workflows/app.yaml/badge.svg)](https://github.com/swu-bc/stand-with-ukraine-backend/actions/workflows/app.yaml)
+[![server](https://github.com/swu-bc/stand-with-ukraine-backend/actions/workflows/server.yaml/badge.svg)](https://github.com/swu-bc/stand-with-ukraine-backend/actions/workflows/server.yaml)
 [![exporter](https://github.com/swu-bc/stand-with-ukraine-backend/actions/workflows/exporter.yaml/badge.svg)](https://github.com/swu-bc/stand-with-ukraine-backend/actions/workflows/exporter.yaml)
 
 This repo contains the backend code for this BigCommerce marketplace app.

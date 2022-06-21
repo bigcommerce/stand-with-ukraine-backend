@@ -12,7 +12,7 @@ RUN cargo chef cook --release --recipe-path recipe.json
 COPY . .
 ENV SQLX_OFFLINE true
 # Build our project
-RUN cargo build -p swu-app --release --bin swu-app
+RUN cargo build -p swu-exporter --release --bin swu-exporter
 
 FROM debian:bullseye-slim AS runtime
 WORKDIR /app
@@ -22,7 +22,7 @@ RUN apt-get update -y \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/*
 # Setup executable and configuration
-COPY --from=builder /app/target/release/swu-app swu-app
-COPY app/configuration configuration
-ENV APP_ENVIRONMENT production
-ENTRYPOINT ["./swu-app"]
+COPY --from=builder /app/target/release/swu-exporter swu-exporter
+COPY apps/exporter/configuration configuration
+COPY credentials credentials
+ENTRYPOINT ["./swu-exporter"]

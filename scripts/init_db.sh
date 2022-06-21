@@ -1,10 +1,18 @@
 #!/usr/bin/env bash
 
 set -o pipefail
+shopt -s expand_aliases
 
-if ! [ -x "$(command -v docker)" ]; then
-    echo >&2 "Error: docker is not installed."
-    exit 1
+if [ "${USE_NERDCTL}" == "TRUE" ]; then
+    alias container_cmd="nerdctl"
+elif [ "${USE_PODMAN}" == "TRUE" ]; then
+    alias container_cmd="podman"
+else
+    alias container_cmd="docker"
+    if ! [ -x "$(command -v docker)" ]; then
+        echo >&2 "Error: docker is not installed."
+        exit 1
+    fi
 fi
 if ! [ -x "$(command -v psql)" ]; then
     echo >&2 "Error: psql is not installed."
@@ -27,12 +35,11 @@ DB_CONTAINER_NAME="swu-db"
 # Allow to skip Docker if a dockerized Postgres database is already running
 if [[ "${CREATE_LOCAL_DB}" == "TRUE" ]]; then
     # # Cleanup existing docker containers
-
-    docker kill $DB_CONTAINER_NAME || true
-    docker rm $DB_CONTAINER_NAME || true
+    container_cmd kill $DB_CONTAINER_NAME || true
+    container_cmd rm $DB_CONTAINER_NAME || true
 
     echo "Starting container ${DB_CONTAINER_NAME}"
-    docker run \
+    container_cmd run \
         --name "${DB_CONTAINER_NAME}" \
         -e POSTGRES_USER=${DB_USER} \
         -e POSTGRES_PASSWORD=${DB_PASSWORD} \
