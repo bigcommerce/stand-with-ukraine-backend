@@ -17,7 +17,7 @@ The backend is powered by a rust application built using `actix` (HTTP server) a
   - Docker
     - Recommended setup for `macos` or `linux` is `podman` and creating an alias for docker from podman
   - Editor
-    - Recommended setup is `vscode` and the `rust-analyzer` extension. I do not recommend using the `Rust` extension as that is not supported by the rust team anymore.
+    - Recommended setup is `vscode` and the `rust-analyzer` extension.
   - For parsing logging `bunyan` command is helpful.
     - Recommended setup is `cargo install bunyan`
     - Enable log during testing and pass it through bunyan `TEST_LOG=true cargo test | bunyan`
@@ -27,9 +27,8 @@ The backend is powered by a rust application built using `actix` (HTTP server) a
 
 ## Deployment
 
-The app is deployed to digital ocean apps. Github Actions tests and builds a docker image if everything passes.
-The action is also responsible for pushing the image to Digital Ocean Container Registry (DOCR) and also running the update deployment command to target the new image.
-The production app is connected to a managed Postgres Database.
+The app is deployed to Google cloud run using a Docker container. Github Actions tests and builds a docker image if everything passes.
+The action is also responsible for pushing the image to google cloud artifcats and also running the update deployment command to target the new image. The production app is connected to a Cloud SQL managed Postgres Database.
 
 ## Architecture - API/Routes
 
