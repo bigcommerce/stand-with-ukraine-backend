@@ -131,8 +131,8 @@ pub enum AppEnvironment {
 impl AppEnvironment {
     pub const fn as_str(&self) -> &'static str {
         match self {
-            AppEnvironment::Local => "local",
-            AppEnvironment::Production => "production",
+            Self::Local => "local",
+            Self::Production => "production",
         }
     }
 }

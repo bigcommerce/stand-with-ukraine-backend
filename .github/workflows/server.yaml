@@ -92,6 +92,8 @@ jobs:
           POSTGRES_DB: postgres
         ports:
           - 5432:5432
+    env:
+      DATABASE_URL: postgres://postgres:password@localhost:5432/swu
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -125,12 +127,8 @@ jobs:
 
       - name: Check sqlx-data.json is up-to-date
         run: |
-          DB_USER=${POSTGRES_USER:=postgres}
-          DB_PASSWORD="${POSTGRES_PASSWORD:=password}"
-          DB_NAME="${POSTGRES_DB:=swu}"
-          DB_PORT="${POSTGRES_PORT:=5432}"
           cd apps/server
-          cargo sqlx prepare --database-url postgres://${DB_USER}:${DB_PASSWORD}@localhost:${DB_PORT}/${DB_NAME} --check -- --lib
+          cargo sqlx prepare --database-url $DATABASE_URL --check -- --lib
 
       - name: Run tests
         run: |
@@ -259,6 +257,8 @@ jobs:
           POSTGRES_DB: postgres
         ports:
           - 5432:5432
+    env:
+      DATABASE_URL: postgres://postgres:password@localhost:5432/swu
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
