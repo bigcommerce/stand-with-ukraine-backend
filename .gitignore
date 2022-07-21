@@ -1,4 +1,5 @@
 /target
-lcov.info
 /sql-migration
-credentials/
+/credentials
+lcov.info
+.env

@@ -1,3 +1,5 @@
+#![allow(clippy::use_self)] // necessary for enum that uses derive
+
 use anyhow::Context;
 use secrecy::Secret;
 use sqlx::{types::time::OffsetDateTime, PgPool};
@@ -251,6 +253,7 @@ pub async fn write_charity_visited_event(
     Ok(())
 }
 
+#[allow(clippy::use_self)]
 #[derive(serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum WidgetEventType {
