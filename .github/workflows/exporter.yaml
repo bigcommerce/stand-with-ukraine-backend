@@ -92,6 +92,8 @@ jobs:
           POSTGRES_DB: postgres
         ports:
           - 5432:5432
+    env:
+      DATABASE_URL: postgres://postgres:password@localhost:5432/swu
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
