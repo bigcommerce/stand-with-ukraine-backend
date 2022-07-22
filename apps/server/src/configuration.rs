@@ -77,12 +77,6 @@ pub struct Application {
 
 impl Configuration {
     pub fn generate_from_environment() -> Result<Self, ConfigError> {
-        let environment: AppEnvironment = std::env::var("APP_ENVIRONMENT")
-            .unwrap_or_else(|_| "local".to_owned())
-            .as_str()
-            .try_into()
-            .expect("Failed to parse APP_ENVIRONMENT.");
-
         let base_path =
             std::env::current_dir().expect("Failed to determine the current directory.");
         let configuration_directory = base_path.join("configuration");
@@ -90,7 +84,7 @@ impl Configuration {
         Config::builder()
             .add_source(File::from(configuration_directory.join("base")).required(true))
             .add_source(
-                File::from(configuration_directory.join(environment.as_str())).required(true),
+                File::from(configuration_directory.join("base")).required(true),
             )
             .add_source(Environment::with_prefix("app").separator("__"))
             .build()?

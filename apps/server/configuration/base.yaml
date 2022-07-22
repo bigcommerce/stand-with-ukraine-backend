@@ -1,13 +1,19 @@
 application:
+  host: 0.0.0.0
+  base_url:
   port: 8000
-  lightstep_access_token: "developer"
+  lightstep_access_token: ""
+  jwt_secret: ""
 database:
+  require_ssl: false
   host: "localhost"
   port: 5432
-  username: "postgres"
-  password: "password"
-  database_name: "swu"
+  username: ""
+  password: ""
+  database_name: ""
 bigcommerce:
   api_base_url: https://api.bigcommerce.com
   login_base_url: https://login.bigcommerce.com
   timeout: 10000
+  client_secret: ""
+  client_id: ""

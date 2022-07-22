@@ -1,9 +1,0 @@
-application:
-  host: 127.0.0.1
-  base_url: http://127.0.0.1
-  jwt_secret: "abcdefghijklmnopqrstuv"
-database:
-  require_ssl: false
-bigcommerce:
-  client_secret: "abcdefg"
-  client_id: "abcdefg"
