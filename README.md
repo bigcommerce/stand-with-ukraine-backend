@@ -25,7 +25,7 @@ We hope this sample gives you a good reference point for building your next kill
 4. You don't have to fill out all the details for your app right away, but you do need
    to provide some core details in section 4 (Technical). Note that if you are just getting started, you can use `localhost` for your hostname, but ultimately you'll need to host your app on the public Internet.
 
-   - _Auth Callback URL_: `https://<app hostname>/bigcommerce/callback`
+   - _Auth Callback URL_: `https://<app hostname>/bigcommerce/install`
    - _Load Callback URL_: `https://<app hostname>/bigcommerce/load`
    - _Uninstall Callback URL_: `https://<app hostname>/bigcommerce/uninstall`
 
@@ -54,7 +54,7 @@ We hope this sample gives you a good reference point for building your next kill
 2. Change to the repo directory: `cd stand-with-ukraine-backend`
 3. Install dependencies with pip: `cargo install`
 4. Copy `.env-sample` to `.env`
-5. Edit `apps/configuration/local.yaml`
+5. Edit  `.env` or  `apps/exporter/configuration/base.yaml` / `apps/server/configuration/base.yaml`
    - Set the following to the values obtained from Developer Portal for your app.
      - `bigcommerce.client_id`
      - `bigcommerce.client_secret`
@@ -71,11 +71,13 @@ In order to install this app in a BigCommerce store, it must be hosted on the pu
 
 This repo is setup to be deployed to Google cloud run using a Docker container. Github Actions tests and builds a docker image if everything passes. The action is also responsible for pushing the image to google cloud artifacts and also running the update deployment command to target the new image.
 
-To configure the production server variables you can either edit the `app/configuration/production.yaml` or use environment variables for the container to override the configuration in the files.
+To configure the production server variables you can use environment variables for the container to override the configuration in the file `apps/server/configuration/base.yaml`
+`apps/exporter/configuration/base.yaml`.
 
 For example, to configure of the app hostname you can do one of the following:
 
-1. Edit `application.base_url` in `app/configuration/production.yaml`
+1. Edit `application.base_url` in `apps/server/configuration/base.yaml`
+   `apps/exporter/configuration/base.yaml`.
 2. Set `APP__APPLICATION__BASE_URL` using environment variables from the container platform. Environment variables will override the file configuration.
 
 ### Installing the app in your trial store

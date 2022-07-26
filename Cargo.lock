@@ -2466,6 +2466,7 @@ dependencies = [
  "anyhow",
  "base64",
  "config",
+ "dotenv",
  "jsonwebtoken",
  "once_cell",
  "opentelemetry",
@@ -2496,6 +2497,7 @@ name = "swu-exporter"
 version = "0.1.0"
 dependencies = [
  "config",
+ "dotenv",
  "google-sheets4",
  "serde",
  "serde_json",

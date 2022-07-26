@@ -6,6 +6,7 @@ use swu_app::{
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
+
     let subscriber = get_subscriber("swu-app".into(), "info".into(), std::io::stdout);
     init_subscriber(subscriber);
 

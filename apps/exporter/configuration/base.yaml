@@ -1,10 +1,11 @@
 database:
   host: "localhost"
   port: 5432
-  username: "postgres"
-  password: "password"
-  database_name: "swu"
+  username: ""
+  password: ""
+  database_name: ""
   require_ssl: false
 sheets:
   credential_path: credentials/exporter.json
   token_cache_path: credentials/token-cache.json
+  spreadsheet_id: ""
