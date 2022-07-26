@@ -20,6 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - run: cp .env-example .env
 
       - uses: actions-rs/toolchain@v1
         with:
@@ -47,6 +48,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+      - run: cp .env-example .env
 
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
@@ -97,6 +99,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+      - run: cp .env-example .env
 
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
@@ -262,6 +265,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+      - run: cp .env-example .env
 
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1

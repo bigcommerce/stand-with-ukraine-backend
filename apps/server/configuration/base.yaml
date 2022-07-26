@@ -1,6 +1,6 @@
 application:
   host: 0.0.0.0
-  base_url:
+  base_url: "http://localhost:8000"
   port: 8000
   lightstep_access_token: ""
   jwt_secret: ""

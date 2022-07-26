@@ -1,6 +1,6 @@
 use config::{Config, ConfigError, Environment, File};
-use swu_app::configuration::Database;
 use dotenv::dotenv;
+use swu_app::configuration::Database;
 
 #[derive(serde::Deserialize, Clone)]
 pub struct Configuration {

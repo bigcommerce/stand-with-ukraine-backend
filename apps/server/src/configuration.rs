@@ -1,11 +1,11 @@
 use config::{Config, ConfigError, Environment, File};
+use dotenv::dotenv;
 use secrecy::{ExposeSecret, Secret};
 use serde_aux::field_attributes::deserialize_number_from_string;
 use sqlx::{
     postgres::{PgConnectOptions, PgSslMode},
     ConnectOptions,
 };
-use dotenv::dotenv;
 
 #[derive(serde::Deserialize, Clone)]
 pub struct Configuration {
@@ -86,10 +86,7 @@ impl Configuration {
 
         Config::builder()
             .add_source(File::from(configuration_directory.join("base")).required(true))
-            .add_source(
-                File::from(configuration_directory.join("base")).required(true),
-            )
-            .add_source(Environment::with_prefix("app").separator("__"))
+            .add_source(Environment::with_prefix("APP").separator("__"))
             .build()?
             .try_deserialize()
     }
