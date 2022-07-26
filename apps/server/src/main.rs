@@ -3,11 +3,9 @@ use swu_app::{
     startup::Application,
     telemetry::{get_subscriber, init_subscriber},
 };
-use dotenv::dotenv;
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    dotenv().ok();
 
     let subscriber = get_subscriber("swu-app".into(), "info".into(), std::io::stdout);
     init_subscriber(subscriber);

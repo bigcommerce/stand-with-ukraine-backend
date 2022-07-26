@@ -1,5 +1,6 @@
 use config::{Config, ConfigError, Environment, File};
 use swu_app::configuration::Database;
+use dotenv::dotenv;
 
 #[derive(serde::Deserialize, Clone)]
 pub struct Configuration {
@@ -16,6 +17,8 @@ pub struct SheetsConfiguration {
 
 impl Configuration {
     pub fn generate_from_environment() -> Result<Self, ConfigError> {
+        dotenv().ok();
+
         let base_path =
             std::env::current_dir().expect("Failed to determine the current directory.");
         let configuration_directory = base_path.join("configuration");

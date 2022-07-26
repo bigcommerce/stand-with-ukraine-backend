@@ -25,7 +25,7 @@ We hope this sample gives you a good reference point for building your next kill
 4. You don't have to fill out all the details for your app right away, but you do need
    to provide some core details in section 4 (Technical). Note that if you are just getting started, you can use `localhost` for your hostname, but ultimately you'll need to host your app on the public Internet.
 
-   - _Auth Callback URL_: `https://<app hostname>/bigcommerce/callback`
+   - _Auth Callback URL_: `https://<app hostname>/bigcommerce/install`
    - _Load Callback URL_: `https://<app hostname>/bigcommerce/load`
    - _Uninstall Callback URL_: `https://<app hostname>/bigcommerce/uninstall`
 
