@@ -9,7 +9,7 @@ async fn insert_event_without_store_does_not_create_record() {
     let response = app
         .test_client
         .post(app.test_server_url("/api/v2/widget-event"))
-        .query(&[("event", "opened"), ("store_hash", "test-store")])
+        .query(&[("event", "widget-opened"), ("store_hash", "test-store")])
         .send()
         .await
         .unwrap();
@@ -25,7 +25,11 @@ async fn insert_event_without_store_does_not_create_record() {
     let response = app
         .test_client
         .post(app.test_server_url("/api/v2/charity-event"))
-        .query(&[("charity", "razom"), ("store_hash", "test-store")])
+        .query(&[
+            ("charity", "razom"),
+            ("store_hash", "test-store"),
+            ("event", "support-clicked"),
+        ])
         .send()
         .await
         .unwrap();
@@ -47,7 +51,7 @@ async fn insert_event_after_store_created_creates_record() {
     let response = app
         .test_client
         .post(app.test_server_url("/api/v2/widget-event"))
-        .query(&[("event", "opened"), ("store_hash", "test-store")])
+        .query(&[("event", "widget-opened"), ("store_hash", "test-store")])
         .send()
         .await
         .unwrap();
@@ -56,7 +60,7 @@ async fn insert_event_after_store_created_creates_record() {
     assert_eq!(
         app.get_widget_events("test-store")
             .await
-            .filter(|event| event == r#""opened""#)
+            .filter(|event| event == r#""widget-opened""#)
             .count(),
         1
     );
@@ -69,7 +73,11 @@ async fn insert_event_after_store_created_creates_record() {
     let response = app
         .test_client
         .post(app.test_server_url("/api/v2/charity-event"))
-        .query(&[("charity", "razom"), ("store_hash", "test-store")])
+        .query(&[
+            ("charity", "razom"),
+            ("store_hash", "test-store"),
+            ("event", "support-clicked"),
+        ])
         .send()
         .await
         .unwrap();
@@ -78,7 +86,8 @@ async fn insert_event_after_store_created_creates_record() {
     assert_eq!(
         app.get_charity_visited_events("test-store")
             .await
-            .filter(|charity| charity == r#""razom""#)
+            .filter(|(charity, event_type)| charity == r#""razom""#
+                && event_type == r#""support-clicked""#)
             .count(),
         1
     );

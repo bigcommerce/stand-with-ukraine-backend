@@ -114,11 +114,11 @@ mod tests {
         let secret = JWTSecret(Secret::from("abcdefg".to_owned()));
         let token = create_jwt(store_hash, secret).unwrap();
 
-        let parts: Vec<&str> = token.splitn(3, ".").collect();
+        let parts: Vec<&str> = token.splitn(3, '.').collect();
 
-        assert!(parts[0].len() > 0);
-        assert!(parts[1].len() > 0);
-        assert!(parts[2].len() > 0);
+        assert!(!parts[0].is_empty());
+        assert!(!parts[1].is_empty());
+        assert!(!parts[2].is_empty());
 
         let secret = JWTSecret(Secret::from("abcdefg".to_owned()));
         let claims = decode_token(token.as_str(), secret).unwrap();
