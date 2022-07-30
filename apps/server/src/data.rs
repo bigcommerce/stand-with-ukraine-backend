@@ -153,13 +153,18 @@ pub struct WidgetConfiguration {
 }
 
 impl WidgetConfiguration {
-    pub fn generate_script(&self, base_url: &BaseURL) -> Result<Script, serde_json::Error> {
+    pub fn generate_script(
+        &self,
+        store_hash: &str,
+        base_url: &BaseURL,
+    ) -> Result<Script, serde_json::Error> {
         Ok(Script::new(
          "Stand With Ukraine".to_owned(),
          "This script displays the stand with ukraine widget on your storefront. Configure it from the Stand With Ukraine app installed on your store.".to_owned(),
          format!(
-            r#"<script>window.SWU_CONFIG={};</script><script src="{}/widget/index.js"></script>"#,
+            r#"<script>window.SWU_CONFIG={};window.SWU_CONFIG.store_hash="{}";</script><script src="{}/widget/index.js"></script>"#,
             serde_json::to_string(self)?,
+            store_hash,
             base_url
         )))
     }
@@ -220,7 +225,7 @@ pub async fn read_widget_configuration(
     Ok(widget_configuration)
 }
 
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(serde::Deserialize, serde::Serialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub enum Charity {
     Unicef,
@@ -229,22 +234,26 @@ pub enum Charity {
     MiraAction,
 }
 
-#[tracing::instrument(
-    name = "Write charity visit event to database",
-    skip(store_hash, charity, db_pool)
-)]
+#[derive(serde::Deserialize, Debug)]
+pub struct CharityEvent {
+    store_hash: String,
+    charity: Charity,
+    event: CharityEventType,
+}
+
+#[tracing::instrument(name = "Write charity visit event to database", skip(db_pool))]
 pub async fn write_charity_visited_event(
-    store_hash: &str,
-    charity: &Charity,
+    event: &CharityEvent,
     db_pool: &PgPool,
 ) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
-        INSERT INTO charity_visited_events (store_hash, charity, created_at)
-        VALUES ($1, $2, $3);
+        INSERT INTO charity_events (store_hash, charity, event_type, created_at)
+        VALUES ($1, $2, $3, $4);
         "#,
-        store_hash,
-        serde_json::to_string(charity).unwrap(),
+        event.store_hash.as_str(),
+        serde_json::to_string(&event.charity).unwrap(),
+        serde_json::to_string(&event.event).unwrap(),
         OffsetDateTime::now_utc(),
     )
     .execute(db_pool)
@@ -254,30 +263,39 @@ pub async fn write_charity_visited_event(
 }
 
 #[allow(clippy::use_self)]
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub enum WidgetEventType {
-    Opened,
-    Collapsed,
-    Closed,
+    WidgetOpened,
+    WidgetCollapsed,
+    WidgetClosed,
+    ModalOpened,
+    ModalClosed,
 }
 
-#[tracing::instrument(
-    name = "Write widget event to database",
-    skip(store_hash, db_pool, event_type)
-)]
-pub async fn write_widget_event(
-    store_hash: &str,
-    event_type: &WidgetEventType,
-    db_pool: &PgPool,
-) -> Result<(), sqlx::Error> {
+#[allow(clippy::use_self)]
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[serde(rename_all = "kebab-case")]
+pub enum CharityEventType {
+    SupportClicked,
+    SeeMoreClicked,
+}
+
+#[derive(serde::Deserialize, Debug)]
+pub struct WidgetEvent {
+    store_hash: String,
+    event: WidgetEventType,
+}
+
+#[tracing::instrument(name = "Write widget event to database", skip(db_pool))]
+pub async fn write_widget_event(event: &WidgetEvent, db_pool: &PgPool) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
         INSERT INTO widget_events (store_hash, event_type, created_at)
         VALUES ($1, $2, $3);
         "#,
-        store_hash,
-        serde_json::to_string(event_type).unwrap(),
+        event.store_hash.as_str(),
+        serde_json::to_string(&event.event).unwrap(),
         OffsetDateTime::now_utc(),
     )
     .execute(db_pool)
@@ -292,10 +310,19 @@ mod tests {
     use rstest::*;
 
     #[rstest]
-    #[case(&WidgetEventType::Opened, "opened")]
-    #[case(&WidgetEventType::Collapsed, "collapsed")]
-    #[case(&WidgetEventType::Closed, "closed")]
+    #[case(&WidgetEventType::WidgetOpened, "widget-opened")]
+    #[case(&WidgetEventType::WidgetCollapsed, "widget-collapsed")]
+    #[case(&WidgetEventType::WidgetClosed, "widget-closed")]
+    #[case(&WidgetEventType::ModalOpened, "modal-opened")]
+    #[case(&WidgetEventType::ModalClosed, "modal-closed")]
     fn widget_event_type_to_string_works(#[case] event: &WidgetEventType, #[case] value: &str) {
+        assert_eq!(serde_variant::to_variant_name(event).unwrap(), value)
+    }
+
+    #[rstest]
+    #[case(&CharityEventType::SupportClicked, "support-clicked")]
+    #[case(&CharityEventType::SeeMoreClicked, "see-more-clicked")]
+    fn charity_event_type_to_string_works(#[case] event: &CharityEventType, #[case] value: &str) {
         assert_eq!(serde_variant::to_variant_name(event).unwrap(), value)
     }
 

@@ -116,7 +116,7 @@ impl AsRef<Secret<String>> for LightstepAccessToken {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum AppEnvironment {
     Local,
     Production,

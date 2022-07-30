@@ -168,16 +168,16 @@ impl TestApp {
     pub async fn get_charity_visited_events(
         &self,
         store_hash: &str,
-    ) -> impl Iterator<Item = String> {
+    ) -> impl Iterator<Item = (String, String)> {
         sqlx::query!(
-            "SELECT charity FROM charity_visited_events WHERE store_hash = $1;",
+            "SELECT charity, event_type FROM charity_events WHERE store_hash = $1;",
             store_hash
         )
         .fetch_all(&self.db_pool)
         .await
         .unwrap()
         .into_iter()
-        .map(|row| row.charity)
+        .map(|row| (row.charity, row.event_type))
     }
 }
 

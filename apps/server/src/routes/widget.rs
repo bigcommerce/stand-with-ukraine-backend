@@ -5,8 +5,8 @@ use crate::{
     data::{
         read_store_credentials, read_store_published, read_widget_configuration,
         write_charity_visited_event, write_store_published, write_unpublish_feedback,
-        write_widget_configuration, write_widget_event, Charity, WidgetConfiguration,
-        WidgetEventType,
+        write_widget_configuration, write_widget_event, CharityEvent, WidgetConfiguration,
+        WidgetEvent,
     },
 };
 
@@ -108,7 +108,7 @@ async fn publish_widget(
         .map_err(PublishError::UnexpectedError)?;
 
     let script = widget_configuration
-        .generate_script(&base_url)
+        .generate_script(store_hash, &base_url)
         .context("Failed to generate script content")
         .map_err(PublishError::UnexpectedError)?;
 
@@ -220,39 +220,24 @@ async fn get_published_status(
     Ok(HttpResponse::Ok().json(store_status))
 }
 
-#[derive(serde::Deserialize)]
-struct CharityEvent {
-    store_hash: String,
-    charity: Charity,
-}
-
-#[tracing::instrument(name = "Log charity event", skip(db_pool, event))]
+#[tracing::instrument(name = "Log charity event", skip(db_pool))]
 async fn log_charity_event(
     event: web::Query<CharityEvent>,
     db_pool: web::Data<PgPool>,
 ) -> HttpResponse {
-    if let Err(error) =
-        write_charity_visited_event(event.store_hash.as_str(), &event.charity, &db_pool).await
-    {
+    if let Err(error) = write_charity_visited_event(&event.into_inner(), &db_pool).await {
         tracing::warn!("Error while saving event {}", error);
     };
 
     HttpResponse::Ok().finish()
 }
 
-#[derive(serde::Deserialize)]
-struct WidgetEvent {
-    store_hash: String,
-    event: WidgetEventType,
-}
-
-#[tracing::instrument(name = "Log widget event", skip(db_pool, event))]
+#[tracing::instrument(name = "Log widget event", skip(db_pool))]
 async fn log_widget_event(
     event: web::Query<WidgetEvent>,
     db_pool: web::Data<PgPool>,
 ) -> HttpResponse {
-    if let Err(error) = write_widget_event(event.store_hash.as_str(), &event.event, &db_pool).await
-    {
+    if let Err(error) = write_widget_event(&event.into_inner(), &db_pool).await {
         tracing::warn!("Error while saving event {}", error);
     };
 
