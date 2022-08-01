@@ -304,6 +304,26 @@ pub async fn write_widget_event(event: &WidgetEvent, db_pool: &PgPool) -> Result
     Ok(())
 }
 
+#[tracing::instrument(name = "Get all published store hashes", skip(db_pool))]
+pub async fn get_all_published_store_hashes(
+    db_pool: &PgPool,
+) -> Result<Vec<String>, anyhow::Error> {
+    let stores = sqlx::query!(
+        r#"
+        SELECT store_hash FROM stores
+        WHERE published = True;
+        "#
+    )
+    .fetch_all(db_pool)
+    .await
+    .context("Fetch all store hashes")?;
+
+    Ok(stores
+        .iter()
+        .map(|store| store.store_hash.to_owned())
+        .collect())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

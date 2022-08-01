@@ -1,12 +1,14 @@
+use std::time::Duration;
+
 use crate::{
     authentication::AuthClaims,
     bigcommerce::client::BCClient,
     configuration::BaseURL,
     data::{
-        read_store_credentials, read_store_published, read_widget_configuration,
-        write_charity_visited_event, write_store_published, write_unpublish_feedback,
-        write_widget_configuration, write_widget_event, CharityEvent, WidgetConfiguration,
-        WidgetEvent,
+        get_all_published_store_hashes, read_store_credentials, read_store_published,
+        read_widget_configuration, write_charity_visited_event, write_store_published,
+        write_unpublish_feedback, write_widget_configuration, write_widget_event, CharityEvent,
+        WidgetConfiguration, WidgetEvent,
     },
 };
 
@@ -14,6 +16,7 @@ use actix_web::{http::StatusCode, web, HttpResponse, ResponseError};
 use actix_web_httpauth::extractors::bearer::Config;
 use anyhow::Context;
 use sqlx::PgPool;
+use tokio::time::sleep;
 
 pub fn register_routes(cfg: &mut web::ServiceConfig) {
     let bearer_auth_config = Config::default().realm("api-v1").scope("modify");
@@ -36,6 +39,10 @@ pub fn register_routes(cfg: &mut web::ServiceConfig) {
             .wrap(cors)
             .route("/widget-event", web::post().to(log_widget_event))
             .route("/charity-event", web::post().to(log_charity_event)),
+    );
+
+    cfg.service(
+        web::scope("/internal-api/v1").route("/update", web::post().to(update_all_widgets)),
     );
 }
 
@@ -103,37 +110,9 @@ async fn publish_widget(
     bigcommerce_client: web::Data<BCClient>,
 ) -> Result<HttpResponse, PublishError> {
     let store_hash = auth.sub.as_str();
-    let widget_configuration = read_widget_configuration(store_hash, &db_pool)
+
+    upsert_widget_script(&db_pool, &base_url, &bigcommerce_client, store_hash)
         .await
-        .map_err(PublishError::UnexpectedError)?;
-
-    let script = widget_configuration
-        .generate_script(store_hash, &base_url)
-        .context("Failed to generate script content")
-        .map_err(PublishError::UnexpectedError)?;
-
-    let store = read_store_credentials(store_hash, &db_pool)
-        .await
-        .map_err(PublishError::UnexpectedError)?;
-
-    let existing_script = bigcommerce_client
-        .try_get_script_with_name(&store, script.get_name())
-        .await
-        .map_err(PublishError::UnexpectedError)?;
-
-    match existing_script {
-        Some(existing_script) => {
-            bigcommerce_client
-                .update_script(&store, &existing_script.uuid, &script)
-                .await
-        }
-        None => bigcommerce_client.create_script(&store, &script).await,
-    }
-    .map_err(PublishError::UnexpectedError)?;
-
-    write_store_published(store_hash, true, &db_pool)
-        .await
-        .context("Failed to set store as published")
         .map_err(PublishError::UnexpectedError)?;
 
     Ok(HttpResponse::Ok().finish())
@@ -242,4 +221,68 @@ async fn log_widget_event(
     };
 
     HttpResponse::Ok().finish()
+}
+
+#[tracing::instrument(
+    name = "Upsert BigCommerce widget script",
+    skip(db_pool, bigcommerce_client, base_url)
+)]
+async fn upsert_widget_script(
+    db_pool: &PgPool,
+    base_url: &BaseURL,
+    bigcommerce_client: &BCClient,
+    store_hash: &str,
+) -> Result<(), anyhow::Error> {
+    let widget_configuration = read_widget_configuration(store_hash, db_pool).await?;
+
+    let script = widget_configuration
+        .generate_script(store_hash, base_url)
+        .context("Failed to generate script content")?;
+
+    let store = read_store_credentials(store_hash, db_pool).await?;
+
+    let existing_script = bigcommerce_client
+        .try_get_script_with_name(&store, script.get_name())
+        .await?;
+
+    sleep(Duration::from_millis(200)).await;
+
+    match existing_script {
+        Some(existing_script) => {
+            bigcommerce_client
+                .update_script(&store, &existing_script.uuid, &script)
+                .await
+        }
+        None => bigcommerce_client.create_script(&store, &script).await,
+    }?;
+
+    write_store_published(store_hash, true, db_pool)
+        .await
+        .context("Failed to set store as published")?;
+
+    Ok(())
+}
+
+#[tracing::instrument(
+    name = "Update all the widget scripts",
+    skip(base_url, db_pool, bigcommerce_client)
+)]
+async fn update_all_widgets(
+    db_pool: web::Data<PgPool>,
+    base_url: web::Data<BaseURL>,
+    bigcommerce_client: web::Data<BCClient>,
+) -> Result<HttpResponse, PublishError> {
+    for store_hash in get_all_published_store_hashes(&db_pool)
+        .await
+        .map_err(PublishError::UnexpectedError)?
+    {
+        let store_hash = store_hash.as_str();
+
+        match upsert_widget_script(&db_pool, &base_url, &bigcommerce_client, store_hash).await {
+            Ok(_) => tracing::info!(store_hash, "updated widget script"),
+            Err(_) => tracing::warn!(store_hash, "failed to update widget script"),
+        };
+    }
+
+    Ok(HttpResponse::Ok().finish())
 }

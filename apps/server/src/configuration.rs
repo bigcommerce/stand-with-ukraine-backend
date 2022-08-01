@@ -85,7 +85,7 @@ impl Configuration {
         let configuration_directory = base_path.join("configuration");
 
         Config::builder()
-            .add_source(File::from(configuration_directory.join("base")).required(true))
+            .add_source(File::from(configuration_directory.join("base")).required(false))
             .add_source(Environment::with_prefix("APP").separator("__"))
             .build()?
             .try_deserialize()
