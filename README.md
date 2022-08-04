@@ -41,7 +41,7 @@ We hope this sample gives you a good reference point for building your next kill
   - Rust toolchain
     - Recommend using `rustup` to setup `rust`, `cargo`, `fmt`
   - SQLX command
-    - Recommend setup using `cargo install sqlx-cli --force --version=0.5.11 --features=postgres,rustls --no-default-features`
+    - Recommend setup using `cargo install sqlx-cli --force --version=0.6.1 --features=postgres,rustls --no-default-features`
   - Docker
     - Recommended setup for `macos` or `linux` is `podman` and creating an alias for docker from podman
   - Editor
@@ -54,7 +54,7 @@ We hope this sample gives you a good reference point for building your next kill
 2. Change to the repo directory: `cd stand-with-ukraine-backend`
 3. Install dependencies with pip: `cargo install`
 4. Copy `.env-sample` to `.env`
-5. Edit  `.env` or  `apps/exporter/configuration/base.yaml` / `apps/server/configuration/base.yaml`
+5. Edit `.env` or `apps/exporter/configuration/base.yaml` / `apps/server/configuration/base.yaml`
    - Set the following to the values obtained from Developer Portal for your app.
      - `bigcommerce.client_id`
      - `bigcommerce.client_secret`
