@@ -54,36 +54,6 @@
     },
     "query": "SELECT * FROM stores"
   },
-  "36904046529f3c931a7c0f5da88c6414e9bffba793fc4f4593f041b3aa654478": {
-    "describe": {
-      "columns": [
-        {
-          "name": "charity",
-          "ordinal": 0,
-          "type_info": "Varchar"
-        },
-        {
-          "name": "event_type",
-          "ordinal": 1,
-          "type_info": "Varchar"
-        },
-        {
-          "name": "count",
-          "ordinal": 2,
-          "type_info": "Int8"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        null
-      ],
-      "parameters": {
-        "Left": []
-      }
-    },
-    "query": "\n        SELECT charity, event_type, count(*)\n        FROM charity_events\n        GROUP BY event_type, charity\n        ORDER BY charity, event_type\n        "
-  },
   "74167901d241029e7aa5ec3bcd49f7d84fc3cd9043c9a2cfe8dac7a80bdc0ce5": {
     "describe": {
       "columns": [
@@ -120,7 +90,37 @@
     },
     "query": "SELECT * FROM unpublish_events"
   },
-  "e9b1c163e1d8e8d43e496f130776faea6a65253651d41e344e7b7b3ff7851644": {
+  "89597dedbadc814979d776ceeb7e4e51a810cf5652bfdffc5bbdc0e0717ef4bb": {
+    "describe": {
+      "columns": [
+        {
+          "name": "charity",
+          "ordinal": 0,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "event_type",
+          "ordinal": 1,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "count",
+          "ordinal": 2,
+          "type_info": "Int8"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        null
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "\n        SELECT charity, event_type, count(*)\n        FROM charity_events\n        GROUP BY event_type, charity\n        ORDER BY event_type, charity\n        "
+  },
+  "c4acf1e00c680c19f41a041558c415532847cab50a4d2706ef78e68320dce8e5": {
     "describe": {
       "columns": [
         {
@@ -142,6 +142,6 @@
         "Left": []
       }
     },
-    "query": "\n        SELECT event_type, count(*)\n        FROM widget_events\n        GROUP BY event_type\n        "
+    "query": "\n        SELECT event_type, count(*)\n        FROM widget_events\n        GROUP BY event_type\n        ORDER BY event_type\n        "
   }
 }
