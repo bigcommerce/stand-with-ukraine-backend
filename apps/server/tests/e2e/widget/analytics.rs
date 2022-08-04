@@ -60,7 +60,7 @@ async fn insert_event_after_store_created_creates_record() {
     assert_eq!(
         app.get_widget_events("test-store")
             .await
-            .filter(|event| event == r#""widget-opened""#)
+            .filter(|event| event == "widget-opened")
             .count(),
         1
     );
@@ -86,8 +86,7 @@ async fn insert_event_after_store_created_creates_record() {
     assert_eq!(
         app.get_charity_visited_events("test-store")
             .await
-            .filter(|(charity, event_type)| charity == r#""razom""#
-                && event_type == r#""support-clicked""#)
+            .filter(|(charity, event_type)| charity == "razom" && event_type == "support-clicked")
             .count(),
         1
     );

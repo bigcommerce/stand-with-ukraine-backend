@@ -234,6 +234,16 @@ pub enum Charity {
     MiraAction,
 }
 
+impl Charity {
+    fn to_value_string(&self) -> String {
+        serde_json::to_value(self)
+            .unwrap()
+            .as_str()
+            .unwrap()
+            .to_owned()
+    }
+}
+
 #[derive(serde::Deserialize, Debug)]
 pub struct CharityEvent {
     store_hash: String,
@@ -252,8 +262,8 @@ pub async fn write_charity_visited_event(
         VALUES ($1, $2, $3, $4);
         "#,
         event.store_hash.as_str(),
-        serde_json::to_string(&event.charity).unwrap(),
-        serde_json::to_string(&event.event).unwrap(),
+        event.charity.to_value_string(),
+        event.event.to_value_string(),
         OffsetDateTime::now_utc(),
     )
     .execute(db_pool)
@@ -273,12 +283,32 @@ pub enum WidgetEventType {
     ModalClosed,
 }
 
+impl WidgetEventType {
+    fn to_value_string(&self) -> String {
+        serde_json::to_value(self)
+            .unwrap()
+            .as_str()
+            .unwrap()
+            .to_owned()
+    }
+}
+
 #[allow(clippy::use_self)]
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub enum CharityEventType {
     SupportClicked,
     SeeMoreClicked,
+}
+
+impl CharityEventType {
+    fn to_value_string(&self) -> String {
+        serde_json::to_value(self)
+            .unwrap()
+            .as_str()
+            .unwrap()
+            .to_owned()
+    }
 }
 
 #[derive(serde::Deserialize, Debug)]
@@ -295,7 +325,7 @@ pub async fn write_widget_event(event: &WidgetEvent, db_pool: &PgPool) -> Result
         VALUES ($1, $2, $3);
         "#,
         event.store_hash.as_str(),
-        serde_json::to_string(&event.event).unwrap(),
+        event.event.to_value_string(),
         OffsetDateTime::now_utc(),
     )
     .execute(db_pool)
@@ -316,14 +346,14 @@ mod tests {
     #[case(&WidgetEventType::ModalOpened, "modal-opened")]
     #[case(&WidgetEventType::ModalClosed, "modal-closed")]
     fn widget_event_type_to_string_works(#[case] event: &WidgetEventType, #[case] value: &str) {
-        assert_eq!(serde_variant::to_variant_name(event).unwrap(), value)
+        assert_eq!(event.to_value_string(), value)
     }
 
     #[rstest]
     #[case(&CharityEventType::SupportClicked, "support-clicked")]
     #[case(&CharityEventType::SeeMoreClicked, "see-more-clicked")]
     fn charity_event_type_to_string_works(#[case] event: &CharityEventType, #[case] value: &str) {
-        assert_eq!(serde_variant::to_variant_name(event).unwrap(), value)
+        assert_eq!(event.to_value_string(), value)
     }
 
     #[rstest]
@@ -332,6 +362,6 @@ mod tests {
     #[case(&Charity::Unicef, "unicef")]
     #[case(&Charity::MiraAction, "mira-action")]
     fn charity_to_string_works(#[case] charity: &Charity, #[case] value: &str) {
-        assert_eq!(serde_variant::to_variant_name(charity).unwrap(), value)
+        assert_eq!(charity.to_value_string(), value)
     }
 }
