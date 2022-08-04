@@ -26,6 +26,29 @@ pub async fn run(configuration: Configuration) {
         .await
         .unwrap();
 
+    let charity_events = sqlx::query!(
+        r#"
+        SELECT charity, event_type, count(*)
+        FROM charity_events
+        GROUP BY event_type, charity
+        ORDER BY charity, event_type
+        "#
+    )
+    .fetch_all(&db_pool)
+    .await
+    .unwrap();
+
+    let widget_events = sqlx::query!(
+        r#"
+        SELECT event_type, count(*)
+        FROM widget_events
+        GROUP BY event_type
+        "#
+    )
+    .fetch_all(&db_pool)
+    .await
+    .unwrap();
+
     let spreadsheet_id = configuration.sheets.spreadsheet_id.as_str();
     let mut updates: Vec<ValueRange> = create_bulk_updates_for_sheet(
         &sheets,
@@ -59,6 +82,44 @@ pub async fn run(configuration: Configuration) {
                         feedback.store_hash.to_owned(),
                         feedback.unpublished_at.to_string(),
                         feedback.reason.to_owned(),
+                    ]
+                })
+                .collect(),
+        )
+        .await,
+    );
+
+    updates.extend(
+        create_bulk_updates_for_sheet(
+            &sheets,
+            spreadsheet_id,
+            "charity-events",
+            charity_events
+                .iter()
+                .map(|charity_event| {
+                    vec![
+                        format!("{}:{}", charity_event.charity, charity_event.event_type),
+                        charity_event.charity.to_owned(),
+                        charity_event.event_type.to_owned(),
+                        charity_event.count.unwrap().to_string(),
+                    ]
+                })
+                .collect(),
+        )
+        .await,
+    );
+
+    updates.extend(
+        create_bulk_updates_for_sheet(
+            &sheets,
+            spreadsheet_id,
+            "widget-events",
+            widget_events
+                .iter()
+                .map(|widget_event| {
+                    vec![
+                        widget_event.event_type.to_owned(),
+                        widget_event.count.unwrap().to_string(),
                     ]
                 })
                 .collect(),
