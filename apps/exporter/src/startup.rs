@@ -31,7 +31,7 @@ pub async fn run(configuration: Configuration) {
         SELECT charity, event_type, count(*)
         FROM charity_events
         GROUP BY event_type, charity
-        ORDER BY charity, event_type
+        ORDER BY event_type, charity
         "#
     )
     .fetch_all(&db_pool)
@@ -43,6 +43,7 @@ pub async fn run(configuration: Configuration) {
         SELECT event_type, count(*)
         FROM widget_events
         GROUP BY event_type
+        ORDER BY event_type
         "#
     )
     .fetch_all(&db_pool)
