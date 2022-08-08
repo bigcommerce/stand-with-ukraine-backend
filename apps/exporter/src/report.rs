@@ -172,7 +172,7 @@ pub async fn get_widget_event_summary_rows(
         )]],
         sqlx::query!(
             r#"
-            SELECT event_type, count(*)
+            SELECT created_at, event_type, count(*)
             FROM widget_events
             WHERE created_at >= $1 and created_at <= $2
             GROUP BY created_at, event_type
