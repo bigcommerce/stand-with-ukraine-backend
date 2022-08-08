@@ -121,18 +121,18 @@ pub async fn get_charity_event_summary_rows(
 ) -> Rows {
     vec![
         vec![vec![format!(
-            "=== {} to {} ===",
+            "⎯⎯⎯⎯⎯ {} to {} ⎯⎯⎯⎯⎯",
             format_date(start_date),
             format_date(end_date)
         )]],
         sqlx::query!(
             r#"
-        SELECT created_at, charity, event_type, count(*)
-        FROM charity_events
-        WHERE created_at >= $1 and created_at <= $2
-        GROUP BY created_at, event_type, charity
-        ORDER BY event_type, charity
-        "#,
+            SELECT created_at, charity, event_type, count(*)
+            FROM charity_events
+            WHERE created_at >= $1 and created_at <= $2
+            GROUP BY created_at, event_type, charity
+            ORDER BY event_type, charity
+            "#,
             start_date,
             end_date
         )
@@ -166,18 +166,18 @@ pub async fn get_widget_event_summary_rows(
 ) -> Rows {
     vec![
         vec![vec![format!(
-            "=== {} to {} ===",
+            "⎯⎯⎯⎯⎯ {} to {} ⎯⎯⎯⎯⎯",
             format_date(start_date),
             format_date(end_date)
         )]],
         sqlx::query!(
             r#"
-        SELECT event_type, count(*)
-        FROM widget_events
-        WHERE created_at >= $1 and created_at <= $2
-        GROUP BY created_at, event_type
-        ORDER BY event_type
-        "#,
+            SELECT event_type, count(*)
+            FROM widget_events
+            WHERE created_at >= $1 and created_at <= $2
+            GROUP BY created_at, event_type
+            ORDER BY event_type
+            "#,
             start_date,
             end_date
         )
