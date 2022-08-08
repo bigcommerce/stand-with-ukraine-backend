@@ -1,5 +1,44 @@
 {
   "db": "PostgreSQL",
+  "0b301885f45c59896d3c53c87c83d94d881aef7a05fe383d988017780fe44761": {
+    "describe": {
+      "columns": [
+        {
+          "name": "created_at",
+          "ordinal": 0,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "charity",
+          "ordinal": 1,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "event_type",
+          "ordinal": 2,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "count",
+          "ordinal": 3,
+          "type_info": "Int8"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        null
+      ],
+      "parameters": {
+        "Left": [
+          "Timestamptz",
+          "Timestamptz"
+        ]
+      }
+    },
+    "query": "\n        SELECT created_at, charity, event_type, count(*)\n        FROM charity_events\n        WHERE created_at >= $1 and created_at <= $2\n        GROUP BY created_at, event_type, charity\n        ORDER BY event_type, charity\n        "
+  },
   "16ec0ea056c4c6aba9837b90f4dffba011a700cf45cdf96094bbcad0b20de056": {
     "describe": {
       "columns": [
@@ -90,37 +129,7 @@
     },
     "query": "SELECT * FROM unpublish_events"
   },
-  "89597dedbadc814979d776ceeb7e4e51a810cf5652bfdffc5bbdc0e0717ef4bb": {
-    "describe": {
-      "columns": [
-        {
-          "name": "charity",
-          "ordinal": 0,
-          "type_info": "Varchar"
-        },
-        {
-          "name": "event_type",
-          "ordinal": 1,
-          "type_info": "Varchar"
-        },
-        {
-          "name": "count",
-          "ordinal": 2,
-          "type_info": "Int8"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        null
-      ],
-      "parameters": {
-        "Left": []
-      }
-    },
-    "query": "\n        SELECT charity, event_type, count(*)\n        FROM charity_events\n        GROUP BY event_type, charity\n        ORDER BY event_type, charity\n        "
-  },
-  "c4acf1e00c680c19f41a041558c415532847cab50a4d2706ef78e68320dce8e5": {
+  "8968b5981e4418a2ffc154c45e6fdab8db851177af94fbe6ad4d9b6e2c3295c7": {
     "describe": {
       "columns": [
         {
@@ -139,9 +148,12 @@
         null
       ],
       "parameters": {
-        "Left": []
+        "Left": [
+          "Timestamptz",
+          "Timestamptz"
+        ]
       }
     },
-    "query": "\n        SELECT event_type, count(*)\n        FROM widget_events\n        GROUP BY event_type\n        ORDER BY event_type\n        "
+    "query": "\n        SELECT event_type, count(*)\n        FROM widget_events\n        WHERE created_at >= $1 and created_at <= $2\n        GROUP BY created_at, event_type\n        ORDER BY event_type\n        "
   }
 }

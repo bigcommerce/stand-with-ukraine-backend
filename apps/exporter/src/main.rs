@@ -1,15 +1,16 @@
 use configuration::Configuration;
 
 mod configuration;
+mod report;
 mod sheets;
-mod startup;
+mod time;
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let configuration =
         Configuration::generate_from_environment().expect("Failed to read configuration.");
 
-    startup::run(configuration).await;
+    report::run(configuration).await;
 
     Ok(())
 }

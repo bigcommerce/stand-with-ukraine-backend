@@ -1,6 +1,8 @@
 extern crate google_sheets4 as sheets4;
 use sheets4::{api::ValueRange, hyper, hyper_rustls, oauth2, Sheets};
 
+pub type Rows = Vec<Vec<String>>;
+
 pub async fn get_sheets_client(credential_path: &str, token_cache_path: &str) -> Sheets {
     let service_account_key = oauth2::read_service_account_key(credential_path)
         .await
@@ -29,7 +31,7 @@ pub async fn create_bulk_updates_for_sheet(
     sheets_client: &Sheets,
     spreadsheet_id: &str,
     sheet_name: &str,
-    rows: Vec<Vec<String>>,
+    rows: Rows,
 ) -> Vec<ValueRange> {
     let existing_rows =
         get_existing_rows_from_sheet(sheets_client, spreadsheet_id, sheet_name).await;
@@ -49,7 +51,7 @@ pub async fn get_existing_rows_from_sheet(
     sheets_client: &Sheets,
     spreadsheet_id: &str,
     sheet_name: &str,
-) -> Option<Vec<Vec<String>>> {
+) -> Option<Rows> {
     let (_, existing_store_ids) = sheets_client
         .spreadsheets()
         .values_get(spreadsheet_id, format!("{}!A1:A", sheet_name).as_str())
@@ -63,7 +65,7 @@ pub async fn get_existing_rows_from_sheet(
 fn create_update_range_from_row(
     sheet_name: &str,
     new_row: Vec<String>,
-    existing_values: &Option<Vec<Vec<String>>>,
+    existing_values: &Option<Rows>,
     last_row: &mut usize,
 ) -> ValueRange {
     let found_row_index = match existing_values {
