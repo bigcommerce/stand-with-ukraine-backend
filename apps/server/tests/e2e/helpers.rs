@@ -73,7 +73,7 @@ pub async fn spawn_app() -> TestApp {
         bigcommerce_server,
         db_pool: get_connection_pool(&configuration.database),
         jwt_secret: JWTSecret(configuration.application.jwt_secret),
-        bc_secret: Secret::from(configuration.bigcommerce.client_secret),
+        bc_secret: configuration.bigcommerce.client_secret,
         base_url: configuration.application.base_url,
         test_client: reqwest::Client::new(),
     }

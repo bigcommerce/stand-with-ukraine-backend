@@ -59,7 +59,7 @@ async fn widget_publish_request_succeeds() {
         .await
         .expect("Invalid response format");
 
-    assert_eq!(response.published, false);
+    assert!(!response.published);
 
     // first publish - should use create request to bc
     {
@@ -95,7 +95,7 @@ async fn widget_publish_request_succeeds() {
         .await
         .expect("Invalid response format");
 
-    assert_eq!(response.published, true);
+    assert!(response.published);
 
     // second publish - should use put request to bc to update existing script
     {
@@ -280,7 +280,7 @@ async fn widget_remove_request_succeeds() {
         .await
         .expect("Invalid response format");
 
-    assert_eq!(response.published, false);
+    assert!(!response.published);
 }
 
 #[tokio::test]
@@ -321,7 +321,7 @@ async fn widget_remove_request_with_feedback_succeeds() {
         .await
         .expect("Invalid response format");
 
-    assert_eq!(response.published, false);
+    assert!(!response.published);
 
     let rows = sqlx::query!(
         "SELECT reason FROM unpublish_events WHERE store_hash = $1",

@@ -208,7 +208,7 @@ async fn uninstall_request_succeeds() {
     .await
     .unwrap();
 
-    assert_eq!(row.uninstalled, true);
+    assert!(row.uninstalled);
     assert_eq!(response.status().as_u16(), 200);
 }
 
@@ -254,6 +254,6 @@ async fn uninstall_request_fails_with_non_owner() {
     .await
     .unwrap();
 
-    assert_eq!(row.uninstalled, false);
+    assert!(!row.uninstalled);
     assert!(response.status().is_client_error());
 }
