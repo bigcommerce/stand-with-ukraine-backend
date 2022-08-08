@@ -1,4 +1,4 @@
-use time::{Date, OffsetDateTime, PrimitiveDateTime, Time};
+use time::{macros::time, Date, OffsetDateTime, PrimitiveDateTime, Time};
 
 pub fn get_week_start_end(base_date: Option<OffsetDateTime>) -> (OffsetDateTime, OffsetDateTime) {
     let base_date = match base_date {
@@ -24,7 +24,7 @@ pub fn get_week_start_end(base_date: Option<OffsetDateTime>) -> (OffsetDateTime,
             time::Weekday::Sunday,
         )
         .unwrap(),
-        Time::MIDNIGHT,
+        time!(23:59:59),
     )
     .assume_utc();
 
@@ -75,7 +75,7 @@ mod tests {
         #[case] end_date: DateTuple,
     ) {
         let start_date = start_date.to_datetime();
-        let end_date = end_date.to_datetime();
+        let end_date = end_date.to_datetime().replace_time(time!(23:59:59));
 
         assert_eq!(
             get_week_start_end(Some(date.to_datetime())),
