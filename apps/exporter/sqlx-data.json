@@ -54,6 +54,66 @@
     },
     "query": "SELECT * FROM stores"
   },
+  "22fbdabbd2a8d2135169ecc53d0ee3038d2c2b03aa500e099f0172470ddc3254": {
+    "describe": {
+      "columns": [
+        {
+          "name": "event_type",
+          "ordinal": 0,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "count",
+          "ordinal": 1,
+          "type_info": "Int8"
+        }
+      ],
+      "nullable": [
+        false,
+        null
+      ],
+      "parameters": {
+        "Left": [
+          "Timestamptz",
+          "Timestamptz"
+        ]
+      }
+    },
+    "query": "\n            SELECT event_type, count(*)\n            FROM widget_events\n            WHERE created_at >= $1 and created_at <= $2\n            GROUP BY event_type\n            ORDER BY event_type\n            "
+  },
+  "65a0c884cd37d1b384a0c88b0ef89f43d4f003dff66cb7f030155b830b650252": {
+    "describe": {
+      "columns": [
+        {
+          "name": "charity",
+          "ordinal": 0,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "event_type",
+          "ordinal": 1,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "count",
+          "ordinal": 2,
+          "type_info": "Int8"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        null
+      ],
+      "parameters": {
+        "Left": [
+          "Timestamptz",
+          "Timestamptz"
+        ]
+      }
+    },
+    "query": "\n            SELECT charity, event_type, count(*)\n            FROM charity_events\n            WHERE created_at >= $1 and created_at <= $2\n            GROUP BY event_type, charity\n            ORDER BY event_type, charity\n            "
+  },
   "74167901d241029e7aa5ec3bcd49f7d84fc3cd9043c9a2cfe8dac7a80bdc0ce5": {
     "describe": {
       "columns": [
@@ -89,77 +149,5 @@
       }
     },
     "query": "SELECT * FROM unpublish_events"
-  },
-  "e90c953329770f588cdafc4299a78c7ad819ae6bd4b31936fcee524a1cd08666": {
-    "describe": {
-      "columns": [
-        {
-          "name": "created_at",
-          "ordinal": 0,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "event_type",
-          "ordinal": 1,
-          "type_info": "Varchar"
-        },
-        {
-          "name": "count",
-          "ordinal": 2,
-          "type_info": "Int8"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        null
-      ],
-      "parameters": {
-        "Left": [
-          "Timestamptz",
-          "Timestamptz"
-        ]
-      }
-    },
-    "query": "\n            SELECT created_at, event_type, count(*)\n            FROM widget_events\n            WHERE created_at >= $1 and created_at <= $2\n            GROUP BY created_at, event_type\n            ORDER BY event_type\n            "
-  },
-  "eb16cadc8e91691daaff638ae05cb8fa3c3347947587da8c97c47e3bc30dd326": {
-    "describe": {
-      "columns": [
-        {
-          "name": "created_at",
-          "ordinal": 0,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "charity",
-          "ordinal": 1,
-          "type_info": "Varchar"
-        },
-        {
-          "name": "event_type",
-          "ordinal": 2,
-          "type_info": "Varchar"
-        },
-        {
-          "name": "count",
-          "ordinal": 3,
-          "type_info": "Int8"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        null
-      ],
-      "parameters": {
-        "Left": [
-          "Timestamptz",
-          "Timestamptz"
-        ]
-      }
-    },
-    "query": "\n            SELECT created_at, charity, event_type, count(*)\n            FROM charity_events\n            WHERE created_at >= $1 and created_at <= $2\n            GROUP BY created_at, event_type, charity\n            ORDER BY event_type, charity\n            "
   }
 }
