@@ -3,5 +3,5 @@
 /credentials
 lcov.info
 .env
-
+.idea
 bacon.toml
