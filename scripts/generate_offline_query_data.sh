@@ -5,7 +5,7 @@ PROJECT_DIR=$(pwd)
 
 cd $PROJECT_DIR/apps/server
 cargo sqlx prepare \
-    -- --bin swu-app
+    -- --lib
 
 cd $PROJECT_DIR/apps/exporter
 cargo sqlx prepare \
