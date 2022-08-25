@@ -132,6 +132,6 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 [server_action_badge]: https://github.com/swu-bc/stand-with-ukraine-backend/actions/workflows/server.yaml/badge.svg
 [exporter_action]: https://github.com/swu-bc/stand-with-ukraine-backend/actions/workflows/exporter.yaml
 [exporter_action_badge]: https://github.com/swu-bc/stand-with-ukraine-backend/actions/workflows/exporter.yaml/badge.svg
-[coverage_badge]: https://codecov.io/gh/swu-bc/stand-with-ukraine-backend/branch/main/graph/badge.svg?token=6EN9JQRHPQ
-[coverage]: https://codecov.io/gh/swu-bc/stand-with-ukraine-backend
+[coverage_badge]: https://codecov.io/gh/bigcommerce/stand-with-ukraine-backend/branch/main/graph/badge.svg?token=5ZSvtvdh82
+[coverage]: https://codecov.io/gh/bigcommerce/stand-with-ukraine-backend
 [frontend_repo]: https://github.com/bigcommerce/stand-with-ukraine-frontend
