@@ -3,7 +3,7 @@ name: security
 on:
   push:
     branches-ignore:
-      - dependabot/*
+      - 'dependabot/**'
     paths:
       - '**/Cargo.toml'
       - '**/Cargo.lock'
