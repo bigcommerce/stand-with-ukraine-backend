@@ -66,6 +66,7 @@ jobs:
 
       - name: Lint
         uses: actions-rs/clippy-check@v1
+        if: github.actor != 'dependabot[bot]'
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: -- -D warnings
@@ -84,8 +85,8 @@ jobs:
     if: github.ref == 'refs/heads/main'
 
     permissions:
-      contents: "read"
-      id-token: "write"
+      contents: 'read'
+      id-token: 'write'
 
     steps:
       - name: Checkout
@@ -100,7 +101,7 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v0
         with:
-          install_components: "beta"
+          install_components: 'beta'
 
       - name: Use gcloud CLI
         run: gcloud info

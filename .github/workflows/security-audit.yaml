@@ -2,8 +2,6 @@ name: security
 
 on:
   push:
-    branches-ignore:
-      - 'dependabot/**'
     paths:
       - '**/Cargo.toml'
       - '**/Cargo.lock'
@@ -12,6 +10,7 @@ on:
 
 jobs:
   audit:
+    if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
