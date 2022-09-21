@@ -21,9 +21,9 @@ jobs:
       postgres:
         image: postgres:14
         env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: postgres
+          POSTGRES_USER: ${{ secrets.CI_DATABASE_USERNAME }}
+          POSTGRES_PASSWORD: ${{ secrets.CI_DATABASE_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.CI_DATABASE_NAME }}
         ports:
           - 5432:5432
     steps:
@@ -103,7 +103,7 @@ jobs:
         uses: google-github-actions/auth@v0
         with:
           workload_identity_provider: ${{ secrets.GCP_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_IAM_EMAIL }}
+          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v0
@@ -136,7 +136,7 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: |
-            ${{ secrets.CLOUD_RUN_IMAGE_EXPORTER }}
+            ${{ secrets.CLOUD_RUN_EXPORTER_IMAGE }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha
@@ -162,3 +162,20 @@ jobs:
         run: |
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+      
+      - name: Update Cloud Run Job
+        run: |
+          gcloud beta run jobs update ${{ secrets.CLOUD_RUN_EXPORTER }} \
+          --project=${{ secrets.GCP_PROJECT_ID }} \
+          --image=${{ secrets.CLOUD_RUN_EXPORTER_IMAGE }}:${{ steps.tag.outputs.sha }} \
+          --service-account=${{ secrets.CLOUD_RUN_SERVICE_ACCOUNT }} \
+          --parallelism=1 \
+          --set-cloudsql-instances=${{ secrets.CLOUD_SQL_DB }} \
+          --execution-environment=gen2 \
+          --region=us-central1 \
+          --set-env-vars=EXPORTER__DATABASE__REQUIRE_SSL=false \
+          --set-secrets=EXPORTER__DATABASE__SOCKET=APP__DATABASE__SOCKET:2 \
+          --set-secrets=EXPORTER__DATABASE__DATABASE_NAME=APP__DATABASE__DATABASE_NAME:1 \
+          --set-secrets=EXPORTER__DATABASE__PASSWORD=APP__DATABASE__PASSWORD:1 \
+          --set-secrets=EXPORTER__DATABASE__USERNAME=APP__DATABASE__USERNAME:1 \
+          --set-secrets=EXPORTER__SHEETS__SPREADSHEET_ID=EXPORTER__SHEETS__SPREADSHEET_ID:1
