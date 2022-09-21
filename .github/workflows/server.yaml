@@ -21,9 +21,9 @@ jobs:
       postgres:
         image: postgres:14
         env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: postgres
+          POSTGRES_USER: ${{ secrets.CI_DATABASE_USERNAME }}
+          POSTGRES_PASSWORD: ${{ secrets.CI_DATABASE_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.CI_DATABASE_NAME }}
         ports:
           - 5432:5432
     steps:
@@ -96,7 +96,7 @@ jobs:
         uses: google-github-actions/auth@v0
         with:
           workload_identity_provider: ${{ secrets.GCP_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_IAM_EMAIL }}
+          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v0
@@ -129,7 +129,7 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: |
-            ${{ secrets.CLOUD_RUN_IMAGE }}
+            ${{ secrets.CLOUD_RUN_APP_IMAGE }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha
@@ -160,7 +160,7 @@ jobs:
         run: |
           gcloud beta run deploy ${{ secrets.CLOUD_RUN_APP }} \
           --project=${{ secrets.GCP_PROJECT_ID }} \
-          --image=${{ secrets.CLOUD_RUN_IMAGE }}:${{ steps.tag.outputs.sha }} \
+          --image=${{ secrets.CLOUD_RUN_APP_IMAGE }}:${{ steps.tag.outputs.sha }} \
           --service-account=${{ secrets.CLOUD_RUN_SERVICE_ACCOUNT }} \
           --port=${{ secrets.APP__APPLICATION__PORT }} \
           --set-cloudsql-instances=${{ secrets.CLOUD_SQL_DB }} \
@@ -190,14 +190,12 @@ jobs:
       postgres:
         image: postgres:14
         env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: postgres
+          POSTGRES_USER: ${{ secrets.CI_DATABASE_USERNAME }}
+          POSTGRES_PASSWORD: ${{ secrets.CI_DATABASE_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.CI_DATABASE_NAME }}
         ports:
           - 5432:5432
     if: ${{ contains(github.ref, 'dependabot') == false }}
-    env:
-      DATABASE_URL: postgres://postgres:password@localhost:5432/swu
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
