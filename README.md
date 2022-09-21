@@ -6,11 +6,14 @@
 
 ## Overview
 
-Stand With Ukraine is a BigCommerce Marketplace application. It allows merchants to easily add a widget to their storefront with a customized message and list of Charities that the merchant would like their shoppers to visit and support.
+[Stand With Ukraine is a BigCommerce application][app_store_link]. It allows merchants to easily add a widget to their storefront with a customized message and list of Charities that the merchant would like their shoppers to visit and support.
+
+## Repositories
+
+- [Frontend Components][frontend_repo]
+- [Backend Components][backend_repo]
 
 ## Getting Started
-
-This repo contains the backend components of the app. The [frontend components are available in this repo.][frontend_repo]
 
 - `apps/server` is a rust http server that implements the OAuth callback flow for BigCommerce [Single Click Apps][single_click_apps] and uses the [BigCommerce Management APIs][bigcommerce_api_docs] to inject the widget using the [Script API][script_api]. For information on how to develop apps for BigCommerce stores, see our [Developer Portal][dev_portal].
 - `apps/exporter` is an program that exports data from the database and updates a google spreadsheet with the install status and widget removal feedback. It is scheduled to run every hour and allows the product/business teams to access this data without needing database access.
@@ -35,7 +38,7 @@ We hope this sample gives you a good reference point for building your next kill
 6. Click `Save & Close` on the top right of the dialog.
 7. You'll now see your app in a list in the _My Apps_ section of Developer Portal. Hover over it and click _View Client ID_. You'll need these values in the next step.
 
-### Getting started - Local
+### Local Development
 
 - Prerequisites
   - Rust toolchain
@@ -67,7 +70,7 @@ We hope this sample gives you a good reference point for building your next kill
 
 In order to install this app in a BigCommerce store, it must be hosted on the public Internet. You can get started in development by simply running `cargo run --bin swu-app` to run it locally, and then use `localhost` in your URLs. Ultimately you will need to host it somewhere to use the app anywhere other than your development system.
 
-### Getting started - Production
+### Deploying to Production
 
 This repo is setup to be deployed to Google cloud run using a Docker container. Github Actions tests and builds a docker image if everything passes. The action is also responsible for pushing the image to google cloud artifacts and also running the update deployment command to target the new image.
 
@@ -123,15 +126,17 @@ WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEM
 COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+[app_store_link]: https://www.bigcommerce.com/apps/stand-with-ukraine/ "BigCommerce App Store - Stand with Ukraine"
 [bigcommerce]: https://www.bigcommerce.com/
 [single_click_apps]: https://developer.bigcommerce.com/api/#building-oauth-apps
 [bigcommerce_api_docs]: https://developer.bigcommerce.com/docs
 [dev_portal]: https://developer.bigcommerce.com
 [script_api]: https://developer.bigcommerce.com/docs/ZG9jOjIyMDYyMg-scripts-api
-[server_action]: https://github.com/swu-bc/stand-with-ukraine-backend/actions/workflows/server.yaml
-[server_action_badge]: https://github.com/swu-bc/stand-with-ukraine-backend/actions/workflows/server.yaml/badge.svg
-[exporter_action]: https://github.com/swu-bc/stand-with-ukraine-backend/actions/workflows/exporter.yaml
-[exporter_action_badge]: https://github.com/swu-bc/stand-with-ukraine-backend/actions/workflows/exporter.yaml/badge.svg
+[server_action]: https://github.com/bigcommerce/stand-with-ukraine-backend/actions/workflows/server.yaml
+[server_action_badge]: https://github.com/bigcommerce/stand-with-ukraine-backend/actions/workflows/server.yaml/badge.svg
+[exporter_action]: https://github.com/bigcommerce/stand-with-ukraine-backend/actions/workflows/exporter.yaml
+[exporter_action_badge]: https://github.com/bigcommerce/stand-with-ukraine-backend/actions/workflows/exporter.yaml/badge.svg
 [coverage_badge]: https://codecov.io/gh/bigcommerce/stand-with-ukraine-backend/branch/main/graph/badge.svg?token=5ZSvtvdh82
 [coverage]: https://codecov.io/gh/bigcommerce/stand-with-ukraine-backend
 [frontend_repo]: https://github.com/bigcommerce/stand-with-ukraine-frontend
+[backend_repo]: https://github.com/bigcommerce/stand-with-ukraine-backend
