@@ -1,6 +1,6 @@
 # Stand With Ukraine App
 
-[![codecov][coverage_badge]][coverage]
+[![coverage][coverage_badge]][coverage]
 [![server][server_action_badge]][server_action]
 [![exporter][exporter_action_badge]][exporter_action]
 
@@ -136,7 +136,7 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 [server_action_badge]: https://github.com/bigcommerce/stand-with-ukraine-backend/actions/workflows/server.yaml/badge.svg
 [exporter_action]: https://github.com/bigcommerce/stand-with-ukraine-backend/actions/workflows/exporter.yaml
 [exporter_action_badge]: https://github.com/bigcommerce/stand-with-ukraine-backend/actions/workflows/exporter.yaml/badge.svg
-[coverage_badge]: https://codecov.io/gh/bigcommerce/stand-with-ukraine-backend/branch/main/graph/badge.svg?token=5ZSvtvdh82
-[coverage]: https://codecov.io/gh/bigcommerce/stand-with-ukraine-backend
+[coverage_badge]: https://api.codeclimate.com/v1/badges/85c0b7f83486f6da67c9/test_coverage
+[coverage]: https://codeclimate.com/github/bigcommerce/stand-with-ukraine-backend/test_coverage
 [frontend_repo]: https://github.com/bigcommerce/stand-with-ukraine-frontend
 [backend_repo]: https://github.com/bigcommerce/stand-with-ukraine-backend
