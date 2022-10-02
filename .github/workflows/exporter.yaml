@@ -10,7 +10,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  SQLX_VERSION: 0.6.1
+  SQLX_VERSION: 0.6.2
   SQLX_FEATURES: postgres,rustls
   POSTGRES_USER: ${{ secrets.CI_DATABASE_USERNAME }}
   POSTGRES_PASSWORD: ${{ secrets.CI_DATABASE_PASSWORD }}
@@ -167,7 +167,7 @@ jobs:
         run: |
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
-      
+
       - name: Update Cloud Run Job
         run: |
           gcloud beta run jobs update ${{ secrets.CLOUD_RUN_EXPORTER }} \
