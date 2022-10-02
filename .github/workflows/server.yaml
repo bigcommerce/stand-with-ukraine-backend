@@ -12,6 +12,10 @@ env:
   CARGO_TERM_COLOR: always
   SQLX_VERSION: 0.6.1
   SQLX_FEATURES: postgres,rustls
+  POSTGRES_USER: ${{ secrets.CI_DATABASE_USERNAME }}
+  POSTGRES_PASSWORD: ${{ secrets.CI_DATABASE_PASSWORD }}
+  POSTGRES_DB: ${{ secrets.CI_DATABASE_NAME }}
+  POSTGRES_HOST: localhost
 
 jobs:
   fmt-lint-test:
@@ -29,7 +33,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-      - run: cp .env-example .env
+      - name: Setup .env
+        run: ./scripts/create_env.sh
 
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
@@ -199,7 +204,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-      - run: cp .env-example .env
+      - name: Setup .env
+        run: ./scripts/create_env.sh
 
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1

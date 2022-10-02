@@ -31,6 +31,7 @@ DB_PASSWORD="${POSTGRES_PASSWORD:=password}"
 DB_NAME="${POSTGRES_DB:=swu}"
 DB_PORT="${POSTGRES_PORT:=5432}"
 DB_CONTAINER_NAME="swu-db"
+DB_HOST="${POSTGRES_HOST:=localhost}"
 
 # Allow to skip Docker if a dockerized Postgres database is already running
 if [[ "${CREATE_LOCAL_DB}" == "TRUE" ]]; then
@@ -50,14 +51,24 @@ if [[ "${CREATE_LOCAL_DB}" == "TRUE" ]]; then
 fi
 
 # Keep pinging Postgres until it's ready to accept commands
-export PGPASSWORD="${DB_PASSWORD}"
-until psql -h "localhost" -U "${DB_USER}" -p "${DB_PORT}" -d "postgres" -c '\q' >/dev/null 2>&1; do
-    echo >&2 "Postgres is still unavailable at localhost:${DB_PORT} - sleeping"
+COUNTER=0
+export PGPASSWORD=${DB_PASSWORD}
+until psql -h "${DB_HOST}" -U "${DB_USER}" -p "${DB_PORT}" -d "${DB_NAME}" -c '\q' >/dev/null 2>&1; do
+    COUNTER=$((COUNTER+1))
+    if (( COUNTER > 10 )); then
+        ## Exit early because database is not online
+        >&2 echo "Postgres has not come online after waiting for $COUNTER seconds"
+        exit 999;
+    fi
+    echo >&2 "Waiting for postgres at ${DB_HOST}:${DB_PORT}"
     sleep 1
 done
 
 echo >&2 "Postgres is up and running on port ${DB_PORT}!"
-DATABASE_URL_WITHOUT_DB=postgres://${DB_USER}:${DB_PASSWORD}@localhost:${DB_PORT}
+DATABASE_URL_WITHOUT_DB=postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}
+
+# Create database with user name - required for e2e tests
+psql -h "${DB_HOST}" -U "${DB_USER}" -p "${DB_PORT}" -d "${DB_NAME}" -c "CREATE DATABASE ${DB_USER};" >/dev/null 2>&1
 export DATABASE_URL=${DATABASE_URL_WITHOUT_DB}/${DB_NAME}
 sqlx database create
 sqlx migrate run
