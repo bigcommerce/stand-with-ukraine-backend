@@ -21,7 +21,7 @@ fi
 if ! [ -x "$(command -v sqlx)" ]; then
     echo >&2 "Error: sqlx is not installed."
     echo >&2 "Use:"
-    echo >&2 " cargo install --version=0.6.1 sqlx-cli --features postgres,rustls"
+    echo >&2 " cargo install --version=0.6.2 sqlx-cli --features postgres,rustls"
     echo >&2 "to install it."
     exit 1
 fi
@@ -52,14 +52,16 @@ fi
 
 # Keep pinging Postgres until it's ready to accept commands
 COUNTER=0
+COUNTER_LIMIT=10
 export PGPASSWORD=${DB_PASSWORD}
 until psql -h "${DB_HOST}" -U "${DB_USER}" -p "${DB_PORT}" -d "${DB_NAME}" -c '\q' >/dev/null 2>&1; do
-    COUNTER=$((COUNTER+1))
-    if (( COUNTER > 10 )); then
+    if ((COUNTER >= COUNTER_LIMIT)); then
         ## Exit early because database is not online
-        >&2 echo "Postgres has not come online after waiting for $COUNTER seconds"
-        exit 999;
+        echo >&2 "Postgres has not come online after waiting for $COUNTER seconds"
+        exit 999
     fi
+
+    COUNTER=$((COUNTER + 1))
     echo >&2 "Waiting for postgres at ${DB_HOST}:${DB_PORT}"
     sleep 1
 done
