@@ -1,9 +1,15 @@
 extern crate google_sheets4 as sheets4;
-use sheets4::{api::ValueRange, hyper, hyper_rustls, oauth2, Sheets};
+use sheets4::{
+    api::ValueRange,
+    hyper::{self, client::HttpConnector},
+    hyper_rustls::{self, HttpsConnector},
+    oauth2, Sheets,
+};
 
 pub type Rows = Vec<Vec<String>>;
+pub type SheetsClient = Sheets<HttpsConnector<HttpConnector>>;
 
-pub async fn get_sheets_client(credential_path: &str, token_cache_path: &str) -> Sheets {
+pub async fn get_sheets_client(credential_path: &str, token_cache_path: &str) -> SheetsClient {
     let service_account_key = oauth2::read_service_account_key(credential_path)
         .await
         .expect("failed to read service account");
@@ -28,7 +34,7 @@ pub async fn get_sheets_client(credential_path: &str, token_cache_path: &str) ->
 }
 
 pub async fn create_bulk_updates_for_sheet(
-    sheets_client: &Sheets,
+    sheets_client: &SheetsClient,
     spreadsheet_id: &str,
     sheet_name: &str,
     rows: Rows,
@@ -48,7 +54,7 @@ pub async fn create_bulk_updates_for_sheet(
 }
 
 pub async fn get_existing_rows_from_sheet(
-    sheets_client: &Sheets,
+    sheets_client: &SheetsClient,
     spreadsheet_id: &str,
     sheet_name: &str,
 ) -> Option<Rows> {
