@@ -22,7 +22,7 @@ where
 {
     global::set_text_map_propagator(TraceContextPropagator::new());
 
-    let tracer = opentelemetry_jaeger::new_pipeline()
+    let tracer = opentelemetry_jaeger::new_agent_pipeline()
         .with_service_name(&name)
         .install_batch(opentelemetry::runtime::Tokio)
         .expect("Failed to install OpenTelemetry");
