@@ -12,10 +12,6 @@ env:
   CARGO_TERM_COLOR: always
   SQLX_VERSION: 0.6.2
   SQLX_FEATURES: postgres,rustls
-  POSTGRES_USER: ${{ secrets.CI_DATABASE_USERNAME }}
-  POSTGRES_PASSWORD: ${{ secrets.CI_DATABASE_PASSWORD }}
-  POSTGRES_DB: ${{ secrets.CI_DATABASE_NAME }}
-  POSTGRES_HOST: localhost
 
 jobs:
   fmt-lint-test:
@@ -30,6 +26,11 @@ jobs:
           POSTGRES_DB: ${{ secrets.CI_DATABASE_NAME }}
         ports:
           - 5432:5432
+    env:
+      POSTGRES_USER: ${{ secrets.CI_DATABASE_USERNAME }}
+      POSTGRES_PASSWORD: ${{ secrets.CI_DATABASE_PASSWORD }}
+      POSTGRES_DB: ${{ secrets.CI_DATABASE_NAME }}
+      POSTGRES_HOST: localhost
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
