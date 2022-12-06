@@ -11,7 +11,7 @@ path = "src/main.rs"
 name = "swu-app"
 
 [dependencies]
-actix-cors = "0.6.3"
+actix-cors = "0.6.4"
 actix-utils = "3.0.0"
 actix-web = "4.2.1"
 actix-web-httpauth = "0.8.0"
