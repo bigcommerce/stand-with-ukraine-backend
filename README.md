@@ -13,10 +13,10 @@
     <img src="https://img.shields.io/coveralls/github/bigcommerce/stand-with-ukraine-backend/main?style=for-the-badge&labelColor=005BBB">
   </a>
   <a aria-label="Build Status for Server" href="https://github.com/bigcommerce/stand-with-ukraine-backend/actions/workflows/server.yaml">
-    <img alt="" src="https://img.shields.io/github/workflow/status/bigcommerce/stand-with-ukraine-backend/server?label=build%3Aserver&style=for-the-badge&labelColor=005BBB&logo=Rust">
+    <img alt="" src="https://img.shields.io/github/actions/workflow/status/bigcommerce/stand-with-ukraine-backend/server.yaml?branch=main&label=build%3Aserver&style=for-the-badge&labelColor=005BBB&logo=Rust">
   </a>
   <a aria-label="Build Status for Exporter" href="https://github.com/bigcommerce/stand-with-ukraine-backend/actions/workflows/exporter.yaml">
-    <img alt="" src="https://img.shields.io/github/workflow/status/bigcommerce/stand-with-ukraine-backend/exporter?label=build%3Aexporter&style=for-the-badge&labelColor=005BBB&logo=Rust">
+    <img alt="" src="https://img.shields.io/github/actions/workflow/status/bigcommerce/stand-with-ukraine-backend/exporter.yaml?branch=main&label=build%3Aexporter&style=for-the-badge&labelColor=005BBB&logo=Rust">
   </a>
   <a aria-label="License" href="https://github.com/bigcommerce/stand-with-ukraine-backend/blob/main/LICENSE.md">
     <img alt="" src="https://img.shields.io/github/license/bigcommerce/stand-with-ukraine-backend?style=for-the-badge&labelColor=005BBB">
