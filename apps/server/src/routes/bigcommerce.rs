@@ -87,7 +87,7 @@ async fn install(
         .append_header((
             LOCATION,
             format!(
-                "{}/?token={}&store-id={}",
+                "{}/dashboard/?token={}&store-id={}",
                 base_url.get_ref(),
                 &jwt,
                 store.get_store_hash()
@@ -149,7 +149,7 @@ async fn load(
         .append_header((
             LOCATION,
             format!(
-                "{}/?token={}&store-id={}",
+                "{}/dashboard/?token={}&store-id={}",
                 base_url.get_ref(),
                 &jwt,
                 &store_hash
