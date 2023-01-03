@@ -79,7 +79,7 @@ async fn install_request_succeeds() {
     let app = spawn_app().await;
     let client = create_test_server_client_no_redirect();
 
-    get_oauth2_token_mock()
+    get_oauth2_token_mock(&app.bc_secret, &app.bc_redirect_uri)
         .expect(1)
         .mount(&app.bigcommerce_server)
         .await;
