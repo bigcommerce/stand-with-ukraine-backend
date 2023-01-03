@@ -21,15 +21,15 @@ jobs:
       postgres:
         image: postgres:14
         env:
-          POSTGRES_USER: ${{ secrets.CI_DATABASE_USERNAME }}
-          POSTGRES_PASSWORD: ${{ secrets.CI_DATABASE_PASSWORD }}
-          POSTGRES_DB: ${{ secrets.CI_DATABASE_NAME }}
+          POSTGRES_USER: ${{ secrets.CI_DATABASE_USERNAME || 'user' }}
+          POSTGRES_PASSWORD: ${{ secrets.CI_DATABASE_PASSWORD || github.sha }}
+          POSTGRES_DB: ${{ secrets.CI_DATABASE_NAME || 'postgres' }}
         ports:
           - 5432:5432
     env:
-      POSTGRES_USER: ${{ secrets.CI_DATABASE_USERNAME }}
-      POSTGRES_PASSWORD: ${{ secrets.CI_DATABASE_PASSWORD }}
-      POSTGRES_DB: ${{ secrets.CI_DATABASE_NAME }}
+      POSTGRES_USER: ${{ secrets.CI_DATABASE_USERNAME || 'user' }}
+      POSTGRES_PASSWORD: ${{ secrets.CI_DATABASE_PASSWORD || github.sha }}
+      POSTGRES_DB: ${{ secrets.CI_DATABASE_NAME || 'postgres' }}
       POSTGRES_HOST: localhost
     steps:
       - name: Checkout repository
