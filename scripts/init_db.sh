@@ -26,6 +26,12 @@ if ! [ -x "$(command -v sqlx)" ]; then
     exit 1
 fi
 
+if [ -f .env ]; then
+    set -o allexport
+    source .env
+    set +o allexport
+fi
+
 DB_USER=${POSTGRES_USER:=postgres}
 DB_PASSWORD="${POSTGRES_PASSWORD:=password}"
 DB_NAME="${POSTGRES_DB:=swu}"
