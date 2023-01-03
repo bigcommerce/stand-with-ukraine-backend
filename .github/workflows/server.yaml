@@ -202,7 +202,7 @@ jobs:
           POSTGRES_DB: ${{ secrets.CI_DATABASE_NAME || 'test-db' }}
         ports:
           - 5432:5432
-    if: ${{ contains(github.ref, 'dependabot') == false }}
+    if: github.actor != 'dependabot[bot]'
     env:
       POSTGRES_USER: ${{ secrets.CI_DATABASE_USERNAME || 'postgres' }}
       POSTGRES_PASSWORD: ${{ secrets.CI_DATABASE_PASSWORD || github.sha }}
