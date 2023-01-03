@@ -31,6 +31,7 @@ pub struct Database {
 pub struct BigCommerce {
     pub client_id: String,
     pub client_secret: Secret<String>,
+    pub install_redirect_uri: String,
 
     pub api_base_url: String,
     pub login_base_url: String,

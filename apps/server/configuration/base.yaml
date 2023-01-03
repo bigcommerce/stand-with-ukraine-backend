@@ -17,3 +17,4 @@ bigcommerce:
   timeout: 10000
   client_secret: ""
   client_id: ""
+  install_redirect_uri: http://localhost:8000/bigcommerce/install

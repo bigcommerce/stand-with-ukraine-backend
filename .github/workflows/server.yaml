@@ -178,6 +178,7 @@ jobs:
           --region=us-central1 \
           --set-env-vars=APP__APPLICATION__PORT=${{ secrets.APP__APPLICATION__PORT }} \
           --set-env-vars=APP__APPLICATION__BASE_URL=${{ secrets.APP__APPLICATION__BASE_URL }} \
+          --set-env-vars=APP__BIGCOMMERCE__INSTALL_REDIRECT_URI=${{ secrets.APP__BIGCOMMERCE__INSTALL_REDIRECT_URI }} \
           --set-env-vars=APP__DATABASE__REQUIRE_SSL=false \
           --set-secrets=APP__DATABASE__SOCKET=APP__DATABASE__SOCKET:2 \
           --set-secrets=APP__DATABASE__DATABASE_NAME=APP__DATABASE__DATABASE_NAME:1 \
