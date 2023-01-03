@@ -1,5 +1,7 @@
+use secrecy::{ExposeSecret, Secret};
+use serde_json::json;
 use wiremock::{
-    matchers::{header, method, path},
+    matchers::{body_partial_json, header, method, path},
     Mock, ResponseTemplate,
 };
 
@@ -67,12 +69,17 @@ pub fn get_store_information_mock() -> Mock {
         .named("BigCommerce get store information")
 }
 
-pub fn get_oauth2_token_mock() -> Mock {
+pub fn get_oauth2_token_mock(client_secret: &Secret<String>, redirect_uri: &str) -> Mock {
     let oauth2_token_response: serde_json::Value =
         serde_json::from_str(include_str!("get_oauth2_token.json")).expect("Failed to parse file");
 
     Mock::given(method("POST"))
         .and(path("/oauth2/token"))
+        .and(body_partial_json(&json!({
+            "client_secret": &client_secret.expose_secret(),
+            "redirect_uri": &redirect_uri,
+            "grant_type": "authorization_code",
+        })))
         .respond_with(ResponseTemplate::new(200).set_body_json(&oauth2_token_response))
         .named("BigCommerce oauth token request")
 }

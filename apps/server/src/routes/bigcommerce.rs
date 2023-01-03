@@ -81,7 +81,7 @@ async fn install(
     Ok(HttpResponse::Found()
         .append_header((
             LOCATION,
-            get_dashboard_url(&base_url.0, &jwt, store.get_store_hash()),
+            generate_dashboard_url(&base_url.0, &jwt, store.get_store_hash()),
         ))
         .finish())
 }
@@ -136,7 +136,10 @@ async fn load(
         .map_err(LoadError::UnexpectedError)?;
 
     Ok(HttpResponse::Found()
-        .append_header((LOCATION, get_dashboard_url(&base_url.0, &jwt, store_hash)))
+        .append_header((
+            LOCATION,
+            generate_dashboard_url(&base_url.0, &jwt, store_hash),
+        ))
         .finish())
 }
 
@@ -169,9 +172,24 @@ async fn uninstall(
     Ok(HttpResponse::Ok().finish())
 }
 
-fn get_dashboard_url(base_url: &str, token: &str, store_hash: &str) -> String {
+fn generate_dashboard_url(base_url: &str, token: &str, store_hash: &str) -> String {
     format!(
         "{}/dashboard/?token={}&store-id={}",
         base_url, token, store_hash
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn should_generate_dashboard_url() {
+        let dashboard_url = generate_dashboard_url("test.com", "test.test.test", "test-store");
+
+        assert_eq!(
+            dashboard_url,
+            "test.com/dashboard/?token=test.test.test&store-id=test-store"
+        )
+    }
 }

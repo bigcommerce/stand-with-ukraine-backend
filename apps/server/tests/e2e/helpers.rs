@@ -37,6 +37,7 @@ pub struct TestApp {
     pub jwt_secret: JWTSecret,
     pub base_url: String,
     pub bc_secret: Secret<String>,
+    pub bc_redirect_uri: String,
 
     pub test_client: Client,
 }
@@ -74,6 +75,7 @@ pub async fn spawn_app() -> TestApp {
         db_pool: get_connection_pool(&configuration.database),
         jwt_secret: JWTSecret(configuration.application.jwt_secret),
         bc_secret: configuration.bigcommerce.client_secret,
+        bc_redirect_uri: configuration.bigcommerce.install_redirect_uri,
         base_url: configuration.application.base_url,
         test_client: reqwest::Client::new(),
     }
