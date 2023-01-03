@@ -1,3 +1,4 @@
+use actix_web::body::MessageBody;
 use actix_web::dev::{ServiceRequest, ServiceResponse};
 use actix_web::{web, Error};
 use opentelemetry::{global, sdk::propagation::TraceContextPropagator};
@@ -57,7 +58,10 @@ impl RootSpanBuilder for AppRootSpanBuilder {
         root_span!(request, lightstep.access_token = access_token)
     }
 
-    fn on_request_end<B>(span: Span, outcome: &Result<ServiceResponse<B>, Error>) {
+    fn on_request_end<B>(span: Span, outcome: &Result<ServiceResponse<B>, Error>)
+    where
+        B: MessageBody,
+    {
         DefaultRootSpanBuilder::on_request_end(span, outcome);
     }
 }
