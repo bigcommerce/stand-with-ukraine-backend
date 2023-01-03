@@ -4,7 +4,7 @@ use reqwest::{header, Client};
 use secrecy::{ExposeSecret, Secret};
 use serde_json::json;
 
-use crate::{authentication::Error, configuration::BaseURL};
+use crate::authentication::Error;
 
 use super::{
     auth::{BCClaims, BCOAuthResponse},
@@ -17,6 +17,7 @@ pub struct BCClient {
     login_base_url: String,
     client_id: String,
     client_secret: Secret<String>,
+    install_redirect_uri: String,
     http_client: Client,
 }
 
@@ -26,6 +27,7 @@ impl BCClient {
         login_base_url: String,
         client_id: String,
         client_secret: Secret<String>,
+        install_redirect_uri: String,
         timeout: std::time::Duration,
     ) -> Self {
         let mut headers = header::HeaderMap::new();
@@ -48,6 +50,7 @@ impl BCClient {
             login_base_url,
             client_id,
             client_secret,
+            install_redirect_uri,
             http_client,
         }
     }
@@ -58,19 +61,16 @@ impl BCClient {
 
     pub async fn authorize_oauth_install(
         &self,
-        callback_url: &BaseURL,
         code: &str,
         scope: &str,
         context: &str,
     ) -> Result<BCOAuthResponse, reqwest::Error> {
-        let callback_url = format!("{}/bigcommerce/install", callback_url);
-
         self.http_client
             .post(self.get_oauth2_url())
             .json(&json!({
                 "client_id": self.client_id,
                 "client_secret": self.client_secret.expose_secret(),
-                "redirect_uri": callback_url,
+                "redirect_uri": self.install_redirect_uri,
                 "grant_type": "authorization_code",
                 "code": code,
                 "scope": scope,

@@ -24,6 +24,7 @@ impl Application {
             configuration.bigcommerce.login_base_url,
             configuration.bigcommerce.client_id,
             configuration.bigcommerce.client_secret,
+            configuration.bigcommerce.install_redirect_uri,
             std::time::Duration::from_millis(configuration.bigcommerce.timeout.into()),
         );
 

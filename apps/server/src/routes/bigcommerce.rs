@@ -55,12 +55,7 @@ async fn install(
     tracing::Span::current().record("context", &tracing::field::display(&query.context));
 
     let oauth_credentials = bigcommerce_client
-        .authorize_oauth_install(
-            base_url.get_ref(),
-            &query.code,
-            &query.scope,
-            &query.context,
-        )
+        .authorize_oauth_install(&query.code, &query.scope, &query.context)
         .await
         .context("Failed to validate credentials")
         .map_err(InstallError::UnexpectedError)?;
@@ -86,12 +81,7 @@ async fn install(
     Ok(HttpResponse::Found()
         .append_header((
             LOCATION,
-            format!(
-                "{}/dashboard/?token={}&store-id={}",
-                base_url.get_ref(),
-                &jwt,
-                store.get_store_hash()
-            ),
+            get_dashboard_url(&base_url.0, &jwt, store.get_store_hash()),
         ))
         .finish())
 }
@@ -146,15 +136,7 @@ async fn load(
         .map_err(LoadError::UnexpectedError)?;
 
     Ok(HttpResponse::Found()
-        .append_header((
-            LOCATION,
-            format!(
-                "{}/dashboard/?token={}&store-id={}",
-                base_url.get_ref(),
-                &jwt,
-                &store_hash
-            ),
-        ))
+        .append_header((LOCATION, get_dashboard_url(&base_url.0, &jwt, store_hash)))
         .finish())
 }
 
@@ -185,4 +167,11 @@ async fn uninstall(
         .map_err(LoadError::UnexpectedError)?;
 
     Ok(HttpResponse::Ok().finish())
+}
+
+fn get_dashboard_url(base_url: &str, token: &str, store_hash: &str) -> String {
+    format!(
+        "{}/dashboard/?token={}&store-id={}",
+        base_url, token, store_hash
+    )
 }
