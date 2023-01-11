@@ -4,7 +4,7 @@ use crate::{
     configuration::BaseURL,
     data::{
         read_store_credentials, read_store_published, read_widget_configuration,
-        write_charity_visited_event, write_feedback_form, write_store_published,
+        write_charity_visited_event, write_general_feedback, write_store_published,
         write_unpublish_feedback, write_widget_configuration, write_widget_event, CharityEvent,
         FeedbackForm, WidgetConfiguration, WidgetEvent,
     },
@@ -36,7 +36,7 @@ pub fn register_routes(cfg: &mut web::ServiceConfig) {
             .wrap(cors)
             .route("/widget-event", web::post().to(log_widget_event))
             .route("/charity-event", web::post().to(log_charity_event))
-            .route("/feedback-form", web::post().to(submit_feedback_form)),
+            .route("/feedback-form", web::post().to(submit_general_feedback)),
     );
 }
 
@@ -234,11 +234,11 @@ async fn log_charity_event(
 }
 
 #[tracing::instrument(name = "Save feedback form", skip(db_pool))]
-async fn submit_feedback_form(
+async fn submit_general_feedback(
     event: web::Query<FeedbackForm>,
     db_pool: web::Data<PgPool>,
 ) -> HttpResponse {
-    if let Err(error) = write_feedback_form(&event.into_inner(), &db_pool).await {
+    if let Err(error) = write_general_feedback(&event.into_inner(), &db_pool).await {
         tracing::warn!("Error while saving event {}", error);
     };
 

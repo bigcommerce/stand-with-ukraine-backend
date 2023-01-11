@@ -343,10 +343,13 @@ pub struct FeedbackForm {
 }
 
 #[tracing::instrument(name = "Write feedback to database", skip(db_pool))]
-pub async fn write_feedback_form(data: &FeedbackForm, db_pool: &PgPool) -> Result<(), sqlx::Error> {
+pub async fn write_general_feedback(
+    data: &FeedbackForm,
+    db_pool: &PgPool,
+) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
-        INSERT INTO feedback_form (name, email, message, submitted_at)
+        INSERT INTO general_feedback (name, email, message, submitted_at)
         VALUES ($1, $2, $3, $4);
         "#,
         data.name.as_str(),

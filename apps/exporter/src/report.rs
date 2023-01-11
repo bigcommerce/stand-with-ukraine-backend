@@ -43,8 +43,8 @@ pub async fn run(configuration: Configuration) {
         create_bulk_updates_for_sheet(
             &sheets,
             spreadsheet_id,
-            "website-feedback",
-            get_website_feedback_rows(&db_pool).await,
+            "general-feedback",
+            get_general_feedback_rows(&db_pool).await,
         )
         .await,
     );
@@ -124,8 +124,8 @@ pub async fn get_uninstall_feedback_rows(db_pool: &PgPool) -> Rows {
         .collect()
 }
 
-pub async fn get_website_feedback_rows(db_pool: &PgPool) -> Rows {
-    sqlx::query!("SELECT * FROM feedback_form")
+pub async fn get_general_feedback_rows(db_pool: &PgPool) -> Rows {
+    sqlx::query!("SELECT * FROM general_feedback")
         .fetch_all(db_pool)
         .await
         .unwrap()

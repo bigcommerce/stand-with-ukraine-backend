@@ -93,7 +93,7 @@ async fn insert_event_after_store_created_creates_record() {
 }
 
 #[tokio::test]
-async fn submit_feedback_form_without_required_or_invalid_fields_does_not_create_record() {
+async fn submit_general_feedback_without_required_or_invalid_fields_does_not_create_record() {
     let app = spawn_app().await;
 
     assert_eq!(app.get_form_feedback_submissions().await.count(), 0);
@@ -134,7 +134,7 @@ async fn submit_feedback_form_without_required_or_invalid_fields_does_not_create
 }
 
 #[tokio::test]
-async fn submit_feedback_form_should_create_record() {
+async fn submit_general_feedback_should_create_record() {
     let app = spawn_app().await;
 
     assert_eq!(app.get_form_feedback_submissions().await.count(), 0);

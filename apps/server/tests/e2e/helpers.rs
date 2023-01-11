@@ -170,7 +170,7 @@ impl TestApp {
     pub async fn get_form_feedback_submissions(
         &self,
     ) -> impl Iterator<Item = (String, String, String)> {
-        sqlx::query!("SELECT name, email, message FROM feedback_form;")
+        sqlx::query!("SELECT name, email, message FROM general_feedback;")
             .fetch_all(&self.db_pool)
             .await
             .unwrap()
