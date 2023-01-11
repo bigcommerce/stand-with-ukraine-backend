@@ -123,6 +123,21 @@
     },
     "query": "\n        UPDATE stores\n        SET published = $1\n        WHERE store_hash = $2;\n        "
   },
+  "c7651b8cec54a14708a1cc7fe4e90afb76e2d6cf0d85399ffd0d1c658f3d4f9b": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Varchar",
+          "Varchar",
+          "Varchar",
+          "Timestamptz"
+        ]
+      }
+    },
+    "query": "\n        INSERT INTO general_feedback (name, email, message, submitted_at)\n        VALUES ($1, $2, $3, $4);\n        "
+  },
   "ea92a0d130fec78ee1f88cc529ee67d1d1247d174c45d586e5f9ccd56cdaeeb0": {
     "describe": {
       "columns": [

@@ -95,6 +95,12 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: -- -D warnings
 
+      - name: Check sqlx offline query
+        if: github.actor != 'dependabot[bot]'
+        run: |
+          cd apps/exporter
+          cargo sqlx prepare --check -- --bin swu-exporter
+
       - name: Run tests
         run: |
           cd apps/exporter

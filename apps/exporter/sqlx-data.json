@@ -81,6 +81,48 @@
     },
     "query": "\n            SELECT event_type, count(*)\n            FROM widget_events\n            WHERE created_at >= $1 and created_at <= $2\n            GROUP BY event_type\n            ORDER BY event_type\n            "
   },
+  "234741a79e9861917d5701f9295bf2321660e695c5b02137bc0b16aa8a4dfc9e": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "submitted_at",
+          "ordinal": 1,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "name",
+          "ordinal": 2,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "email",
+          "ordinal": 3,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "message",
+          "ordinal": 4,
+          "type_info": "Varchar"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "SELECT * FROM general_feedback"
+  },
   "65a0c884cd37d1b384a0c88b0ef89f43d4f003dff66cb7f030155b830b650252": {
     "describe": {
       "columns": [
