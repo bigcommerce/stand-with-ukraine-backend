@@ -33,8 +33,18 @@ pub async fn run(configuration: Configuration) {
         create_bulk_updates_for_sheet(
             &sheets,
             spreadsheet_id,
-            "feedback",
-            get_feedback_rows(&db_pool).await,
+            "uninstall-feedback",
+            get_uninstall_feedback_rows(&db_pool).await,
+        )
+        .await,
+    );
+
+    updates.extend(
+        create_bulk_updates_for_sheet(
+            &sheets,
+            spreadsheet_id,
+            "general-feedback",
+            get_general_feedback_rows(&db_pool).await,
         )
         .await,
     );
@@ -97,7 +107,7 @@ pub async fn get_store_status_rows(db_pool: &PgPool) -> Rows {
         .collect()
 }
 
-pub async fn get_feedback_rows(db_pool: &PgPool) -> Rows {
+pub async fn get_uninstall_feedback_rows(db_pool: &PgPool) -> Rows {
     sqlx::query!("SELECT * FROM unpublish_events")
         .fetch_all(db_pool)
         .await
@@ -109,6 +119,24 @@ pub async fn get_feedback_rows(db_pool: &PgPool) -> Rows {
                 feedback.store_hash.to_owned(),
                 feedback.unpublished_at.to_string(),
                 feedback.reason.to_owned(),
+            ]
+        })
+        .collect()
+}
+
+pub async fn get_general_feedback_rows(db_pool: &PgPool) -> Rows {
+    sqlx::query!("SELECT * FROM general_feedback")
+        .fetch_all(db_pool)
+        .await
+        .unwrap()
+        .iter()
+        .map(|feedback| {
+            vec![
+                feedback.id.to_string(),
+                feedback.submitted_at.to_string(),
+                feedback.name.to_owned(),
+                feedback.email.to_owned(),
+                feedback.message.to_owned(),
             ]
         })
         .collect()
