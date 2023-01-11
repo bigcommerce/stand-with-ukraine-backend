@@ -91,3 +91,67 @@ async fn insert_event_after_store_created_creates_record() {
         1
     );
 }
+
+#[tokio::test]
+async fn submit_feedback_form_without_required_or_invalid_fields_does_not_create_record() {
+    let app = spawn_app().await;
+
+    assert_eq!(app.get_form_feedback_submissions().await.count(), 0);
+
+    // invalid email
+    let response = app
+        .test_client
+        .post(app.test_server_url("/api/v2/feedback-form"))
+        .query(&[("name", "Test"), ("message", "Test"), ("email", "test")])
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(response.status().as_u16(), 400);
+    assert!(
+        response.text().await.unwrap().contains("invalid value"),
+        "Response should complain about invalid email field"
+    );
+
+    assert_eq!(app.get_form_feedback_submissions().await.count(), 0);
+
+    // empty required field
+    let response = app
+        .test_client
+        .post(app.test_server_url("/api/v2/feedback-form"))
+        .query(&[("name", "Test"), ("message", "Test")])
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(response.status().as_u16(), 400);
+    assert!(
+        response.text().await.unwrap().contains("missing field"),
+        "Response should complain about missing email field"
+    );
+
+    assert_eq!(app.get_form_feedback_submissions().await.count(), 0);
+}
+
+#[tokio::test]
+async fn submit_feedback_form_should_create_record() {
+    let app = spawn_app().await;
+
+    assert_eq!(app.get_form_feedback_submissions().await.count(), 0);
+
+    // invalid email
+    let response = app
+        .test_client
+        .post(app.test_server_url("/api/v2/feedback-form"))
+        .query(&[
+            ("name", "Test"),
+            ("message", "Test"),
+            ("email", "test@test.com"),
+        ])
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(response.status().as_u16(), 200);
+    assert_eq!(app.get_form_feedback_submissions().await.count(), 1);
+}

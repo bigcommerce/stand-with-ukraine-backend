@@ -243,15 +243,10 @@ jobs:
           sudo apt-get install libpq-dev -y
           SKIP_DOCKER=true ./scripts/init_db.sh
 
-      - name: Test & publish code coverage
-        uses: paambaati/codeclimate-action@v3.0.0
-        env:
-          CC_TEST_REPORTER_ID: ${{secrets.CC_TEST_REPORTER_ID}}
-        with:
-          workingDirectory: ${{github.workspace}}/apps/server
-          coverageCommand: cargo llvm-cov nextest --all-features --lcov --output-path lcov.info
-          coverageLocations: |
-            ${{github.workspace}}/apps/server/lcov.info:lcov
+      - name: Test
+        run: |
+          cd apps/server/
+          cargo llvm-cov nextest --all-features --lcov --output-path lcov.info
 
       - name: Upload coverage to Coveralls
         uses: coverallsapp/github-action@1.1.3

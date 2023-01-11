@@ -1,6 +1,7 @@
 #![allow(clippy::use_self)] // necessary for enum that uses derive
 
 use anyhow::Context;
+use email_address::EmailAddress;
 use secrecy::Secret;
 use sqlx::{types::time::OffsetDateTime, PgPool};
 use uuid::Uuid;
@@ -326,6 +327,31 @@ pub async fn write_widget_event(event: &WidgetEvent, db_pool: &PgPool) -> Result
         "#,
         event.store_hash.as_str(),
         event.event.to_value_string(),
+        OffsetDateTime::now_utc(),
+    )
+    .execute(db_pool)
+    .await?;
+
+    Ok(())
+}
+
+#[derive(serde::Deserialize, Debug)]
+pub struct FeedbackForm {
+    name: String,
+    email: EmailAddress,
+    message: String,
+}
+
+#[tracing::instrument(name = "Write feedback to database", skip(db_pool))]
+pub async fn write_feedback_form(data: &FeedbackForm, db_pool: &PgPool) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"
+        INSERT INTO feedback_form (name, email, message, submitted_at)
+        VALUES ($1, $2, $3, $4);
+        "#,
+        data.name.as_str(),
+        data.email.as_str(),
+        data.message.as_str(),
         OffsetDateTime::now_utc(),
     )
     .execute(db_pool)

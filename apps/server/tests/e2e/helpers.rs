@@ -167,6 +167,17 @@ impl TestApp {
         .map(|row| row.event_type)
     }
 
+    pub async fn get_form_feedback_submissions(
+        &self,
+    ) -> impl Iterator<Item = (String, String, String)> {
+        sqlx::query!("SELECT name, email, message FROM feedback_form;")
+            .fetch_all(&self.db_pool)
+            .await
+            .unwrap()
+            .into_iter()
+            .map(|row| (row.name, row.email, row.message))
+    }
+
     pub async fn get_charity_visited_events(
         &self,
         store_hash: &str,
