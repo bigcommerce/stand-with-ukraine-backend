@@ -33,9 +33,19 @@ jobs:
       POSTGRES_HOST: localhost
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup .env
         run: ./scripts/create_env.sh
+
+      - name: Cache dependencies
+        id: cache-dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-exporter-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
@@ -51,19 +61,27 @@ jobs:
           args: --all -- --check
 
       - uses: taiki-e/install-action@nextest
-      - uses: Swatinem/rust-cache@v1
-        with:
-          key: exporter
 
+      - name: Cache sqlx-cli
+        uses: actions/cache@v3
+        id: cache-sqlx
+        with:
+          path: |
+            ~/.cargo/bin/sqlx
+            ~/.cargo/bin/cargo-sqlx
+          key: ${{ runner.os }}-sqlx-${{ env.SQLX_VERSION }}
       - name: Install sqlx-cli
         uses: actions-rs/cargo@v1
+        if: steps.cache-sqlx.outputs.cache-hit == false
         with:
           command: install
-          args: >
+          args: |
             sqlx-cli
+            --force
             --version=${{ env.SQLX_VERSION }}
-            --features=${{ env.SQLX_FEATURES }}
+            --features ${{ env.SQLX_FEATURES }}
             --no-default-features
+            --locked
 
       - name: Migrate database
         run: |
@@ -91,12 +109,12 @@ jobs:
     if: github.ref == 'refs/heads/main'
 
     permissions:
-      contents: 'read'
-      id-token: 'write'
+      contents: read
+      id-token: write
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Exporter Google Sheet Credentials
         env:
@@ -114,7 +132,7 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v0
         with:
-          install_components: 'beta'
+          install_components: beta
 
       - name: Use gcloud CLI
         run: gcloud info
@@ -126,7 +144,7 @@ jobs:
           install: true
 
       - name: Cache Docker layers
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: /tmp/.buildx-cache
           key: ${{ runner.os }}-multi-buildx-${{ github.sha }}
@@ -152,7 +170,7 @@ jobs:
           gcloud auth configure-docker --quiet us-central1-docker.pkg.dev
 
       - name: Build production image
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
