@@ -49,11 +49,11 @@ pub struct AppRootSpanBuilder;
 
 impl RootSpanBuilder for AppRootSpanBuilder {
     fn on_request_start(request: &ServiceRequest) -> Span {
-        let access_token = match request.app_data::<web::Data<LightstepAccessToken>>() {
-            // unwrap from web::Data => LightstepAccessToken => Secret => String => str
-            Some(access_token) => access_token.as_ref().as_ref().expose_secret().as_str(),
-            None => "developer",
-        };
+        let access_token = request
+            .app_data::<web::Data<LightstepAccessToken>>()
+            .map_or("developer", |access_token| {
+                access_token.as_ref().as_ref().expose_secret().as_str()
+            });
 
         root_span!(request, lightstep.access_token = access_token)
     }

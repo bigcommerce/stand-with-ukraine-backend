@@ -1,0 +1,6 @@
+target/
+tests/
+.gitignore
+.dockerignore
+lcov.info
+Dockerfile

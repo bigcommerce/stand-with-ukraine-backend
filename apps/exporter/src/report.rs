@@ -86,7 +86,7 @@ pub async fn run(configuration: Configuration) {
         .await
         .unwrap();
 
-    println!("{:?}", response);
+    println!("{response:?}");
 }
 
 pub async fn get_store_status_rows(db_pool: &PgPool) -> Rows {

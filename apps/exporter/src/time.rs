@@ -1,10 +1,7 @@
 use time::{macros::time, Date, OffsetDateTime, PrimitiveDateTime, Time};
 
 pub fn get_week_start_end(base_date: Option<OffsetDateTime>) -> (OffsetDateTime, OffsetDateTime) {
-    let base_date = match base_date {
-        Some(date) => date,
-        None => OffsetDateTime::now_utc(),
-    };
+    let base_date = base_date.map_or_else(OffsetDateTime::now_utc, |date| date);
 
     let week_start = PrimitiveDateTime::new(
         Date::from_iso_week_date(

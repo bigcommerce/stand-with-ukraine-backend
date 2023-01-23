@@ -41,10 +41,7 @@ pub async fn create_bulk_updates_for_sheet(
 ) -> Vec<ValueRange> {
     let existing_rows =
         get_existing_rows_from_sheet(sheets_client, spreadsheet_id, sheet_name).await;
-    let mut last_row = match &existing_rows {
-        Some(rows) => rows.len(),
-        None => 0,
-    };
+    let mut last_row = existing_rows.as_ref().map_or(0, |rows| rows.len());
 
     rows.into_iter()
         .map(|new_row| {
@@ -60,7 +57,7 @@ pub async fn get_existing_rows_from_sheet(
 ) -> Option<Rows> {
     let (_, existing_store_ids) = sheets_client
         .spreadsheets()
-        .values_get(spreadsheet_id, format!("{}!A1:A", sheet_name).as_str())
+        .values_get(spreadsheet_id, format!("{sheet_name}!A1:A").as_str())
         .doit()
         .await
         .unwrap();
@@ -74,25 +71,23 @@ fn create_update_range_from_row(
     existing_values: &Option<Rows>,
     last_row: &mut usize,
 ) -> ValueRange {
-    let found_row_index = match existing_values {
-        Some(rows) => rows.iter().position(|row| {
+    let found_row_index = existing_values.as_ref().and_then(|rows| {
+        rows.iter().position(|row| {
             if !row.is_empty() {
                 row[0] == new_row[0]
             } else {
                 false
             }
-        }),
-        None => None,
-    };
+        })
+    });
 
-    let update_row_index = match found_row_index {
-        // 1 based index
-        Some(found_row_index) => found_row_index + 1,
-        None => {
+    let update_row_index = found_row_index.map_or_else(
+        || {
             *last_row += 1;
             *last_row
-        }
-    };
+        },
+        |found_row_index| found_row_index + 1,
+    );
 
     let end_column: char = (b'A' + (new_row.len().max(1) - 1) as u8) as char;
 
@@ -100,8 +95,7 @@ fn create_update_range_from_row(
         major_dimension: Some("ROWS".to_owned()),
         values: Some(vec![new_row]),
         range: Some(format!(
-            "{0}!A{1}:{2}{1}",
-            sheet_name, update_row_index, end_column
+            "{sheet_name}!A{update_row_index}:{end_column}{update_row_index}"
         )),
     }
 }

@@ -173,10 +173,7 @@ async fn uninstall(
 }
 
 fn generate_dashboard_url(base_url: &str, token: &str, store_hash: &str) -> String {
-    format!(
-        "{}/dashboard/?token={}&store-id={}",
-        base_url, token, store_hash
-    )
+    format!("{base_url}/dashboard/?token={token}&store-id={store_hash}")
 }
 
 #[cfg(test)]
