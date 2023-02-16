@@ -167,6 +167,15 @@ impl TestApp {
         .map(|row| row.event_type)
     }
 
+    pub async fn get_universal_widget_events(&self) -> impl Iterator<Item = String> {
+        sqlx::query!("SELECT event_type FROM widget_events WHERE store_hash IS NULL")
+            .fetch_all(&self.db_pool)
+            .await
+            .unwrap()
+            .into_iter()
+            .map(|row| row.event_type)
+    }
+
     pub async fn get_form_feedback_submissions(
         &self,
     ) -> impl Iterator<Item = (String, String, String)> {
@@ -176,6 +185,17 @@ impl TestApp {
             .unwrap()
             .into_iter()
             .map(|row| (row.name, row.email, row.message))
+    }
+
+    pub async fn get_universal_configurator_submissions(
+        &self,
+    ) -> impl Iterator<Item = (String, Option<String>)> {
+        sqlx::query!("SELECT event_type, metadata FROM universal_installer_events;")
+            .fetch_all(&self.db_pool)
+            .await
+            .unwrap()
+            .into_iter()
+            .map(|row| (row.event_type, row.metadata))
     }
 
     pub async fn get_charity_visited_events(
@@ -191,6 +211,17 @@ impl TestApp {
         .unwrap()
         .into_iter()
         .map(|row| (row.charity, row.event_type))
+    }
+
+    pub async fn get_universal_charity_visited_events(
+        &self,
+    ) -> impl Iterator<Item = (String, String)> {
+        sqlx::query!("SELECT charity, event_type FROM charity_events WHERE store_hash IS NULL;")
+            .fetch_all(&self.db_pool)
+            .await
+            .unwrap()
+            .into_iter()
+            .map(|row| (row.charity, row.event_type))
     }
 }
 

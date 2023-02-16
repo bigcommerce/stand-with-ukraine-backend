@@ -262,7 +262,7 @@ pub async fn write_charity_visited_event(
         INSERT INTO charity_events (store_hash, charity, event_type, created_at)
         VALUES ($1, $2, $3, $4);
         "#,
-        event.store_hash.as_str(),
+        store_hash_field_from_str(event.store_hash.as_str()),
         event.charity.to_value_string(),
         event.event.to_value_string(),
         OffsetDateTime::now_utc(),
@@ -318,6 +318,13 @@ pub struct WidgetEvent {
     event: WidgetEventType,
 }
 
+pub fn store_hash_field_from_str(store_hash: &str) -> Option<&str> {
+    match store_hash {
+        "universal" => None,
+        store_hash => Some(store_hash),
+    }
+}
+
 #[tracing::instrument(name = "Write widget event to database", skip(db_pool))]
 pub async fn write_widget_event(event: &WidgetEvent, db_pool: &PgPool) -> Result<(), sqlx::Error> {
     sqlx::query!(
@@ -325,7 +332,7 @@ pub async fn write_widget_event(event: &WidgetEvent, db_pool: &PgPool) -> Result
         INSERT INTO widget_events (store_hash, event_type, created_at)
         VALUES ($1, $2, $3);
         "#,
-        event.store_hash.as_str(),
+        store_hash_field_from_str(event.store_hash.as_str()),
         event.event.to_value_string(),
         OffsetDateTime::now_utc(),
     )
@@ -363,6 +370,49 @@ pub async fn write_general_feedback(
     Ok(())
 }
 
+#[derive(serde::Deserialize, serde::Serialize, Debug)]
+#[serde(rename_all = "kebab-case")]
+pub enum UniversalConfiguratorEventType {
+    GenerateCode,
+    CopyCode,
+}
+
+impl UniversalConfiguratorEventType {
+    fn to_value_string(&self) -> String {
+        serde_json::to_value(self)
+            .unwrap()
+            .as_str()
+            .unwrap()
+            .to_owned()
+    }
+}
+
+#[derive(serde::Deserialize, Debug)]
+pub struct UniversalConfiguratorEvent {
+    metadata: Option<String>,
+    event_type: UniversalConfiguratorEventType,
+}
+
+#[tracing::instrument(name = "Write universal widget event to database", skip(db_pool))]
+pub async fn write_universal_widget_event(
+    data: &UniversalConfiguratorEvent,
+    db_pool: &PgPool,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"
+        INSERT INTO universal_installer_events (submitted_at, event_type, metadata)
+        VALUES ($1, $2, $3);
+        "#,
+        OffsetDateTime::now_utc(),
+        data.event_type.to_value_string(),
+        data.metadata
+    )
+    .execute(db_pool)
+    .await?;
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -392,5 +442,15 @@ mod tests {
     #[case(&Charity::MiraAction, "mira-action")]
     fn charity_to_string_works(#[case] charity: &Charity, #[case] value: &str) {
         assert_eq!(charity.to_value_string(), value)
+    }
+
+    #[rstest]
+    #[case(&UniversalConfiguratorEventType::GenerateCode, "generate-code")]
+    #[case(&UniversalConfiguratorEventType::CopyCode, "copy-code")]
+    fn universal_configurator_event_to_string_works(
+        #[case] event: &UniversalConfiguratorEventType,
+        #[case] value: &str,
+    ) {
+        assert_eq!(event.to_value_string(), value)
     }
 }

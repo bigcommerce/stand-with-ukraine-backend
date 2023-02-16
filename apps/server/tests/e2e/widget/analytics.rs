@@ -93,6 +93,54 @@ async fn insert_event_after_store_created_creates_record() {
 }
 
 #[tokio::test]
+async fn insert_event_using_universal_creates_record() {
+    let app = spawn_app().await;
+    app.insert_test_store().await;
+
+    assert_eq!(app.get_universal_widget_events().await.count(), 0);
+
+    let response = app
+        .test_client
+        .post(app.test_server_url("/api/v2/widget-event"))
+        .query(&[("event", "widget-opened"), ("store_hash", "universal")])
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(response.status().as_u16(), 200);
+
+    assert_eq!(
+        app.get_universal_widget_events()
+            .await
+            .filter(|event| event == "widget-opened")
+            .count(),
+        1
+    );
+
+    assert_eq!(app.get_universal_charity_visited_events().await.count(), 0);
+
+    let response = app
+        .test_client
+        .post(app.test_server_url("/api/v2/charity-event"))
+        .query(&[
+            ("charity", "razom"),
+            ("store_hash", "universal"),
+            ("event", "support-clicked"),
+        ])
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(response.status().as_u16(), 200);
+
+    assert_eq!(
+        app.get_universal_charity_visited_events()
+            .await
+            .filter(|(charity, event_type)| charity == "razom" && event_type == "support-clicked")
+            .count(),
+        1
+    );
+}
+
+#[tokio::test]
 async fn submit_general_feedback_without_required_or_invalid_fields_does_not_create_record() {
     let app = spawn_app().await;
 
@@ -139,7 +187,7 @@ async fn submit_general_feedback_should_create_record() {
 
     assert_eq!(app.get_form_feedback_submissions().await.count(), 0);
 
-    // invalid email
+    // valid
     let response = app
         .test_client
         .post(app.test_server_url("/api/v2/feedback-form"))
@@ -154,4 +202,29 @@ async fn submit_general_feedback_should_create_record() {
 
     assert_eq!(response.status().as_u16(), 200);
     assert_eq!(app.get_form_feedback_submissions().await.count(), 1);
+}
+
+#[tokio::test]
+async fn submit_universal_configurator_event_should_create_record() {
+    let app = spawn_app().await;
+
+    assert_eq!(
+        app.get_universal_configurator_submissions().await.count(),
+        0
+    );
+
+    // valid
+    let response = app
+        .test_client
+        .post(app.test_server_url("/api/v2/universal-event"))
+        .query(&[("event_type", "generate-code")])
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(response.status().as_u16(), 200);
+    assert_eq!(
+        app.get_universal_configurator_submissions().await.count(),
+        1
+    );
 }

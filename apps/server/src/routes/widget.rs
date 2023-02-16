@@ -5,8 +5,9 @@ use crate::{
     data::{
         read_store_credentials, read_store_published, read_widget_configuration,
         write_charity_visited_event, write_general_feedback, write_store_published,
-        write_unpublish_feedback, write_widget_configuration, write_widget_event, CharityEvent,
-        FeedbackForm, WidgetConfiguration, WidgetEvent,
+        write_universal_widget_event, write_unpublish_feedback, write_widget_configuration,
+        write_widget_event, CharityEvent, FeedbackForm, UniversalConfiguratorEvent,
+        WidgetConfiguration, WidgetEvent,
     },
 };
 
@@ -36,7 +37,11 @@ pub fn register_routes(cfg: &mut web::ServiceConfig) {
             .wrap(cors)
             .route("/widget-event", web::post().to(log_widget_event))
             .route("/charity-event", web::post().to(log_charity_event))
-            .route("/feedback-form", web::post().to(submit_general_feedback)),
+            .route("/feedback-form", web::post().to(submit_general_feedback))
+            .route(
+                "/universal-event",
+                web::post().to(submit_universal_configurator_event),
+            ),
     );
 }
 
@@ -239,6 +244,18 @@ async fn submit_general_feedback(
     db_pool: web::Data<PgPool>,
 ) -> HttpResponse {
     if let Err(error) = write_general_feedback(&event.into_inner(), &db_pool).await {
+        tracing::warn!("Error while saving event {}", error);
+    };
+
+    HttpResponse::Ok().finish()
+}
+
+#[tracing::instrument(name = "Save universal configurator event", skip(db_pool))]
+async fn submit_universal_configurator_event(
+    event: web::Query<UniversalConfiguratorEvent>,
+    db_pool: web::Data<PgPool>,
+) -> HttpResponse {
+    if let Err(error) = write_universal_widget_event(&event.into_inner(), &db_pool).await {
         tracing::warn!("Error while saving event {}", error);
     };
 
