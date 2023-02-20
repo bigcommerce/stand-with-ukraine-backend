@@ -98,6 +98,20 @@
     },
     "query": "\n        INSERT INTO widget_events (store_hash, event_type, created_at)\n        VALUES ($1, $2, $3);\n        "
   },
+  "6d4f9de8180dccaa71801dd55e01e029d6e3b53e175d98948e8f292afce6ec15": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Timestamptz",
+          "Varchar",
+          "Varchar"
+        ]
+      }
+    },
+    "query": "\n        INSERT INTO universal_installer_events (submitted_at, event_type, metadata)\n        VALUES ($1, $2, $3);\n        "
+  },
   "82f438f197114b0bf39ff73fa6e43b2737f111551396ffd53610786519796279": {
     "describe": {
       "columns": [],
