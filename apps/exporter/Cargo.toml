@@ -37,3 +37,4 @@ features = [
 [dev-dependencies]
 rstest = "0.16.0"
 rand = "0.8.5"
+rusty-hook = "^0.11.2"

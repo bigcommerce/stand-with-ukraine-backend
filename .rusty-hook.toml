@@ -1,0 +1,6 @@
+[hooks]
+pre-commit = "./scripts/pre_commit.sh"
+pre-push = "./scripts/pre_push.sh"
+
+[logging]
+verbose = true
