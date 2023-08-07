@@ -103,6 +103,9 @@ pub async fn get_store_status_rows(db_pool: &PgPool) -> Rows {
                 store.published.to_string(),
                 store.uninstalled.to_string(),
             ]
+            .into_iter()
+            .map(Into::into)
+            .collect()
         })
         .collect()
 }
@@ -120,6 +123,9 @@ pub async fn get_uninstall_feedback_rows(db_pool: &PgPool) -> Rows {
                 feedback.unpublished_at.to_string(),
                 feedback.reason.to_owned(),
             ]
+            .into_iter()
+            .map(Into::into)
+            .collect()
         })
         .collect()
 }
@@ -138,6 +144,9 @@ pub async fn get_general_feedback_rows(db_pool: &PgPool) -> Rows {
                 feedback.email.to_owned(),
                 feedback.message.to_owned(),
             ]
+            .into_iter()
+            .map(Into::into)
+            .collect()
         })
         .collect()
 }
@@ -152,7 +161,8 @@ pub async fn get_charity_event_summary_rows(
             "⎯⎯⎯⎯⎯ {} to {} ⎯⎯⎯⎯⎯",
             format_date(start_date),
             format_date(end_date)
-        )]],
+        )
+        .into()]],
         sqlx::query!(
             r#"
             SELECT charity, event_type, count(*)
@@ -181,6 +191,9 @@ pub async fn get_charity_event_summary_rows(
                 charity_event.event_type.to_owned(),
                 charity_event.count.unwrap().to_string(),
             ]
+            .into_iter()
+            .map(Into::into)
+            .collect()
         })
         .collect(),
     ]
@@ -197,7 +210,8 @@ pub async fn get_widget_event_summary_rows(
             "⎯⎯⎯⎯⎯ {} to {} ⎯⎯⎯⎯⎯",
             format_date(start_date),
             format_date(end_date)
-        )]],
+        )
+        .into()]],
         sqlx::query!(
             r#"
             SELECT event_type, count(*)
@@ -224,6 +238,9 @@ pub async fn get_widget_event_summary_rows(
                 widget_event.event_type.to_owned(),
                 widget_event.count.unwrap().to_string(),
             ]
+            .into_iter()
+            .map(Into::into)
+            .collect()
         })
         .collect(),
     ]

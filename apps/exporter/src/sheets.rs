@@ -1,4 +1,5 @@
 extern crate google_sheets4 as sheets4;
+use serde_json::Value;
 use sheets4::{
     api::ValueRange,
     hyper::{self, client::HttpConnector},
@@ -6,7 +7,7 @@ use sheets4::{
     oauth2, Sheets,
 };
 
-pub type Rows = Vec<Vec<String>>;
+pub type Rows = Vec<Vec<Value>>;
 pub type SheetsClient = Sheets<HttpsConnector<HttpConnector>>;
 
 pub async fn get_sheets_client(credential_path: &str, token_cache_path: &str) -> SheetsClient {
@@ -67,7 +68,7 @@ pub async fn get_existing_rows_from_sheet(
 
 fn create_update_range_from_row(
     sheet_name: &str,
-    new_row: Vec<String>,
+    new_row: Vec<Value>,
     existing_values: &Option<Rows>,
     last_row: &mut usize,
 ) -> ValueRange {
@@ -107,10 +108,16 @@ mod tests {
     #[test]
     fn should_order_update_correctly_from_existing_rows() {
         let sheet_name = "test-sheet";
-        let new_row = vec!["1".to_owned(), "test-store".to_owned()];
-        let existing_rows = vec![
-            vec!["id".to_owned(), "store_hash".to_owned()],
-            vec!["1".to_owned(), "old-name".to_owned()],
+        let new_row: Vec<Value> = vec!["1".to_owned(), "test-store".to_owned()]
+            .into_iter()
+            .map(Into::into)
+            .collect();
+        let existing_rows: Vec<Vec<Value>> = vec![
+            vec!["id", "store_hash"]
+                .into_iter()
+                .map(Into::into)
+                .collect(),
+            vec!["1", "old-name"].into_iter().map(Into::into).collect(),
         ];
         let mut last_row = existing_rows.len();
 
@@ -129,10 +136,16 @@ mod tests {
     #[test]
     fn update_should_add_to_end_if_match_not_found() {
         let sheet_name = "test-sheet";
-        let new_row = vec!["1".to_owned(), "test-store-1".to_owned()];
-        let existing_rows = vec![
-            vec!["id".to_owned(), "store_hash".to_owned()],
-            vec!["2".to_owned(), "store-abc".to_owned()],
+        let new_row: Vec<Value> = vec!["1", "test-store-1"]
+            .into_iter()
+            .map(Into::into)
+            .collect();
+        let existing_rows: Vec<Vec<Value>> = vec![
+            vec!["id", "store_hash"]
+                .into_iter()
+                .map(Into::into)
+                .collect(),
+            vec!["2", "store-abc"].into_iter().map(Into::into).collect(),
         ];
         let mut last_row = existing_rows.len();
 
@@ -148,7 +161,10 @@ mod tests {
         assert_eq!(updates.range, Some("test-sheet!A3:B3".to_owned()));
         assert_eq!(last_row, existing_rows.len() + 1);
 
-        let new_row = vec!["3".to_owned(), "test-store-3".to_owned()];
+        let new_row: Vec<Value> = vec!["3", "test-store-3"]
+            .into_iter()
+            .map(Into::into)
+            .collect();
 
         let updates = create_update_range_from_row(
             sheet_name,

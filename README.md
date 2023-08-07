@@ -64,7 +64,7 @@ We hope this sample gives you a good reference point for building your next kill
   - Rust toolchain
     - Recommend using `rustup` to setup `rust`, `cargo`, `fmt`
   - SQLX command
-    - Recommend setup using `cargo install sqlx-cli --force --version=0.6.3 --features=postgres,rustls --no-default-features`
+    - Recommend setup using `cargo install sqlx-cli --force --version=0.7.1 --features=postgres,rustls --no-default-features`
   - Docker
     - Recommended setup for `macos` or `linux` is `podman` and creating an alias for docker from podman
   - Editor
