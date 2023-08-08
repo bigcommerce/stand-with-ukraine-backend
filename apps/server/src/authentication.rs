@@ -22,9 +22,8 @@ impl FromRequest for AuthClaims {
     type Error = Error;
 
     fn from_request(req: &HttpRequest, _payload: &mut Payload) -> <Self as FromRequest>::Future {
-        let jwt_secret = match req.app_data::<web::Data<JWTSecret>>() {
-            Some(val) => val,
-            None => return ready(Err(Error::InvalidServerConfiguration)),
+        let Some(jwt_secret) = req.app_data::<web::Data<JWTSecret>>() else {
+            return ready(Err(Error::InvalidServerConfiguration))
         };
 
         let bearer = match <authorization::Authorization::<authorization::Bearer> as actix_web::http::header::Header>::parse(req) {

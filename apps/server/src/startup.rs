@@ -17,7 +17,7 @@ pub struct Application {
 }
 
 impl Application {
-    pub async fn build(configuration: Configuration) -> Result<Self, std::io::Error> {
+    pub fn build(configuration: Configuration) -> Result<Self, std::io::Error> {
         let db_pool = get_connection_pool(&configuration.database);
         let bigcommerce_client = BCClient::new(
             configuration.bigcommerce.api_base_url,
