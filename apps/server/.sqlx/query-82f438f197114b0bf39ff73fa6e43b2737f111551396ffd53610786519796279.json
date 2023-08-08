@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE stores\n        SET uninstalled = true, published = false\n        WHERE store_hash = $1;\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "82f438f197114b0bf39ff73fa6e43b2737f111551396ffd53610786519796279"
+}
