@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO universal_installer_events (submitted_at, event_type, metadata)\n        VALUES ($1, $2, $3);\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6d4f9de8180dccaa71801dd55e01e029d6e3b53e175d98948e8f292afce6ec15"
+}

@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO charity_events (store_hash, charity, event_type, created_at)\n        VALUES ($1, $2, $3, $4);\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "20f522c74fee80aebdb7450afcc064474a653100592b220eda67db3ec404d70b"
+}

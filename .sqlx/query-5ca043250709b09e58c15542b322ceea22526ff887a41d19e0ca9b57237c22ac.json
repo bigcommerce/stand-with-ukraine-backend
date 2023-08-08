@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO widget_events (store_hash, event_type, created_at)\n        VALUES ($1, $2, $3);\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Varchar",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5ca043250709b09e58c15542b322ceea22526ff887a41d19e0ca9b57237c22ac"
+}

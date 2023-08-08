@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO unpublish_events (store_hash, unpublished_at, reason)\n        VALUES ($1, $2, $3);\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Timestamptz",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "30c2572effa6a53c59b8ec57ea019ea78235a427007c2b62ac7be9f81feb9e3f"
+}
