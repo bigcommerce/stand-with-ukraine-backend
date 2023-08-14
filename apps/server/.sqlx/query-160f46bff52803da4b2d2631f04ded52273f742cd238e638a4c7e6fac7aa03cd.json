@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO stores (id, store_hash, access_token, installed_at, uninstalled)\n        VALUES ($1, $2, $3, $4, false)\n        ON CONFLICT (store_hash) DO UPDATE set access_token = $3, installed_at = $4, uninstalled = false;\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "160f46bff52803da4b2d2631f04ded52273f742cd238e638a4c7e6fac7aa03cd"
+}

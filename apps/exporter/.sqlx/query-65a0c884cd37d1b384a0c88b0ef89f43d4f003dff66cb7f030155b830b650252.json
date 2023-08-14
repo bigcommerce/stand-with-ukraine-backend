@@ -1,0 +1,35 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT charity, event_type, count(*)\n            FROM charity_events\n            WHERE created_at >= $1 and created_at <= $2\n            GROUP BY event_type, charity\n            ORDER BY event_type, charity\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "charity",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "event_type",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "count",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "65a0c884cd37d1b384a0c88b0ef89f43d4f003dff66cb7f030155b830b650252"
+}

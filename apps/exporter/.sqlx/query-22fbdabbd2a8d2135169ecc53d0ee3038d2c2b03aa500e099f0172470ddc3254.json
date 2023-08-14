@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT event_type, count(*)\n            FROM widget_events\n            WHERE created_at >= $1 and created_at <= $2\n            GROUP BY event_type\n            ORDER BY event_type\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "event_type",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "count",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      null
+    ]
+  },
+  "hash": "22fbdabbd2a8d2135169ecc53d0ee3038d2c2b03aa500e099f0172470ddc3254"
+}

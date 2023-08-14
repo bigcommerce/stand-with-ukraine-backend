@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT access_token, store_hash FROM stores WHERE store_hash = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "access_token",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "store_hash",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "ea92a0d130fec78ee1f88cc529ee67d1d1247d174c45d586e5f9ccd56cdaeeb0"
+}
