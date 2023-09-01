@@ -60,7 +60,7 @@ features = [
 ]
 
 [dependencies.tokio]
-version = "1.29.1"
+version = "1.32.0"
 features = ["macros", "rt-multi-thread"]
 
 [dev-dependencies]
