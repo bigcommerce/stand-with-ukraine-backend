@@ -97,7 +97,7 @@ pub async fn get_store_status_rows(db_pool: &PgPool) -> Rows {
         .unwrap()
         .iter()
         .map(|store| {
-            vec![
+            [
                 store.id.to_string(),
                 store.store_hash.clone(),
                 store.installed_at.to_string(),
@@ -118,7 +118,7 @@ pub async fn get_uninstall_feedback_rows(db_pool: &PgPool) -> Rows {
         .unwrap()
         .iter()
         .map(|feedback| {
-            vec![
+            [
                 feedback.id.to_string(),
                 feedback.store_hash.clone(),
                 feedback.unpublished_at.to_string(),
@@ -138,7 +138,7 @@ pub async fn get_general_feedback_rows(db_pool: &PgPool) -> Rows {
         .unwrap()
         .iter()
         .map(|feedback| {
-            vec![
+            [
                 feedback.id.to_string(),
                 feedback.submitted_at.to_string(),
                 feedback.name.clone(),
@@ -157,7 +157,7 @@ pub async fn get_charity_event_summary_rows(
     start_date: OffsetDateTime,
     end_date: OffsetDateTime,
 ) -> Rows {
-    vec![
+    [
         vec![vec![format!(
             "⎯⎯⎯⎯⎯ {} to {} ⎯⎯⎯⎯⎯",
             format_date(start_date),
@@ -180,7 +180,7 @@ pub async fn get_charity_event_summary_rows(
         .unwrap()
         .iter()
         .map(|charity_event| {
-            vec![
+            [
                 format!(
                     "{}:{} {} to {}",
                     charity_event.charity,
@@ -206,7 +206,7 @@ pub async fn get_widget_event_summary_rows(
     start_date: OffsetDateTime,
     end_date: OffsetDateTime,
 ) -> Rows {
-    vec![
+    [
         vec![vec![format!(
             "⎯⎯⎯⎯⎯ {} to {} ⎯⎯⎯⎯⎯",
             format_date(start_date),
@@ -229,7 +229,7 @@ pub async fn get_widget_event_summary_rows(
         .unwrap()
         .iter()
         .map(|widget_event| {
-            vec![
+            [
                 format!(
                     "{} {} to {}",
                     widget_event.event_type,

@@ -109,17 +109,15 @@ mod tests {
     #[test]
     fn should_order_update_correctly_from_existing_rows() {
         let sheet_name = "test-sheet";
-        let new_row: Vec<Value> = vec!["1".to_owned(), "test-store".to_owned()]
+        let new_row: Vec<Value> = ["1".to_owned(), "test-store".to_owned()]
             .into_iter()
             .map(Into::into)
             .collect();
-        let existing_rows: Vec<Vec<Value>> = vec![
-            vec!["id", "store_hash"]
-                .into_iter()
-                .map(Into::into)
-                .collect(),
-            vec!["1", "old-name"].into_iter().map(Into::into).collect(),
-        ];
+        let existing_rows: Vec<Vec<Value>> = [
+            ["id", "store_hash"].into_iter().map(Into::into).collect(),
+            ["1", "old-name"].into_iter().map(Into::into).collect(),
+        ]
+        .into();
         let mut last_row = existing_rows.len();
 
         let updates = create_update_range_from_row(
@@ -137,17 +135,12 @@ mod tests {
     #[test]
     fn update_should_add_to_end_if_match_not_found() {
         let sheet_name = "test-sheet";
-        let new_row: Vec<Value> = vec!["1", "test-store-1"]
-            .into_iter()
-            .map(Into::into)
-            .collect();
-        let existing_rows: Vec<Vec<Value>> = vec![
-            vec!["id", "store_hash"]
-                .into_iter()
-                .map(Into::into)
-                .collect(),
-            vec!["2", "store-abc"].into_iter().map(Into::into).collect(),
-        ];
+        let new_row: Vec<Value> = ["1", "test-store-1"].into_iter().map(Into::into).collect();
+        let existing_rows: Vec<Vec<Value>> = [
+            ["id", "store_hash"].into_iter().map(Into::into).collect(),
+            ["2", "store-abc"].into_iter().map(Into::into).collect(),
+        ]
+        .into();
         let mut last_row = existing_rows.len();
 
         let updates = create_update_range_from_row(
@@ -162,10 +155,7 @@ mod tests {
         assert_eq!(updates.range, Some("test-sheet!A3:B3".to_owned()));
         assert_eq!(last_row, existing_rows.len() + 1);
 
-        let new_row: Vec<Value> = vec!["3", "test-store-3"]
-            .into_iter()
-            .map(Into::into)
-            .collect();
+        let new_row: Vec<Value> = ["3", "test-store-3"].into_iter().map(Into::into).collect();
 
         let updates = create_update_range_from_row(
             sheet_name,
