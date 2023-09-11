@@ -1,6 +1,6 @@
 use crate::{
     authentication::AuthClaims,
-    bigcommerce::client::BCClient,
+    bigcommerce::client::HttpAPI,
     configuration::BaseURL,
     data::{
         read_store_credentials, read_store_published, read_widget_configuration,
@@ -106,7 +106,7 @@ async fn publish_widget(
     auth: AuthClaims,
     db_pool: web::Data<PgPool>,
     base_url: web::Data<BaseURL>,
-    bigcommerce_client: web::Data<BCClient>,
+    bigcommerce_client: web::Data<HttpAPI>,
 ) -> Result<HttpResponse, PublishError> {
     let store_hash = auth.sub.as_str();
     let widget_configuration = read_widget_configuration(store_hash, &db_pool)
@@ -157,7 +157,7 @@ struct Feedback {
 async fn remove_widget(
     auth: AuthClaims,
     db_pool: web::Data<PgPool>,
-    bigcommerce_client: web::Data<BCClient>,
+    bigcommerce_client: web::Data<HttpAPI>,
     feedback: web::Query<Feedback>,
 ) -> Result<HttpResponse, PublishError> {
     let store_hash = auth.sub.as_str();
@@ -193,7 +193,7 @@ async fn remove_widget(
 async fn preview_widget(
     auth: AuthClaims,
     db_pool: web::Data<PgPool>,
-    bigcommerce_client: web::Data<BCClient>,
+    bigcommerce_client: web::Data<HttpAPI>,
 ) -> Result<HttpResponse, PublishError> {
     let store_hash = auth.sub.as_str();
 

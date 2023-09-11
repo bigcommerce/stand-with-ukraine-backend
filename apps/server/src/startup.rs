@@ -1,7 +1,7 @@
 use std::net::TcpListener;
 
 use crate::{
-    bigcommerce::client::BCClient,
+    bigcommerce::client::HttpAPI,
     configuration::{BaseURL, Configuration, Database, JWTSecret, LightstepAccessToken},
     routes::register,
     telemetry::AppRootSpanBuilder,
@@ -17,9 +17,12 @@ pub struct Application {
 }
 
 impl Application {
+    /// # Errors
+    ///
+    /// Will return `std::io::Error` if listener could not be setup on the port provided
     pub fn build(configuration: Configuration) -> Result<Self, std::io::Error> {
         let db_pool = get_connection_pool(&configuration.database);
-        let bigcommerce_client = BCClient::new(
+        let bigcommerce_client = HttpAPI::new(
             configuration.bigcommerce.api_base_url,
             configuration.bigcommerce.login_base_url,
             configuration.bigcommerce.client_id,
@@ -33,7 +36,10 @@ impl Application {
             configuration.application.host, configuration.application.port
         );
         let listener = TcpListener::bind(address)?;
-        let port = listener.local_addr().unwrap().port();
+        let port = listener
+            .local_addr()
+            .expect("listener does not have an address")
+            .port();
         let server = run(
             listener,
             db_pool,
@@ -50,24 +56,31 @@ impl Application {
         self.port
     }
 
+    /// # Errors
+    ///
+    /// Will return `std::io::Error` if actix server returns an error
     pub async fn run_until_stopped(self) -> Result<(), std::io::Error> {
         self.server.await
     }
 }
 
+#[must_use]
 pub fn get_connection_pool(configuration: &Database) -> PgPool {
     PgPoolOptions::new()
         .acquire_timeout(std::time::Duration::from_secs(2))
         .connect_lazy_with(configuration.with_db())
 }
 
+/// # Errors
+///
+/// Will return `std::io::Error` if server could not bind to the listener
 pub fn run(
     listener: TcpListener,
     db_pool: PgPool,
     base_url: String,
     jwt_secret: Secret<String>,
     lightstep_access_token: Secret<String>,
-    bigcommerce_client: BCClient,
+    bigcommerce_client: HttpAPI,
 ) -> Result<Server, std::io::Error> {
     let db_pool = Data::new(db_pool);
     let base_url = Data::new(BaseURL(base_url));

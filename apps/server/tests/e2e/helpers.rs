@@ -5,7 +5,7 @@ use secrecy::{ExposeSecret, Secret};
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use swu_app::{
     authentication::create_jwt,
-    bigcommerce::auth::BCUser,
+    bigcommerce::auth::User,
     configuration::{Configuration, Database, JWTSecret},
     data::WidgetConfiguration,
     startup::{get_connection_pool, Application},
@@ -102,7 +102,7 @@ async fn configure_database(config: &Database) -> PgPool {
 
 impl TestApp {
     pub fn generate_bc_jwt_token(&self) -> String {
-        let user = BCUser {
+        let user = User {
             id: 1,
             email: "test@test.com".to_owned(),
         };
@@ -113,8 +113,8 @@ impl TestApp {
     pub fn generate_bc_jwt_token_with_params(
         &self,
         sub: &str,
-        owner: &BCUser,
-        user: &BCUser,
+        owner: &User,
+        user: &User,
     ) -> String {
         let now = OffsetDateTime::now_utc();
         let expiration = now + Duration::minutes(30);

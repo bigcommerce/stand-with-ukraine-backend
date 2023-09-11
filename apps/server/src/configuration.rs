@@ -77,6 +77,9 @@ pub struct Application {
 }
 
 impl Configuration {
+    /// # Errors
+    ///
+    /// Will return `ConfigError` if configuration files and environment variables cannot build a valid `Configuration`
     pub fn generate_from_environment() -> Result<Self, ConfigError> {
         dotenv().ok();
 

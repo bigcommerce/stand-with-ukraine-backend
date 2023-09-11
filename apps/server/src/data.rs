@@ -7,12 +7,12 @@ use sqlx::{types::time::OffsetDateTime, PgPool};
 use uuid::Uuid;
 
 use crate::{
-    bigcommerce::{script::Script, store::BCStore},
+    bigcommerce::{script::Script, store::APIToken},
     configuration::BaseURL,
 };
 
 #[tracing::instrument(name = "Write store credentials to database", skip(store, pool))]
-pub async fn write_store_credentials(store: &BCStore, pool: &PgPool) -> Result<(), sqlx::Error> {
+pub async fn write_store_credentials(store: &APIToken, pool: &PgPool) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
         INSERT INTO stores (id, store_hash, access_token, installed_at, uninstalled)
@@ -34,7 +34,7 @@ pub async fn write_store_credentials(store: &BCStore, pool: &PgPool) -> Result<(
 pub async fn read_store_credentials(
     store_hash: &str,
     pool: &PgPool,
-) -> Result<BCStore, anyhow::Error> {
+) -> Result<APIToken, anyhow::Error> {
     let row = sqlx::query!(
         r#"
         SELECT access_token, store_hash FROM stores WHERE store_hash = $1
@@ -44,7 +44,10 @@ pub async fn read_store_credentials(
     .fetch_one(pool)
     .await?;
 
-    Ok(BCStore::new(row.store_hash, Secret::from(row.access_token)))
+    Ok(APIToken::new(
+        row.store_hash,
+        Secret::from(row.access_token),
+    ))
 }
 
 #[tracing::instrument(
@@ -154,6 +157,9 @@ pub struct WidgetConfiguration {
 }
 
 impl WidgetConfiguration {
+    /// # Errors
+    ///
+    /// Will return `serde_json::Error` if `&self` cannot be serialized into a string of json.
     pub fn generate_script(
         &self,
         store_hash: &str,

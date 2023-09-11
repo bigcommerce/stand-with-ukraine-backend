@@ -5,11 +5,11 @@ use swu_app::configuration::Database;
 #[derive(serde::Deserialize, Clone)]
 pub struct Configuration {
     pub database: Database,
-    pub sheets: SheetsConfiguration,
+    pub sheets: Sheets,
 }
 
 #[derive(serde::Deserialize, Clone)]
-pub struct SheetsConfiguration {
+pub struct Sheets {
     pub spreadsheet_id: String,
     pub credential_path: String,
     pub token_cache_path: String,

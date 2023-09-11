@@ -3,16 +3,16 @@ use reqwest::header;
 use secrecy::{ExposeSecret, Secret};
 
 #[derive(serde::Deserialize, serde::Serialize)]
-pub struct BCStoreInformationResponse {
+pub struct Information {
     pub secure_url: String,
 }
 
-pub struct BCStore {
+pub struct APIToken {
     store_hash: String,
     access_token: Secret<String>,
 }
 
-impl BCStore {
+impl APIToken {
     pub fn new(store_hash: String, access_token: Secret<String>) -> Self {
         Self {
             store_hash,
@@ -28,6 +28,9 @@ impl BCStore {
         self.access_token.expose_secret().as_str()
     }
 
+    /// # Errors
+    ///
+    /// Will return `anyhow::Error` if `self.access_token` cannot be parsed into `HeaderValue`
     pub fn get_api_headers(&self) -> Result<header::HeaderMap, anyhow::Error> {
         let mut headers = header::HeaderMap::new();
 

@@ -4,7 +4,7 @@ use crate::{
 };
 use secrecy::Secret;
 use swu_app::{
-    bigcommerce::{auth::BCUser, store::BCStore},
+    bigcommerce::{auth::User, store::APIToken},
     data::write_store_credentials,
 };
 
@@ -135,7 +135,7 @@ async fn load_request_fails_with_bad_token() {
 
     assert!(response.status().is_client_error());
 
-    let user = BCUser {
+    let user = User {
         id: 1,
         email: "user@test.com".to_owned(),
     };
@@ -183,7 +183,7 @@ async fn uninstall_request_succeeds() {
     let app = spawn_app().await;
     let client = create_test_server_client_no_redirect();
 
-    let store = BCStore::new(
+    let store = APIToken::new(
         "test-store".to_owned(),
         Secret::from("test-token".to_owned()),
     );
@@ -217,7 +217,7 @@ async fn uninstall_request_fails_with_non_owner() {
     let app = spawn_app().await;
     let client = create_test_server_client_no_redirect();
 
-    let store = BCStore::new(
+    let store = APIToken::new(
         "test-store".to_owned(),
         Secret::from("test-token".to_owned()),
     );
@@ -225,11 +225,11 @@ async fn uninstall_request_fails_with_non_owner() {
         .await
         .expect("Failed to initialize store");
 
-    let owner = BCUser {
+    let owner = User {
         id: 1,
         email: "owner@test.com".to_owned(),
     };
-    let user = BCUser {
+    let user = User {
         id: 2,
         email: "user@test.com".to_owned(),
     };

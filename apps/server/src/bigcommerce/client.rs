@@ -7,12 +7,12 @@ use serde_json::json;
 use crate::authentication::Error;
 
 use super::{
-    auth::{BCClaims, BCOAuthResponse},
-    script::{BCListScriptsResponse, BCScriptResponse, Script},
-    store::{BCStore, BCStoreInformationResponse},
+    auth::{Claims, OAuthResponse},
+    script::{GetResponse, ListResponse, Script},
+    store::{APIToken, Information},
 };
 
-pub struct BCClient {
+pub struct HttpAPI {
     api_base_url: String,
     login_base_url: String,
     client_id: String,
@@ -21,7 +21,7 @@ pub struct BCClient {
     http_client: Client,
 }
 
-impl BCClient {
+impl HttpAPI {
     pub fn new(
         api_base_url: String,
         login_base_url: String,
@@ -43,7 +43,7 @@ impl BCClient {
             .timeout(timeout)
             .default_headers(headers)
             .build()
-            .unwrap();
+            .expect("BigCommerce api client could not be built");
 
         Self {
             api_base_url,
@@ -64,7 +64,7 @@ impl BCClient {
         code: &str,
         scope: &str,
         context: &str,
-    ) -> Result<BCOAuthResponse, reqwest::Error> {
+    ) -> Result<OAuthResponse, reqwest::Error> {
         self.http_client
             .post(self.get_oauth2_url())
             .json(&json!({
@@ -97,10 +97,7 @@ impl BCClient {
         format!("{}/{}", self.get_scripts_route(store_hash), script_id)
     }
 
-    pub async fn get_all_scripts(
-        &self,
-        store: &BCStore,
-    ) -> Result<BCListScriptsResponse, anyhow::Error> {
+    pub async fn get_all_scripts(&self, store: &APIToken) -> Result<ListResponse, anyhow::Error> {
         self.http_client
             .get(self.get_scripts_route(store.get_store_hash()))
             .headers(store.get_api_headers()?)
@@ -108,16 +105,16 @@ impl BCClient {
             .await
             .context("get all scripts request")?
             .error_for_status()?
-            .json::<BCListScriptsResponse>()
+            .json::<ListResponse>()
             .await
             .context("parse get all scripts response")
     }
 
     pub async fn try_get_script_with_name(
         &self,
-        store: &BCStore,
+        store: &APIToken,
         name: &str,
-    ) -> Result<Option<BCScriptResponse>, anyhow::Error> {
+    ) -> Result<Option<GetResponse>, anyhow::Error> {
         let scripts = self.get_all_scripts(store).await?;
 
         for script in scripts.data {
@@ -129,7 +126,7 @@ impl BCClient {
         Ok(None)
     }
 
-    pub async fn remove_all_scripts(&self, store: &BCStore) -> Result<(), anyhow::Error> {
+    pub async fn remove_all_scripts(&self, store: &APIToken) -> Result<(), anyhow::Error> {
         let scripts = self.get_all_scripts(store).await?;
 
         for script in scripts.data {
@@ -146,7 +143,7 @@ impl BCClient {
 
     pub async fn create_script(
         &self,
-        store: &BCStore,
+        store: &APIToken,
         script: &Script,
     ) -> Result<(), anyhow::Error> {
         self.http_client
@@ -163,7 +160,7 @@ impl BCClient {
 
     pub async fn update_script(
         &self,
-        store: &BCStore,
+        store: &APIToken,
         script_uuid: &str,
         script: &Script,
     ) -> Result<(), anyhow::Error> {
@@ -179,19 +176,19 @@ impl BCClient {
         Ok(())
     }
 
-    pub fn decode_jwt(&self, token: &str) -> Result<BCClaims, Error> {
+    pub fn decode_jwt(&self, token: &str) -> Result<Claims, Error> {
         let key = DecodingKey::from_secret(self.client_secret.expose_secret().as_bytes());
         let validation = Validation::new(Algorithm::HS256);
         let decoded =
-            decode::<BCClaims>(token, &key, &validation).map_err(Error::InvalidTokenError)?;
+            decode::<Claims>(token, &key, &validation).map_err(Error::InvalidTokenError)?;
 
         Ok(decoded.claims)
     }
 
     pub async fn get_store_information(
         &self,
-        store: &BCStore,
-    ) -> Result<BCStoreInformationResponse, anyhow::Error> {
+        store: &APIToken,
+    ) -> Result<Information, anyhow::Error> {
         self.http_client
             .get(self.get_store_information_route(store.get_store_hash()))
             .headers(store.get_api_headers()?)
@@ -199,7 +196,7 @@ impl BCClient {
             .await
             .context("get store information request")?
             .error_for_status()?
-            .json::<BCStoreInformationResponse>()
+            .json::<Information>()
             .await
             .context("parse store information response")
     }
