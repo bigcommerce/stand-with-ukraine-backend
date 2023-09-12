@@ -5,7 +5,7 @@ use sqlx::PgPool;
 
 use crate::{
     authentication::{create_jwt, Error},
-    bigcommerce::client::BCClient,
+    bigcommerce::client::HttpAPI,
     configuration::{BaseURL, JWTSecret},
     data::{write_store_as_uninstalled, write_store_credentials},
 };
@@ -47,7 +47,7 @@ impl ResponseError for InstallError {
 )]
 async fn install(
     query: web::Query<InstallQuery>,
-    bigcommerce_client: web::Data<BCClient>,
+    bigcommerce_client: web::Data<HttpAPI>,
     base_url: web::Data<BaseURL>,
     db_pool: web::Data<PgPool>,
     jwt_secret: web::Data<JWTSecret>,
@@ -119,7 +119,7 @@ impl ResponseError for LoadError {
 )]
 async fn load(
     query: web::Query<LoadQuery>,
-    bigcommerce_client: web::Data<BCClient>,
+    bigcommerce_client: web::Data<HttpAPI>,
     base_url: web::Data<BaseURL>,
     jwt_secret: web::Data<JWTSecret>,
 ) -> Result<HttpResponse, LoadError> {
@@ -149,7 +149,7 @@ async fn load(
 )]
 async fn uninstall(
     query: web::Query<LoadQuery>,
-    bigcommerce_client: web::Data<BCClient>,
+    bigcommerce_client: web::Data<HttpAPI>,
     db_pool: web::Data<PgPool>,
 ) -> Result<HttpResponse, LoadError> {
     let claims = bigcommerce_client

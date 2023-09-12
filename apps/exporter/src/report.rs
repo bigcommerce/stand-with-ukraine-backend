@@ -1,4 +1,5 @@
 extern crate google_sheets4 as sheets4;
+use serde_json::Value;
 use sheets4::api::{BatchUpdateValuesRequest, ValueRange};
 use sqlx::PgPool;
 use swu_app::startup::get_connection_pool;
@@ -96,16 +97,16 @@ pub async fn get_store_status_rows(db_pool: &PgPool) -> Rows {
         .unwrap()
         .iter()
         .map(|store| {
-            vec![
+            [
                 store.id.to_string(),
-                store.store_hash.to_owned(),
+                store.store_hash.clone(),
                 store.installed_at.to_string(),
                 store.published.to_string(),
                 store.uninstalled.to_string(),
             ]
             .into_iter()
             .map(Into::into)
-            .collect()
+            .collect::<Vec<Value>>()
         })
         .collect()
 }
@@ -117,11 +118,11 @@ pub async fn get_uninstall_feedback_rows(db_pool: &PgPool) -> Rows {
         .unwrap()
         .iter()
         .map(|feedback| {
-            vec![
+            [
                 feedback.id.to_string(),
-                feedback.store_hash.to_owned(),
+                feedback.store_hash.clone(),
                 feedback.unpublished_at.to_string(),
-                feedback.reason.to_owned(),
+                feedback.reason.clone(),
             ]
             .into_iter()
             .map(Into::into)
@@ -137,12 +138,12 @@ pub async fn get_general_feedback_rows(db_pool: &PgPool) -> Rows {
         .unwrap()
         .iter()
         .map(|feedback| {
-            vec![
+            [
                 feedback.id.to_string(),
                 feedback.submitted_at.to_string(),
-                feedback.name.to_owned(),
-                feedback.email.to_owned(),
-                feedback.message.to_owned(),
+                feedback.name.clone(),
+                feedback.email.clone(),
+                feedback.message.clone(),
             ]
             .into_iter()
             .map(Into::into)
@@ -156,7 +157,7 @@ pub async fn get_charity_event_summary_rows(
     start_date: OffsetDateTime,
     end_date: OffsetDateTime,
 ) -> Rows {
-    vec![
+    [
         vec![vec![format!(
             "⎯⎯⎯⎯⎯ {} to {} ⎯⎯⎯⎯⎯",
             format_date(start_date),
@@ -179,7 +180,7 @@ pub async fn get_charity_event_summary_rows(
         .unwrap()
         .iter()
         .map(|charity_event| {
-            vec![
+            [
                 format!(
                     "{}:{} {} to {}",
                     charity_event.charity,
@@ -187,8 +188,8 @@ pub async fn get_charity_event_summary_rows(
                     format_date(start_date),
                     format_date(end_date),
                 ),
-                charity_event.charity.to_owned(),
-                charity_event.event_type.to_owned(),
+                charity_event.charity.clone(),
+                charity_event.event_type.clone(),
                 charity_event.count.unwrap().to_string(),
             ]
             .into_iter()
@@ -205,7 +206,7 @@ pub async fn get_widget_event_summary_rows(
     start_date: OffsetDateTime,
     end_date: OffsetDateTime,
 ) -> Rows {
-    vec![
+    [
         vec![vec![format!(
             "⎯⎯⎯⎯⎯ {} to {} ⎯⎯⎯⎯⎯",
             format_date(start_date),
@@ -228,14 +229,14 @@ pub async fn get_widget_event_summary_rows(
         .unwrap()
         .iter()
         .map(|widget_event| {
-            vec![
+            [
                 format!(
                     "{} {} to {}",
                     widget_event.event_type,
                     format_date(start_date),
                     format_date(end_date)
                 ),
-                widget_event.event_type.to_owned(),
+                widget_event.event_type.clone(),
                 widget_event.count.unwrap().to_string(),
             ]
             .into_iter()

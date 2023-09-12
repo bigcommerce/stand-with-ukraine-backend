@@ -1,4 +1,4 @@
-use swu_app::{bigcommerce::store::BCStoreInformationResponse, data::StoreStatus};
+use swu_app::{bigcommerce::store::Information, data::StoreStatus};
 
 use crate::{
     helpers::{create_test_server_client_no_redirect, get_widget_configuration, spawn_app},
@@ -218,7 +218,7 @@ async fn widget_preview_request_succeeds() {
         .send()
         .await
         .expect("Failed to execute the request")
-        .json::<BCStoreInformationResponse>()
+        .json::<Information>()
         .await
         .expect("Failed to deserialize response");
 

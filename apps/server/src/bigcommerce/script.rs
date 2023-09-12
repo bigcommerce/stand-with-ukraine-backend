@@ -1,10 +1,10 @@
 #[derive(serde::Deserialize)]
-pub struct BCListScriptsResponse {
-    pub data: Vec<BCScriptResponse>,
+pub struct ListResponse {
+    pub data: Vec<GetResponse>,
 }
 
 #[derive(serde::Deserialize)]
-pub struct BCScriptResponse {
+pub struct GetResponse {
     pub uuid: String,
     pub api_client_id: String,
     pub enabled: bool,
