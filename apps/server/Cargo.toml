@@ -37,7 +37,7 @@ tracing-subscriber = { version = "0.3.17", features = [
   "registry",
   "env-filter",
 ] }
-uuid = { version = "1.4.1", features = ["v4"] }
+uuid = { version = "1.6.1", features = ["v4"] }
 dotenvy = "0.15.7"
 email_address = "0.2.4"
 
