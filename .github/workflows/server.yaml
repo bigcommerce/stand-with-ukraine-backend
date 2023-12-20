@@ -10,8 +10,8 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  SQLX_VERSION: 0.7.1
-  SQLX_FEATURES: postgres,rustls
+  SQLX_VERSION: 0.7.3
+  SQLX_FEATURES: postgres
 
 jobs:
   fmt-lint-test:

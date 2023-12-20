@@ -1,0 +1,6 @@
+[advisories]
+ignore = [
+  # Advisory about a vulnerability in rsa, which we don't use, but it is pulled in via sqlx due
+  # to a bug in cargo. Context: https://github.com/rust-lang/cargo/issues/10801#issuecomment-1831905921
+  "RUSTSEC-2023-0071"
+]
