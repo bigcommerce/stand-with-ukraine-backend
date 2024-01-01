@@ -66,5 +66,5 @@ features = ["macros", "rt-multi-thread"]
 
 [dev-dependencies]
 rstest = "0.18.2"
-wiremock = "0.5.19"
+wiremock = "0.5.22"
 rusty-hook = "^0.11.2"
