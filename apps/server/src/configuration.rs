@@ -12,6 +12,7 @@ pub struct Configuration {
     pub database: Database,
     pub application: Application,
     pub bigcommerce: BigCommerce,
+    pub liq_pay: LiqPay,
 }
 
 #[derive(serde::Deserialize, Clone)]
@@ -62,6 +63,12 @@ impl Database {
         let options = self.without_db().database(&self.database_name);
         options.log_statements(tracing::log::LevelFilter::Trace)
     }
+}
+
+#[derive(serde::Deserialize, Clone)]
+pub struct LiqPay {
+    pub public_key: Secret<String>,
+    pub private_key: Secret<String>,
 }
 
 #[derive(serde::Deserialize, Clone)]

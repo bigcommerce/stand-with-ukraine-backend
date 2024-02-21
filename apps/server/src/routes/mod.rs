@@ -1,6 +1,7 @@
 use actix_web::{web, HttpResponse};
 
 mod bigcommerce;
+mod payment_buttons;
 mod widget;
 
 pub async fn health_check() -> HttpResponse {
@@ -10,6 +11,7 @@ pub async fn health_check() -> HttpResponse {
 pub fn register(cfg: &mut web::ServiceConfig) {
     cfg.service(web::resource("/health_check").route(web::get().to(health_check)));
 
+    payment_buttons::register_routes(cfg);
     bigcommerce::register_routes(cfg);
     widget::register_routes(cfg);
 }
