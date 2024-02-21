@@ -76,6 +76,9 @@ pub struct Application {
     pub port: u16,
 }
 
+const CONFIGURATION_PATH: &str = "configuration/base";
+const SERVER_WORKSPACE_PATH: &str = "apps/server";
+
 impl Configuration {
     /// # Errors
     ///
@@ -85,10 +88,17 @@ impl Configuration {
 
         let base_path =
             std::env::current_dir().expect("Failed to determine the current directory.");
-        let configuration_directory = base_path.join("configuration");
 
         Config::builder()
-            .add_source(File::from(configuration_directory.join("base")).required(true))
+            .add_source(File::from(base_path.join(CONFIGURATION_PATH)).required(false))
+            .add_source(
+                File::from(
+                    base_path
+                        .join(SERVER_WORKSPACE_PATH)
+                        .join(CONFIGURATION_PATH),
+                )
+                .required(false),
+            )
             .add_source(Environment::with_prefix("APP").separator("__"))
             .build()?
             .try_deserialize()
