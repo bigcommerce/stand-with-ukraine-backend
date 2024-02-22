@@ -3,6 +3,7 @@ pub mod widget;
 
 pub mod helpers;
 pub mod mocks;
+mod pay;
 
 #[tokio::test]
 async fn health_check() {
