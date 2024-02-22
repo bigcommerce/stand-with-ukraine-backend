@@ -1,8 +1,8 @@
 use std::net::TcpListener;
 
-use crate::payment_buttons::liqpay_client::LiqPayClient;
+use crate::liq_pay::HttpAPI as LiqPayHttpAPI;
 use crate::{
-    bigcommerce::client::HttpAPI,
+    bigcommerce::client::HttpAPI as BigCommerceHttpAPI,
     configuration::{BaseURL, Configuration, Database, JWTSecret, LightstepAccessToken},
     routes::register,
     telemetry::AppRootSpanBuilder,
@@ -23,7 +23,7 @@ impl Application {
     /// Will return `std::io::Error` if listener could not be setup on the port provided
     pub fn build(configuration: Configuration) -> Result<Self, std::io::Error> {
         let db_pool = get_connection_pool(&configuration.database);
-        let bigcommerce_client = HttpAPI::new(
+        let bigcommerce_client = BigCommerceHttpAPI::new(
             configuration.bigcommerce.api_base_url,
             configuration.bigcommerce.login_base_url,
             configuration.bigcommerce.client_id,
@@ -31,7 +31,7 @@ impl Application {
             configuration.bigcommerce.install_redirect_uri,
             std::time::Duration::from_millis(configuration.bigcommerce.timeout.into()),
         );
-        let liq_pay_client = LiqPayClient::new(
+        let liq_pay_client = LiqPayHttpAPI::new(
             configuration.liq_pay.public_key,
             configuration.liq_pay.private_key,
         );
@@ -86,8 +86,8 @@ pub fn run(
     base_url: String,
     jwt_secret: Secret<String>,
     lightstep_access_token: Secret<String>,
-    bigcommerce_client: HttpAPI,
-    liq_pay_client: LiqPayClient,
+    bigcommerce_client: BigCommerceHttpAPI,
+    liq_pay_client: LiqPayHttpAPI,
 ) -> Result<Server, std::io::Error> {
     let db_pool = Data::new(db_pool);
     let base_url = Data::new(BaseURL(base_url));

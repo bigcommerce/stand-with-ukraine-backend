@@ -1,35 +1,38 @@
-use crate::payment_buttons::action::Action;
+use crate::liq_pay::HttpAPI;
+use crate::liq_pay::InputQuery;
 use actix_web::web::Redirect;
-use actix_web::{web, Responder};
-use serde::Deserialize;
-
-use crate::payment_buttons::currency::Currency;
-use crate::payment_buttons::language::Language;
-use crate::payment_buttons::liqpay_client::LiqPayClient;
+use actix_web::{web, HttpResponse, ResponseError};
+use reqwest::StatusCode;
 
 pub fn register_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(web::resource("/pay").route(web::get().to(handle)));
 }
 
-#[derive(Deserialize)]
-struct InputQuery {
-    language: String,
-    currency: String,
-    sum: f64,
-    action: String,
+#[derive(thiserror::Error, Debug)]
+enum PayError {
+    #[error(transparent)]
+    UnexpectedError(#[from] anyhow::Error),
+}
+
+impl ResponseError for PayError {
+    fn error_response(&self) -> HttpResponse {
+        match self {
+            Self::UnexpectedError(_) => HttpResponse::new(StatusCode::INTERNAL_SERVER_ERROR),
+        }
+    }
 }
 
 #[tracing::instrument(name = "Process load request", skip(query, liq_pay_links))]
 async fn handle(
     query: web::Query<InputQuery>,
-    liq_pay_links: web::Data<LiqPayClient>,
-) -> impl Responder {
-    let url = liq_pay_links.link(
-        &query.sum,
-        &Language::new(&query.language),
-        &Currency::new(&query.currency),
-        &Action::new(&query.action),
-        "Support BigCommerce colleagues defending Ukraine",
-    );
-    Redirect::to(url)
+    liq_pay_links: web::Data<HttpAPI>,
+) -> Result<Redirect, PayError> {
+    let url = liq_pay_links
+        .link(
+            query.into_inner(),
+            "Support BigCommerce colleagues defending Ukraine",
+        )
+        .map_err(PayError::UnexpectedError)?;
+
+    Ok(Redirect::to(url))
 }
