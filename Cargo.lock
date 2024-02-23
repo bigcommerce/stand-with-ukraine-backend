@@ -2986,6 +2986,7 @@ dependencies = [
  "actix-web",
  "actix-web-httpauth",
  "anyhow",
+ "assert-json-diff",
  "base64 0.21.4",
  "config",
  "dotenvy",
