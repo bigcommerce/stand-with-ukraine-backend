@@ -8,7 +8,7 @@ use time::{format_description::FormatItem, macros::format_description};
 use tracing::debug;
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq)]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "lowercase")]
 pub enum Action {
     Pay,
     Subscribe,
@@ -66,7 +66,7 @@ pub struct SubscriptionPayload {
     payload: Payload,
 
     subscribe: usize,
-    subscribe_periodically: SubscribePeriod,
+    subscribe_periodicity: SubscribePeriod,
     subscribe_date_start: String,
 }
 
@@ -99,7 +99,7 @@ impl HttpAPI {
             Action::Subscribe => serde_json::to_string(&SubscriptionPayload {
                 payload,
                 subscribe: 1,
-                subscribe_periodically: SubscribePeriod::Month,
+                subscribe_periodicity: SubscribePeriod::Month,
                 subscribe_date_start: (OffsetDateTime::now_utc() - Duration::hours(2))
                     .format(DATE_TIME_FORMAT)?,
             })?,
@@ -164,7 +164,7 @@ mod tests {
     #[rstest]
     #[case(Action::Pay, "pay")]
     #[case(Action::Subscribe, "subscribe")]
-    #[case(Action::PayDonate, "pay-donate")]
+    #[case(Action::PayDonate, "paydonate")]
     fn test_action_new(#[case] action: Action, #[case] action_string: &str) {
         assert_eq!(
             serde_json::from_value::<Action>(action_string.into()).unwrap(),
