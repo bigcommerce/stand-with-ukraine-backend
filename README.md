@@ -71,7 +71,7 @@ We hope this sample gives you a good reference point for building your next kill
     - Recommended setup is `vscode` and the `rust-analyzer` extension.
   - Logs
     - Open telemetry is supported so you can enable it:
-      - Run jaeger locally: `docker run -d -p6831:6831/udp -p6832:6832/udp -p16686:16686 -p14268:14268 jaegertracing/all-in-one:latest`
+      - Run jaeger locally: `docker run -d -p16686:16686 -p4317:4317 jaegertracing/all-in-one:latest`
       - Run the app or tests with flag enabled
         - `OTEL_ENABLE=true cargo run --bin swu-app` 
         - `RUST_LOG=trace OTEL_ENABLE=true cargo test` enable trace level logs for tests as default is off 

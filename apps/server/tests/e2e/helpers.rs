@@ -1,5 +1,3 @@
-use std::io::Sink;
-
 use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
 use once_cell::sync::Lazy;
 use reqwest::Client;
