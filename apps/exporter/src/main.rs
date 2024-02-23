@@ -1,3 +1,5 @@
+#![deny(unused_extern_crates)]
+
 use configuration::Configuration;
 
 mod configuration;

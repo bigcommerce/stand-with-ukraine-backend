@@ -1,13 +1,10 @@
-use swu_app::{
-    configuration::Configuration,
-    startup::Application,
-    telemetry::{get_subscriber, init_subscriber},
-};
+#![deny(unused_extern_crates)]
+
+use swu_app::{configuration::Configuration, startup::Application, telemetry::init_tracing};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    let subscriber = get_subscriber("swu-app".into(), "info".into(), std::io::stdout);
-    init_subscriber(subscriber);
+    init_tracing("swu-app".into(), "info".into());
 
     let configuration =
         Configuration::generate_from_environment().expect("Failed to read configuration.");

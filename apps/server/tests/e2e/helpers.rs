@@ -9,23 +9,16 @@ use swu_app::{
     configuration::{Configuration, Database, JWTSecret},
     data::WidgetConfiguration,
     startup::{get_connection_pool, Application},
-    telemetry::{get_subscriber, init_subscriber},
+    telemetry::init_tracing,
 };
 use time::{Duration, OffsetDateTime};
 use uuid::Uuid;
 use wiremock::MockServer;
 
 static TRACING: Lazy<()> = Lazy::new(|| {
-    let default_filter_level = "debug".into();
+    let default_filter_level = "off".into();
     let subscriber_name = "test".into();
-
-    if std::env::var("TEST_LOG").is_ok() {
-        let subscriber = get_subscriber(subscriber_name, default_filter_level, std::io::stdout);
-        init_subscriber(subscriber);
-    } else {
-        let subscriber = get_subscriber(subscriber_name, default_filter_level, std::io::sink);
-        init_subscriber(subscriber);
-    };
+    init_tracing(subscriber_name, default_filter_level);
 });
 
 pub struct TestApp {
