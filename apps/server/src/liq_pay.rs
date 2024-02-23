@@ -164,7 +164,7 @@ mod tests {
     #[rstest]
     #[case(Action::Pay, "pay")]
     #[case(Action::Subscribe, "subscribe")]
-    #[case(Action::PayDonate, "pay-donate")]
+    #[case(Action::PayDonate, "paydonate")]
     fn test_action_new(#[case] action: Action, #[case] action_string: &str) {
         assert_eq!(
             serde_json::from_value::<Action>(action_string.into()).unwrap(),
