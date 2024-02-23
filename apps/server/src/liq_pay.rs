@@ -1,11 +1,10 @@
-use ::time::{Duration, OffsetDateTime};
+use ::time::OffsetDateTime;
 use base64::engine::general_purpose::STANDARD as encoder;
 use base64::Engine;
 use secrecy::{ExposeSecret, Secret};
 use serde::{Deserialize, Serialize};
 use sha1::{Digest, Sha1};
 use time::{format_description::FormatItem, macros::format_description};
-use tracing::debug;
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq)]
 #[serde(rename_all = "lowercase")]
@@ -49,7 +48,7 @@ pub struct HttpAPI {
 }
 
 #[derive(Debug, Serialize)]
-pub struct SharedFields {
+pub struct BaseFields {
     public_key: String,
     language: Language,
     action: Action,
@@ -61,10 +60,11 @@ pub struct SharedFields {
 }
 
 #[derive(Debug, Serialize)]
-pub enum CheckoutRequestPayload {
+#[serde(untagged)]
+pub enum CheckoutRequest {
     Subscription {
         #[serde(flatten)]
-        shared: SharedFields,
+        shared: BaseFields,
 
         subscribe: usize,
         subscribe_periodicity: SubscribePeriod,
@@ -73,7 +73,7 @@ pub enum CheckoutRequestPayload {
 
     Pay {
         #[serde(flatten)]
-        shared: SharedFields,
+        shared: BaseFields,
     },
 }
 
@@ -89,9 +89,13 @@ impl HttpAPI {
         }
     }
 
-    #[tracing::instrument(name = "Generate LiqPay link", skip(self))]
-    pub fn link(&self, query: InputQuery, description: &str) -> anyhow::Result<String> {
-        let shared = SharedFields {
+    #[tracing::instrument(name = "Generate payload", skip(self))]
+    pub fn generate_request_payload(
+        &self,
+        query: InputQuery,
+        description: &str,
+    ) -> anyhow::Result<CheckoutRequest> {
+        let shared = BaseFields {
             public_key: self.public_key.expose_secret().clone(),
             language: query.language,
             action: query.action.clone(),
@@ -102,22 +106,22 @@ impl HttpAPI {
             order_id: uuid::Uuid::new_v4().into(),
         };
 
-        let payload = match query.action {
-            Action::Subscribe => CheckoutRequestPayload::Subscription {
+        Ok(match query.action {
+            Action::Subscribe => CheckoutRequest::Subscription {
                 shared,
                 subscribe: 1,
                 subscribe_periodicity: SubscribePeriod::Month,
-                subscribe_date_start: (OffsetDateTime::now_utc() - Duration::hours(2))
-                    .format(DATE_TIME_FORMAT)?,
+                subscribe_date_start: OffsetDateTime::now_utc().format(DATE_TIME_FORMAT)?,
             },
-            Action::Pay | Action::PayDonate => CheckoutRequestPayload::Pay { shared },
-        };
+            Action::Pay | Action::PayDonate => CheckoutRequest::Pay { shared },
+        })
+    }
 
-        let payload = serde_json::to_string(&payload)?;
+    #[tracing::instrument(name = "Generate LiqPay link", skip(self))]
+    pub fn link(&self, request: CheckoutRequest) -> anyhow::Result<String> {
+        let data = serde_json::to_string(&request)?;
+        let data = encoder.encode(data);
 
-        debug!(payload, "generated payload");
-
-        let data = encoder.encode(payload);
         Ok(format!(
             "https://www.liqpay.ua/api/{}/checkout?data={}&signature={}",
             API_VERSION,
@@ -140,19 +144,21 @@ impl HttpAPI {
 
 #[cfg(test)]
 mod tests {
+    use assert_json_diff::assert_json_include;
     use rstest::rstest;
+    use serde_json::json;
 
     use super::*;
 
-    #[rstest]
+    #[test]
     fn test_create_link_subscribe() {
         let client = HttpAPI::new(
             Secret::new("public_key".to_string()),
             Secret::new("private_key".to_string()),
         );
 
-        let link = client
-            .link(
+        let checkout_request = client
+            .generate_request_payload(
                 InputQuery {
                     amount: 100.0,
                     language: Language::UA,
@@ -163,6 +169,8 @@ mod tests {
             )
             .unwrap();
 
+        let link = client.link(checkout_request).unwrap();
+
         assert_eq!(
             link.starts_with("https://www.liqpay.ua/api/3/checkout?data="),
             true
@@ -170,15 +178,80 @@ mod tests {
         assert_eq!(link.contains("&signature="), true);
     }
 
-    #[rstest]
+    #[test]
+    fn test_subscribe_request_serialization() {
+        let request = CheckoutRequest::Subscription {
+            shared: BaseFields {
+                public_key: "public_key".to_owned(),
+                language: Language::UA,
+                action: Action::Subscribe,
+                version: 3,
+                amount: 100.00,
+                currency: Currency::USD,
+                description: "stand with ukraine".to_owned(),
+                order_id: "1234".to_owned(),
+            },
+            subscribe: 1,
+            subscribe_periodicity: SubscribePeriod::Month,
+            subscribe_date_start: "2024-02-23 15:26:00".to_owned(),
+        };
+
+        assert_json_include!(
+            actual: serde_json::to_value(&request).unwrap(),
+            expected: json!({
+                "public_key":"public_key",
+                "language":"ua",
+                "action":"subscribe",
+                "version":3,
+                "amount":100.0,
+                "currency":"USD",
+                "description":"stand with ukraine",
+                "order_id":"1234",
+                "subscribe":1,
+                "subscribe_periodicity":"month",
+                "subscribe_date_start":"2024-02-23 15:26:00"
+            })
+        );
+    }
+    #[test]
+    fn test_donate_request_serialization() {
+        let request = CheckoutRequest::Pay {
+            shared: BaseFields {
+                public_key: "public_key".to_owned(),
+                language: Language::UA,
+                action: Action::PayDonate,
+                version: 3,
+                amount: 100.00,
+                currency: Currency::USD,
+                description: "stand with ukraine".to_owned(),
+                order_id: "1234".to_owned(),
+            },
+        };
+
+        assert_json_include!(
+            actual: serde_json::to_value(&request).unwrap(),
+            expected: json!({
+                "public_key":"public_key",
+                "language":"ua",
+                "action":"paydonate",
+                "version":3,
+                "amount":100.0,
+                "currency":"USD",
+                "description":"stand with ukraine",
+                "order_id":"1234"
+            })
+        );
+    }
+
+    #[test]
     fn test_create_link_pay() {
         let client = HttpAPI::new(
             Secret::new("public_key".to_string()),
             Secret::new("private_key".to_string()),
         );
 
-        let link = client
-            .link(
+        let checkout_request = client
+            .generate_request_payload(
                 InputQuery {
                     amount: 100.0,
                     language: Language::EN,
@@ -188,6 +261,8 @@ mod tests {
                 "Stand with Ukraine",
             )
             .unwrap();
+
+        let link = client.link(checkout_request).unwrap();
 
         assert_eq!(
             link.starts_with("https://www.liqpay.ua/api/3/checkout?data="),

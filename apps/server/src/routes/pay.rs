@@ -5,7 +5,7 @@ use actix_web::{web, HttpResponse, ResponseError};
 use reqwest::StatusCode;
 
 pub fn register_routes(cfg: &mut web::ServiceConfig) {
-    cfg.service(web::resource("/pay").route(web::get().to(handle)));
+    cfg.service(web::resource("/pay").route(web::get().to(pay)));
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -22,16 +22,18 @@ impl ResponseError for PayError {
     }
 }
 
-#[tracing::instrument(name = "Process load request", skip(query, liq_pay_links))]
-async fn handle(
+#[tracing::instrument(name = "Process pay request", skip(query, liq_pay))]
+async fn pay(
     query: web::Query<InputQuery>,
-    liq_pay_links: web::Data<HttpAPI>,
+    liq_pay: web::Data<HttpAPI>,
 ) -> Result<Redirect, PayError> {
-    let url = liq_pay_links
-        .link(
-            query.into_inner(),
-            "Support BigCommerce colleagues defending Ukraine",
-        )
+    let checkout_request = liq_pay.generate_request_payload(
+        query.into_inner(),
+        "Support BigCommerce colleagues defending Ukraine",
+    )?;
+
+    let url = liq_pay
+        .link(checkout_request)
         .map_err(PayError::UnexpectedError)?;
 
     Ok(Redirect::to(url))
