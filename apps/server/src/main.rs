@@ -1,3 +1,5 @@
+#![deny(unused_extern_crates)]
+
 use swu_app::{configuration::Configuration, startup::Application, telemetry::init_tracing};
 
 #[tokio::main]

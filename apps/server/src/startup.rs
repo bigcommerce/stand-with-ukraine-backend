@@ -5,7 +5,6 @@ use crate::{
     bigcommerce::client::HttpAPI as BigCommerceHttpAPI,
     configuration::{BaseURL, Configuration, Database, JWTSecret, LightstepAccessToken},
     routes::register,
-    telemetry::AppRootSpanBuilder,
 };
 use actix_web::{dev::Server, web::Data, App, HttpServer};
 use secrecy::Secret;
@@ -98,13 +97,13 @@ pub fn run(
 
     let server = HttpServer::new(move || {
         App::new()
+            .wrap(TracingLogger::default())
             .app_data(db_pool.clone())
             .app_data(base_url.clone())
             .app_data(bigcommerce_client.clone())
             .app_data(liq_pay_client.clone())
             .app_data(jwt_secret.clone())
             .app_data(lightstep_access_token.clone())
-            .wrap(TracingLogger::<AppRootSpanBuilder>::new())
             .configure(register)
     })
     .listen(listener)?
