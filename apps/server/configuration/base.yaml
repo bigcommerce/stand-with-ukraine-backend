@@ -18,3 +18,6 @@ bigcommerce:
   client_secret: ""
   client_id: ""
   install_redirect_uri: http://localhost:8000/bigcommerce/install
+liq_pay:
+  public_key: "public_key_value"
+  private_key: "private_key_value"

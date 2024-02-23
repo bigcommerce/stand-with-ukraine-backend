@@ -1,7 +1,8 @@
 use std::net::TcpListener;
 
+use crate::liq_pay::HttpAPI as LiqPayHttpAPI;
 use crate::{
-    bigcommerce::client::HttpAPI,
+    bigcommerce::client::HttpAPI as BigCommerceHttpAPI,
     configuration::{BaseURL, Configuration, Database, JWTSecret, LightstepAccessToken},
     routes::register,
     telemetry::AppRootSpanBuilder,
@@ -22,13 +23,17 @@ impl Application {
     /// Will return `std::io::Error` if listener could not be setup on the port provided
     pub fn build(configuration: Configuration) -> Result<Self, std::io::Error> {
         let db_pool = get_connection_pool(&configuration.database);
-        let bigcommerce_client = HttpAPI::new(
+        let bigcommerce_client = BigCommerceHttpAPI::new(
             configuration.bigcommerce.api_base_url,
             configuration.bigcommerce.login_base_url,
             configuration.bigcommerce.client_id,
             configuration.bigcommerce.client_secret,
             configuration.bigcommerce.install_redirect_uri,
             std::time::Duration::from_millis(configuration.bigcommerce.timeout.into()),
+        );
+        let liq_pay_client = LiqPayHttpAPI::new(
+            configuration.liq_pay.public_key,
+            configuration.liq_pay.private_key,
         );
 
         let address = format!(
@@ -47,6 +52,7 @@ impl Application {
             configuration.application.jwt_secret,
             configuration.application.lightstep_access_token,
             bigcommerce_client,
+            liq_pay_client,
         )?;
 
         Ok(Self { port, server })
@@ -80,11 +86,13 @@ pub fn run(
     base_url: String,
     jwt_secret: Secret<String>,
     lightstep_access_token: Secret<String>,
-    bigcommerce_client: HttpAPI,
+    bigcommerce_client: BigCommerceHttpAPI,
+    liq_pay_client: LiqPayHttpAPI,
 ) -> Result<Server, std::io::Error> {
     let db_pool = Data::new(db_pool);
     let base_url = Data::new(BaseURL(base_url));
     let bigcommerce_client = Data::new(bigcommerce_client);
+    let liq_pay_client = Data::new(liq_pay_client);
     let jwt_secret = Data::new(JWTSecret(jwt_secret));
     let lightstep_access_token = Data::new(LightstepAccessToken(lightstep_access_token));
 
@@ -93,6 +101,7 @@ pub fn run(
             .app_data(db_pool.clone())
             .app_data(base_url.clone())
             .app_data(bigcommerce_client.clone())
+            .app_data(liq_pay_client.clone())
             .app_data(jwt_secret.clone())
             .app_data(lightstep_access_token.clone())
             .wrap(TracingLogger::<AppRootSpanBuilder>::new())
