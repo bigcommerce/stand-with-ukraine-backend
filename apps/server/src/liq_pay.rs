@@ -7,7 +7,7 @@ use sha1::{Digest, Sha1};
 use time::{format_description::FormatItem, macros::format_description};
 use tracing::debug;
 
-#[derive(Debug, Deserialize, Serialize, Eq, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq)]
 #[serde(rename_all = "kebab-case")]
 pub enum Action {
     Pay,
@@ -52,6 +52,7 @@ pub struct HttpAPI {
 pub struct Payload {
     public_key: String,
     language: Language,
+    action: Action,
     version: usize,
     amount: f64,
     currency: Currency,
@@ -86,6 +87,7 @@ impl HttpAPI {
         let payload = Payload {
             public_key: self.public_key.expose_secret().clone(),
             language: query.language,
+            action: query.action.clone(),
             version: API_VERSION,
             amount: query.amount,
             currency: query.currency,
