@@ -69,9 +69,17 @@ We hope this sample gives you a good reference point for building your next kill
     - Recommended setup for `macos` or `linux` is `podman` and creating an alias for docker from podman
   - Editor
     - Recommended setup is `vscode` and the `rust-analyzer` extension.
-  - For parsing logging `bunyan` command is helpful.
-    - Recommended setup is `cargo install bunyan`
-    - Enable log during testing and pass it through bunyan `TEST_LOG=true cargo test | bunyan`
+  - Logs
+    - Open telemetry is supported so you can enable it:
+      - Run jaeger locally: `docker run -d -p6831:6831/udp -p6832:6832/udp -p16686:16686 -p14268:14268 jaegertracing/all-in-one:latest`
+      - Run the app or tests with flag enabled
+        - `OTEL_ENABLE=true cargo run --bin swu-app` 
+        - `RUST_LOG=trace OTEL_ENABLE=true cargo test` enable trace level logs for tests as default is off 
+      - View spans in the jaeger ui
+        - http://localhost:16686
+    - Or you can use stdout + bunyan 
+      - Recommended setup is `cargo install bunyan`
+      - Set log level during testing and pass it through bunyan `RUST_LOG=trace cargo test | bunyan`
 
 1. Clone this repo: `git clone git@github.com:bigcommerce/stand-with-ukraine-backend.git`
 2. Change to the repo directory: `cd stand-with-ukraine-backend`
