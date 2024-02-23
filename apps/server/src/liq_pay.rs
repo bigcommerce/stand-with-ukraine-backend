@@ -49,7 +49,7 @@ pub struct HttpAPI {
 }
 
 #[derive(Debug, Serialize)]
-pub struct Payload {
+pub struct SharedFields {
     public_key: String,
     language: Language,
     action: Action,
@@ -61,13 +61,20 @@ pub struct Payload {
 }
 
 #[derive(Debug, Serialize)]
-pub struct SubscriptionPayload {
-    #[serde(flatten)]
-    payload: Payload,
+pub enum CheckoutRequestPayload {
+    Subscription {
+        #[serde(flatten)]
+        shared: SharedFields,
 
-    subscribe: usize,
-    subscribe_periodicity: SubscribePeriod,
-    subscribe_date_start: String,
+        subscribe: usize,
+        subscribe_periodicity: SubscribePeriod,
+        subscribe_date_start: String,
+    },
+
+    Pay {
+        #[serde(flatten)]
+        shared: SharedFields,
+    },
 }
 
 const API_VERSION: usize = 3;
@@ -84,7 +91,7 @@ impl HttpAPI {
 
     #[tracing::instrument(name = "Generate LiqPay link", skip(self))]
     pub fn link(&self, query: InputQuery, description: &str) -> anyhow::Result<String> {
-        let payload = Payload {
+        let shared = SharedFields {
             public_key: self.public_key.expose_secret().clone(),
             language: query.language,
             action: query.action.clone(),
@@ -96,15 +103,17 @@ impl HttpAPI {
         };
 
         let payload = match query.action {
-            Action::Subscribe => serde_json::to_string(&SubscriptionPayload {
-                payload,
+            Action::Subscribe => CheckoutRequestPayload::Subscription {
+                shared,
                 subscribe: 1,
                 subscribe_periodicity: SubscribePeriod::Month,
                 subscribe_date_start: (OffsetDateTime::now_utc() - Duration::hours(2))
                     .format(DATE_TIME_FORMAT)?,
-            })?,
-            _ => serde_json::to_string(&payload)?,
+            },
+            Action::Pay | Action::PayDonate => CheckoutRequestPayload::Pay { shared },
         };
+
+        let payload = serde_json::to_string(&payload)?;
 
         debug!(payload, "generated payload");
 
@@ -136,7 +145,7 @@ mod tests {
     use super::*;
 
     #[rstest]
-    fn test_create_link() {
+    fn test_create_link_subscribe() {
         let client = HttpAPI::new(
             Secret::new("public_key".to_string()),
             Secret::new("private_key".to_string()),
@@ -155,7 +164,33 @@ mod tests {
             .unwrap();
 
         assert_eq!(
-            link.contains("https://www.liqpay.ua/api/3/checkout?data="),
+            link.starts_with("https://www.liqpay.ua/api/3/checkout?data="),
+            true
+        );
+        assert_eq!(link.contains("&signature="), true);
+    }
+
+    #[rstest]
+    fn test_create_link_pay() {
+        let client = HttpAPI::new(
+            Secret::new("public_key".to_string()),
+            Secret::new("private_key".to_string()),
+        );
+
+        let link = client
+            .link(
+                InputQuery {
+                    amount: 100.0,
+                    language: Language::EN,
+                    currency: Currency::USD,
+                    action: Action::Pay,
+                },
+                "Stand with Ukraine",
+            )
+            .unwrap();
+
+        assert_eq!(
+            link.starts_with("https://www.liqpay.ua/api/3/checkout?data="),
             true
         );
         assert_eq!(link.contains("&signature="), true);
