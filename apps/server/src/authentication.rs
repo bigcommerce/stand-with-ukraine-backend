@@ -1,14 +1,21 @@
-use actix_utils::future::{ready, Ready};
-use actix_web::{
-    dev::Payload, error::ParseError, http::StatusCode, web, FromRequest, HttpRequest, HttpResponse,
-    ResponseError,
+use anyhow::Context;
+use axum::RequestPartsExt;
+use axum::{
+    async_trait,
+    extract::FromRequestParts,
+    http::{request::Parts, StatusCode},
+    response::{IntoResponse, Response},
+    Extension,
 };
-use actix_web_httpauth::headers::authorization;
+use axum_extra::{
+    headers::{authorization::Bearer, Authorization},
+    TypedHeader,
+};
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use secrecy::{ExposeSecret, Secret};
 use time::{Duration, OffsetDateTime};
 
-use crate::configuration::JWTSecret;
+use crate::startup::AppState;
 
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub struct AuthClaims {
@@ -17,35 +24,47 @@ pub struct AuthClaims {
     pub exp: i64,
 }
 
-impl FromRequest for AuthClaims {
-    type Future = Ready<Result<Self, Self::Error>>;
-    type Error = Error;
+#[async_trait]
+impl<S> FromRequestParts<S> for AuthClaims
+where
+    S: Send + Sync,
+{
+    type Rejection = Error;
 
-    fn from_request(req: &HttpRequest, _payload: &mut Payload) -> <Self as FromRequest>::Future {
-        let Some(jwt_secret) = req.app_data::<web::Data<JWTSecret>>() else {
-            return ready(Err(Error::InvalidServerConfiguration));
-        };
+    #[tracing::instrument(name = "decode auth from request", skip(parts, _state))]
+    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+        // Extract the token from the authorization header
+        let TypedHeader(Authorization(bearer)) = parts
+            .extract::<TypedHeader<Authorization<Bearer>>>()
+            .await
+            .map_err(|_| Error::NoToken)?;
 
-        let bearer = match <authorization::Authorization::<authorization::Bearer> as actix_web::http::header::Header>::parse(req) {
-            Ok(auth) => auth.into_scheme(),
-            Err(err) => {
-                return ready(Err(Error::NoTokenProvided(err)))
-            }
-        };
+        let Extension(AppState { jwt_secret, .. }) = parts
+            .extract::<Extension<AppState>>()
+            .await
+            .context("extract state")?;
 
-        let claims = match decode_token(bearer.token(), jwt_secret.as_ref()) {
-            Ok(claims) => claims,
-            Err(err) => return ready(Err(err)),
-        };
-
-        ready(Ok(claims))
+        decode_token(bearer.token(), jwt_secret)
     }
 }
 
-pub fn create_jwt<S>(store_hash: &str, secret: S) -> Result<String, jsonwebtoken::errors::Error>
-where
-    S: AsRef<Secret<String>>,
-{
+impl IntoResponse for Error {
+    fn into_response(self) -> Response {
+        match self {
+            Self::InvalidServerConfiguration => {
+                (StatusCode::INTERNAL_SERVER_ERROR, "Unknown error")
+            }
+            Self::Unexpected(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Unknown error"),
+            Self::InvalidToken(_) | Self::NoToken => (StatusCode::BAD_REQUEST, "Invalid token"),
+        }
+        .into_response()
+    }
+}
+
+pub fn create_jwt(
+    store_hash: &str,
+    secret: &Secret<String>,
+) -> Result<String, jsonwebtoken::errors::Error> {
     let expiration = OffsetDateTime::now_utc() + Duration::days(1);
 
     let claims = AuthClaims {
@@ -54,64 +73,46 @@ where
         exp: expiration.unix_timestamp(),
     };
     let header = Header::new(Algorithm::HS512);
-    let key = EncodingKey::from_secret(secret.as_ref().expose_secret().as_bytes());
+    let key = EncodingKey::from_secret(secret.expose_secret().as_bytes());
 
     encode(&header, &claims, &key)
 }
 
 pub struct AuthorizedUser(pub String);
 
-pub fn decode_token<S>(token: &str, secret: S) -> Result<AuthClaims, Error>
-where
-    S: AsRef<Secret<String>>,
-{
-    let key = DecodingKey::from_secret(secret.as_ref().expose_secret().as_bytes());
+#[tracing::instrument(name = "decode token")]
+pub fn decode_token(token: &str, secret: Secret<String>) -> Result<AuthClaims, Error> {
+    let key = DecodingKey::from_secret(secret.expose_secret().as_bytes());
     let validation = Validation::new(Algorithm::HS512);
-    let decoded =
-        decode::<AuthClaims>(token, &key, &validation).map_err(Error::InvalidTokenError)?;
+    let decoded = decode::<AuthClaims>(token, &key, &validation).map_err(Error::InvalidToken)?;
 
     Ok(decoded.claims)
 }
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
-    #[error("No Bearer Token")]
-    NoTokenProvided(#[source] ParseError),
+    #[error("Token is not provided.")]
+    NoToken,
 
     #[error("Token is invalid.")]
-    InvalidTokenError(#[source] jsonwebtoken::errors::Error),
+    InvalidToken(#[source] jsonwebtoken::errors::Error),
 
     #[error("Server Configuration Invalid")]
     InvalidServerConfiguration,
 
     #[error(transparent)]
-    UnexpectedError(#[from] anyhow::Error),
-}
-
-impl ResponseError for Error {
-    fn error_response(&self) -> HttpResponse {
-        match self {
-            Self::InvalidServerConfiguration => {
-                HttpResponse::new(StatusCode::INTERNAL_SERVER_ERROR)
-            }
-            Self::InvalidTokenError(_) | Self::NoTokenProvided(_) => {
-                HttpResponse::new(StatusCode::UNAUTHORIZED)
-            }
-            Self::UnexpectedError(_) => HttpResponse::new(StatusCode::INTERNAL_SERVER_ERROR),
-        }
-    }
+    Unexpected(#[from] anyhow::Error),
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use actix_web::{http::header::AUTHORIZATION, test::TestRequest, web::Data};
 
     #[test]
     fn should_encode_and_decode_jwt_in_correct_format() {
         let store_hash = "test_store";
-        let secret = JWTSecret(Secret::from("abcdefg".to_owned()));
-        let token = create_jwt(store_hash, secret).unwrap();
+        let secret = Secret::from("abcdefg".to_owned());
+        let token = create_jwt(store_hash, &secret).unwrap();
 
         let parts: Vec<&str> = token.splitn(3, '.').collect();
 
@@ -119,7 +120,7 @@ mod tests {
         assert!(!parts[1].is_empty());
         assert!(!parts[2].is_empty());
 
-        let secret = JWTSecret(Secret::from("abcdefg".to_owned()));
+        let secret = Secret::from("abcdefg".to_owned());
         let claims = decode_token(token.as_str(), secret).unwrap();
 
         assert_eq!("test_store", claims.sub);
@@ -127,50 +128,5 @@ mod tests {
             claims.exp > (OffsetDateTime::now_utc() + Duration::minutes(30)).unix_timestamp(),
             "Expiration should be more than 30 mins"
         )
-    }
-
-    #[actix_web::test]
-    async fn auth_claims_extractor_fails_without_jwt_secret() {
-        let req = TestRequest::default()
-            .insert_header((AUTHORIZATION, "test-token"))
-            .to_http_request();
-        let mut payload = Payload::None;
-
-        let err = AuthClaims::from_request(&req, &mut payload)
-            .await
-            .unwrap_err();
-
-        assert_eq!(err.to_string(), "Server Configuration Invalid");
-    }
-
-    #[actix_web::test]
-    async fn auth_claims_extractor_fails_with_no_header() {
-        let jwt_secret = Data::new(JWTSecret(Secret::from("test-token".to_owned())));
-        let req = TestRequest::default()
-            .app_data(jwt_secret.clone())
-            .to_http_request();
-        let mut payload = Payload::None;
-
-        let err = AuthClaims::from_request(&req, &mut payload)
-            .await
-            .unwrap_err();
-
-        assert_eq!(err.to_string(), "No Bearer Token");
-    }
-
-    #[actix_web::test]
-    async fn auth_claims_extractor_fails_with_bad_token() {
-        let jwt_secret = Data::new(JWTSecret(Secret::from("test-secret".to_owned())));
-        let req = TestRequest::default()
-            .app_data(jwt_secret.clone())
-            .insert_header((AUTHORIZATION, "Bearer test-token"))
-            .to_http_request();
-        let mut payload = Payload::None;
-
-        let err = AuthClaims::from_request(&req, &mut payload)
-            .await
-            .unwrap_err();
-
-        assert_eq!(err.to_string(), "Token is invalid.");
     }
 }

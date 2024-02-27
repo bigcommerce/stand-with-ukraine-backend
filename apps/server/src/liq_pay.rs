@@ -42,6 +42,7 @@ pub struct InputQuery {
     pub action: Action,
 }
 
+#[derive(Clone)]
 pub struct HttpAPI {
     public_key: Secret<String>,
     private_key: Secret<String>,

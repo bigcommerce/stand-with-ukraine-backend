@@ -6,10 +6,7 @@ use secrecy::Secret;
 use sqlx::{types::time::OffsetDateTime, PgPool};
 use uuid::Uuid;
 
-use crate::{
-    bigcommerce::{script::Script, store::APIToken},
-    configuration::BaseURL,
-};
+use crate::bigcommerce::{script::Script, store::APIToken};
 
 #[tracing::instrument(name = "Write store credentials to database", skip(store, pool))]
 pub async fn write_store_credentials(store: &APIToken, pool: &PgPool) -> Result<(), sqlx::Error> {
@@ -163,7 +160,7 @@ impl WidgetConfiguration {
     pub fn generate_script(
         &self,
         store_hash: &str,
-        base_url: &BaseURL,
+        base_url: &str,
     ) -> Result<Script, serde_json::Error> {
         Ok(Script::new(
          "Stand With Ukraine".to_owned(),

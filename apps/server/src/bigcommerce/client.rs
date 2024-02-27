@@ -12,6 +12,7 @@ use super::{
     store::{APIToken, Information},
 };
 
+#[derive(Clone)]
 pub struct HttpAPI {
     api_base_url: String,
     login_base_url: String,
@@ -179,8 +180,7 @@ impl HttpAPI {
     pub fn decode_jwt(&self, token: &str) -> Result<Claims, Error> {
         let key = DecodingKey::from_secret(self.client_secret.expose_secret().as_bytes());
         let validation = Validation::new(Algorithm::HS256);
-        let decoded =
-            decode::<Claims>(token, &key, &validation).map_err(Error::InvalidTokenError)?;
+        let decoded = decode::<Claims>(token, &key, &validation).map_err(Error::InvalidToken)?;
 
         Ok(decoded.claims)
     }

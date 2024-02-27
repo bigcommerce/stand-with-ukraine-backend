@@ -8,7 +8,7 @@ async fn main() -> std::io::Result<()> {
 
     let configuration =
         Configuration::generate_from_environment().expect("Failed to read configuration.");
-    let application = Application::build(configuration)?;
+    let application = Application::build(configuration).await?;
 
     application.run_until_stopped().await?;
 

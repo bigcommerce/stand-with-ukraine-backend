@@ -1,22 +1,23 @@
-use actix_web::{http::StatusCode, web, HttpResponse, ResponseError};
 use anyhow::Context;
-use reqwest::header::LOCATION;
-use sqlx::PgPool;
+use axum::{
+    extract::{Query, State},
+    http::StatusCode,
+    response::{IntoResponse, Redirect, Response},
+    routing::get,
+    Router,
+};
 
 use crate::{
     authentication::{create_jwt, Error},
-    bigcommerce::client::HttpAPI,
-    configuration::{BaseURL, JWTSecret},
     data::{write_store_as_uninstalled, write_store_credentials},
+    startup::AppState,
 };
 
-pub fn register_routes(cfg: &mut web::ServiceConfig) {
-    cfg.service(
-        web::scope("/bigcommerce")
-            .route("/install", web::get().to(install))
-            .route("/uninstall", web::get().to(uninstall))
-            .route("/load", web::get().to(load)),
-    );
+pub fn router() -> Router<AppState> {
+    Router::new()
+        .route("/install", get(install))
+        .route("/uninstall", get(uninstall))
+        .route("/load", get(load))
 }
 
 #[derive(serde::Deserialize)]
@@ -32,10 +33,10 @@ enum InstallError {
     UnexpectedError(#[from] anyhow::Error),
 }
 
-impl ResponseError for InstallError {
-    fn error_response(&self) -> HttpResponse {
+impl IntoResponse for InstallError {
+    fn into_response(self) -> axum::response::Response {
         match self {
-            Self::UnexpectedError(_) => HttpResponse::new(StatusCode::INTERNAL_SERVER_ERROR),
+            Self::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
         }
     }
 }
@@ -46,12 +47,15 @@ impl ResponseError for InstallError {
     fields(context=tracing::field::Empty, user_email=tracing::field::Empty)
 )]
 async fn install(
-    query: web::Query<InstallQuery>,
-    bigcommerce_client: web::Data<HttpAPI>,
-    base_url: web::Data<BaseURL>,
-    db_pool: web::Data<PgPool>,
-    jwt_secret: web::Data<JWTSecret>,
-) -> Result<HttpResponse, InstallError> {
+    Query(query): Query<InstallQuery>,
+    State(AppState {
+        bigcommerce_client,
+        db_pool,
+        jwt_secret,
+        base_url,
+        ..
+    }): State<AppState>,
+) -> Result<Response, InstallError> {
     tracing::Span::current().record("context", &tracing::field::display(&query.context));
 
     let oauth_credentials = bigcommerce_client
@@ -74,16 +78,16 @@ async fn install(
         .context("Failed to store credentials in database")
         .map_err(InstallError::UnexpectedError)?;
 
-    let jwt = create_jwt(store.get_store_hash(), jwt_secret.get_ref())
+    let jwt = create_jwt(store.get_store_hash(), &jwt_secret)
         .context("Failed to encode jwt token")
         .map_err(InstallError::UnexpectedError)?;
 
-    Ok(HttpResponse::Found()
-        .append_header((
-            LOCATION,
-            generate_dashboard_url(&base_url.0, &jwt, store.get_store_hash()),
-        ))
-        .finish())
+    Ok(Redirect::to(&generate_dashboard_url(
+        &base_url,
+        &jwt,
+        store.get_store_hash(),
+    ))
+    .into_response())
 }
 
 #[derive(serde::Deserialize)]
@@ -102,14 +106,13 @@ enum LoadError {
     UnexpectedError(#[from] anyhow::Error),
 }
 
-impl ResponseError for LoadError {
-    fn error_response(&self) -> HttpResponse {
+impl IntoResponse for LoadError {
+    fn into_response(self) -> Response {
         match self {
-            Self::NotStoreOwnerError | Self::InvalidCredentials(_) => {
-                HttpResponse::new(StatusCode::UNAUTHORIZED)
-            }
-            Self::UnexpectedError(_) => HttpResponse::new(StatusCode::INTERNAL_SERVER_ERROR),
+            Self::NotStoreOwnerError | Self::InvalidCredentials(_) => StatusCode::UNAUTHORIZED,
+            Self::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
+        .into_response()
     }
 }
 
@@ -118,11 +121,14 @@ impl ResponseError for LoadError {
     skip(query, bigcommerce_client, base_url, jwt_secret)
 )]
 async fn load(
-    query: web::Query<LoadQuery>,
-    bigcommerce_client: web::Data<HttpAPI>,
-    base_url: web::Data<BaseURL>,
-    jwt_secret: web::Data<JWTSecret>,
-) -> Result<HttpResponse, LoadError> {
+    Query(query): Query<LoadQuery>,
+    State(AppState {
+        bigcommerce_client,
+        base_url,
+        jwt_secret,
+        ..
+    }): State<AppState>,
+) -> Result<Response, LoadError> {
     let claims = bigcommerce_client
         .decode_jwt(&query.signed_payload_jwt)
         .map_err(LoadError::InvalidCredentials)?;
@@ -131,16 +137,11 @@ async fn load(
         .get_store_hash()
         .map_err(LoadError::UnexpectedError)?;
 
-    let jwt = create_jwt(store_hash, jwt_secret.as_ref())
+    let jwt = create_jwt(store_hash, &jwt_secret)
         .context("Failed to encode token")
         .map_err(LoadError::UnexpectedError)?;
 
-    Ok(HttpResponse::Found()
-        .append_header((
-            LOCATION,
-            generate_dashboard_url(&base_url.0, &jwt, store_hash),
-        ))
-        .finish())
+    Ok(Redirect::to(&generate_dashboard_url(&base_url, &jwt, store_hash)).into_response())
 }
 
 #[tracing::instrument(
@@ -148,10 +149,13 @@ async fn load(
     skip(query, bigcommerce_client, db_pool)
 )]
 async fn uninstall(
-    query: web::Query<LoadQuery>,
-    bigcommerce_client: web::Data<HttpAPI>,
-    db_pool: web::Data<PgPool>,
-) -> Result<HttpResponse, LoadError> {
+    Query(query): Query<LoadQuery>,
+    State(AppState {
+        bigcommerce_client,
+        db_pool,
+        ..
+    }): State<AppState>,
+) -> Result<Response, LoadError> {
     let claims = bigcommerce_client
         .decode_jwt(&query.signed_payload_jwt)
         .map_err(LoadError::InvalidCredentials)?;
@@ -169,7 +173,7 @@ async fn uninstall(
         .context("Failed to set store as uninstalled")
         .map_err(LoadError::UnexpectedError)?;
 
-    Ok(HttpResponse::Ok().finish())
+    Ok(StatusCode::OK.into_response())
 }
 
 fn generate_dashboard_url(base_url: &str, token: &str, store_hash: &str) -> String {

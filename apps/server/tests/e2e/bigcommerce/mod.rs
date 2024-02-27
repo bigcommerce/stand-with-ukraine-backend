@@ -95,7 +95,7 @@ async fn install_request_succeeds() {
         .await
         .expect("Failed to execute the request");
 
-    assert_eq!(response.status().as_u16(), 302);
+    assert!(response.status().is_redirection());
     assert!(
         response
             .headers()
@@ -165,7 +165,7 @@ async fn load_request_succeeds() {
         .await
         .expect("Failed to execute the request");
 
-    assert_eq!(response.status().as_u16(), 302);
+    assert!(response.status().is_redirection());
     assert!(
         response
             .headers()

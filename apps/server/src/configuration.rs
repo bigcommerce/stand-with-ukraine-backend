@@ -7,6 +7,12 @@ use sqlx::{
     ConnectOptions,
 };
 
+use crate::{
+    bigcommerce::client::HttpAPI as BigCommerceHttpAPI,
+    liq_pay::HttpAPI as LiqPayHttpAPI,
+    startup::{get_connection_pool, AppState},
+};
+
 #[derive(serde::Deserialize, Clone)]
 pub struct Configuration {
     pub database: Database,
@@ -110,6 +116,30 @@ impl Configuration {
             .build()?
             .try_deserialize()
     }
+
+    pub fn get_app_state(&self) -> AppState {
+        let db_pool = get_connection_pool(&self.database);
+        let bigcommerce_client = BigCommerceHttpAPI::new(
+            self.bigcommerce.api_base_url.clone(),
+            self.bigcommerce.login_base_url.clone(),
+            self.bigcommerce.client_id.clone(),
+            self.bigcommerce.client_secret.clone(),
+            self.bigcommerce.install_redirect_uri.clone(),
+            std::time::Duration::from_millis(self.bigcommerce.timeout.into()),
+        );
+        let liq_pay_client = LiqPayHttpAPI::new(
+            self.liq_pay.public_key.clone(),
+            self.liq_pay.private_key.clone(),
+        );
+
+        AppState {
+            db_pool,
+            base_url: self.application.base_url.clone(),
+            jwt_secret: self.application.jwt_secret.clone(),
+            bigcommerce_client,
+            liq_pay_client,
+        }
+    }
 }
 
 pub struct BaseURL(pub String);
@@ -117,14 +147,6 @@ pub struct BaseURL(pub String);
 impl std::fmt::Display for BaseURL {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{}", self.0)
-    }
-}
-
-pub struct JWTSecret(pub Secret<String>);
-
-impl AsRef<Secret<String>> for JWTSecret {
-    fn as_ref(&self) -> &Secret<String> {
-        &self.0
     }
 }
 
