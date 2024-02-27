@@ -15,7 +15,7 @@ use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, 
 use secrecy::{ExposeSecret, Secret};
 use time::{Duration, OffsetDateTime};
 
-use crate::startup::AppState;
+use crate::configuration::SharedState;
 
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub struct AuthClaims {
@@ -39,12 +39,12 @@ where
             .await
             .map_err(|_| Error::NoToken)?;
 
-        let Extension(AppState { jwt_secret, .. }) = parts
-            .extract::<Extension<AppState>>()
+        let Extension(state) = parts
+            .extract::<Extension<SharedState>>()
             .await
             .context("extract state")?;
 
-        decode_token(bearer.token(), jwt_secret)
+        decode_token(bearer.token(), &state.jwt_secret)
     }
 }
 
@@ -81,7 +81,7 @@ pub fn create_jwt(
 pub struct AuthorizedUser(pub String);
 
 #[tracing::instrument(name = "decode token")]
-pub fn decode_token(token: &str, secret: Secret<String>) -> Result<AuthClaims, Error> {
+pub fn decode_token(token: &str, secret: &Secret<String>) -> Result<AuthClaims, Error> {
     let key = DecodingKey::from_secret(secret.expose_secret().as_bytes());
     let validation = Validation::new(Algorithm::HS512);
     let decoded = decode::<AuthClaims>(token, &key, &validation).map_err(Error::InvalidToken)?;
@@ -121,7 +121,7 @@ mod tests {
         assert!(!parts[2].is_empty());
 
         let secret = Secret::from("abcdefg".to_owned());
-        let claims = decode_token(token.as_str(), secret).unwrap();
+        let claims = decode_token(token.as_str(), &secret).unwrap();
 
         assert_eq!("test_store", claims.sub);
         assert!(

@@ -1,5 +1,6 @@
 use crate::{
     authentication::AuthClaims,
+    configuration::{AppState, SharedState},
     data::{
         read_store_credentials, read_store_published, read_widget_configuration,
         write_charity_visited_event, write_general_feedback, write_store_published,
@@ -7,7 +8,6 @@ use crate::{
         write_widget_event, CharityEvent, FeedbackForm, UniversalConfiguratorEvent,
         WidgetConfiguration, WidgetEvent,
     },
-    startup::AppState,
 };
 
 use tower_http::cors::{Any, CorsLayer};
@@ -21,7 +21,7 @@ use axum::{
     Json, Router,
 };
 
-pub fn router() -> Router<AppState> {
+pub fn router() -> Router<SharedState> {
     let v1_router = Router::new()
         .route("/configuration", post(save_widget_configuration))
         .route("/configuration", get(get_widget_configuration))
@@ -61,25 +61,31 @@ impl IntoResponse for ConfigurationError {
     }
 }
 
-#[tracing::instrument(name = "Save widget configuration", skip(auth, db_pool))]
+#[tracing::instrument(name = "Save widget configuration", skip(auth, state))]
 async fn save_widget_configuration(
     auth: AuthClaims,
-    State(AppState { db_pool, .. }): State<AppState>,
+    State(state): State<SharedState>,
     Json(widget_configuration): Json<WidgetConfiguration>,
 ) -> Result<Response, ConfigurationError> {
-    write_widget_configuration(auth.sub.as_str(), &widget_configuration, &db_pool)
+    let AppState { db_pool, .. } = state.as_ref();
+    let store_hash = auth.sub.as_str();
+
+    write_widget_configuration(store_hash, &widget_configuration, db_pool)
         .await
         .map_err(ConfigurationError::UnexpectedError)?;
 
     Ok(StatusCode::OK.into_response())
 }
 
-#[tracing::instrument(name = "Get widget configuration", skip(auth, db_pool))]
+#[tracing::instrument(name = "Get widget configuration", skip(auth, state))]
 async fn get_widget_configuration(
     auth: AuthClaims,
-    State(AppState { db_pool, .. }): State<AppState>,
+    State(state): State<SharedState>,
 ) -> Result<Response, ConfigurationError> {
-    let widget_configuration = read_widget_configuration(auth.sub.as_str(), &db_pool)
+    let AppState { db_pool, .. } = state.as_ref();
+    let store_hash = auth.sub.as_str();
+
+    let widget_configuration = read_widget_configuration(store_hash, db_pool)
         .await
         .map_err(ConfigurationError::UnexpectedError)?;
 
@@ -101,30 +107,28 @@ impl IntoResponse for PublishError {
     }
 }
 
-#[tracing::instrument(
-    name = "Publish the widget",
-    skip(auth, base_url, db_pool, bigcommerce_client)
-)]
+#[tracing::instrument(name = "Publish the widget", skip(auth, state))]
 async fn publish_widget(
     auth: AuthClaims,
-    State(AppState {
+    State(state): State<SharedState>,
+) -> Result<Response, PublishError> {
+    let AppState {
         db_pool,
         base_url,
         bigcommerce_client,
         ..
-    }): State<AppState>,
-) -> Result<Response, PublishError> {
+    } = state.as_ref();
     let store_hash = auth.sub.as_str();
-    let widget_configuration = read_widget_configuration(store_hash, &db_pool)
+    let widget_configuration = read_widget_configuration(store_hash, db_pool)
         .await
         .map_err(PublishError::UnexpectedError)?;
 
     let script = widget_configuration
-        .generate_script(store_hash, &base_url)
+        .generate_script(store_hash, base_url)
         .context("Failed to generate script content")
         .map_err(PublishError::UnexpectedError)?;
 
-    let store = read_store_credentials(store_hash, &db_pool)
+    let store = read_store_credentials(store_hash, db_pool)
         .await
         .map_err(PublishError::UnexpectedError)?;
 
@@ -143,7 +147,7 @@ async fn publish_widget(
     }
     .map_err(PublishError::UnexpectedError)?;
 
-    write_store_published(store_hash, true, &db_pool)
+    write_store_published(store_hash, true, db_pool)
         .await
         .context("Failed to set store as published")
         .map_err(PublishError::UnexpectedError)?;
@@ -156,22 +160,20 @@ struct Feedback {
     reason: Option<String>,
 }
 
-#[tracing::instrument(
-    name = "Remove widget",
-    skip(auth, db_pool, bigcommerce_client, feedback)
-)]
+#[tracing::instrument(name = "Remove widget", skip(auth, state, feedback))]
 async fn remove_widget(
     auth: AuthClaims,
-    State(AppState {
+    State(state): State<SharedState>,
+    Query(feedback): Query<Feedback>,
+) -> Result<Response, PublishError> {
+    let AppState {
         db_pool,
         bigcommerce_client,
         ..
-    }): State<AppState>,
-    Query(feedback): Query<Feedback>,
-) -> Result<Response, PublishError> {
+    } = state.as_ref();
     let store_hash = auth.sub.as_str();
 
-    let store = read_store_credentials(store_hash, &db_pool)
+    let store = read_store_credentials(store_hash, db_pool)
         .await
         .context("Failed to get store credentials")
         .map_err(PublishError::UnexpectedError)?;
@@ -182,13 +184,13 @@ async fn remove_widget(
         .context("Failed to remove scripts in BigCommerce")
         .map_err(PublishError::UnexpectedError)?;
 
-    write_store_published(store_hash, false, &db_pool)
+    write_store_published(store_hash, false, db_pool)
         .await
         .context("Failed to set store as not published")
         .map_err(PublishError::UnexpectedError)?;
 
     if let Some(reason) = feedback.reason {
-        write_unpublish_feedback(store_hash, reason.as_str(), &db_pool)
+        write_unpublish_feedback(store_hash, reason.as_str(), db_pool)
             .await
             .context("Failed to record unpublish feedback")
             .map_err(PublishError::UnexpectedError)?;
@@ -197,18 +199,19 @@ async fn remove_widget(
     Ok(StatusCode::OK.into_response())
 }
 
-#[tracing::instrument(name = "Preview widget", skip(auth, db_pool, bigcommerce_client))]
+#[tracing::instrument(name = "Preview widget", skip(auth, state))]
 async fn preview_widget(
     auth: AuthClaims,
-    State(AppState {
+    State(state): State<SharedState>,
+) -> Result<Response, PublishError> {
+    let AppState {
         db_pool,
         bigcommerce_client,
         ..
-    }): State<AppState>,
-) -> Result<Response, PublishError> {
+    } = state.as_ref();
     let store_hash = auth.sub.as_str();
 
-    let store = read_store_credentials(store_hash, &db_pool)
+    let store = read_store_credentials(store_hash, db_pool)
         .await
         .context("Failed to get store credentials")
         .map_err(PublishError::UnexpectedError)?;
@@ -222,14 +225,15 @@ async fn preview_widget(
     Ok(Json(store_information).into_response())
 }
 
-#[tracing::instrument(name = "Get widget status", skip(auth, db_pool))]
+#[tracing::instrument(name = "Get widget status", skip(auth, state))]
 async fn get_published_status(
     auth: AuthClaims,
-    State(AppState { db_pool, .. }): State<AppState>,
+    State(state): State<SharedState>,
 ) -> Result<Response, PublishError> {
+    let AppState { db_pool, .. } = state.as_ref();
     let store_hash = auth.sub.as_str();
 
-    let store_status = read_store_published(store_hash, &db_pool)
+    let store_status = read_store_published(store_hash, db_pool)
         .await
         .context("Failed to get store status")
         .map_err(PublishError::UnexpectedError)?;
@@ -237,48 +241,56 @@ async fn get_published_status(
     Ok(Json(store_status).into_response())
 }
 
-#[tracing::instrument(name = "Log charity event", skip(db_pool))]
+#[tracing::instrument(name = "Log charity event", skip(state))]
 async fn log_charity_event(
     Query(event): Query<CharityEvent>,
-    State(AppState { db_pool, .. }): State<AppState>,
+    State(state): State<SharedState>,
 ) -> Response {
-    if let Err(error) = write_charity_visited_event(&event, &db_pool).await {
+    let AppState { db_pool, .. } = state.as_ref();
+
+    if let Err(error) = write_charity_visited_event(&event, db_pool).await {
         tracing::warn!("Error while saving event {}", error);
     };
 
     StatusCode::OK.into_response()
 }
 
-#[tracing::instrument(name = "Save feedback form", skip(db_pool))]
+#[tracing::instrument(name = "Save feedback form", skip(state))]
 async fn submit_general_feedback(
     Query(event): Query<FeedbackForm>,
-    State(AppState { db_pool, .. }): State<AppState>,
+    State(state): State<SharedState>,
 ) -> Response {
-    if let Err(error) = write_general_feedback(&event, &db_pool).await {
+    let AppState { db_pool, .. } = state.as_ref();
+
+    if let Err(error) = write_general_feedback(&event, db_pool).await {
         tracing::warn!("Error while saving event {}", error);
     };
 
     StatusCode::OK.into_response()
 }
 
-#[tracing::instrument(name = "Save universal configurator event", skip(db_pool))]
+#[tracing::instrument(name = "Save universal configurator event", skip(state))]
 async fn submit_universal_configurator_event(
     Query(event): Query<UniversalConfiguratorEvent>,
-    State(AppState { db_pool, .. }): State<AppState>,
+    State(state): State<SharedState>,
 ) -> Response {
-    if let Err(error) = write_universal_widget_event(&event, &db_pool).await {
+    let AppState { db_pool, .. } = state.as_ref();
+
+    if let Err(error) = write_universal_widget_event(&event, db_pool).await {
         tracing::warn!("Error while saving event {}", error);
     };
 
     StatusCode::OK.into_response()
 }
 
-#[tracing::instrument(name = "Log widget event", skip(db_pool))]
+#[tracing::instrument(name = "Log widget event", skip(state))]
 async fn log_widget_event(
     Query(event): Query<WidgetEvent>,
-    State(AppState { db_pool, .. }): State<AppState>,
+    State(state): State<SharedState>,
 ) -> Response {
-    if let Err(error) = write_widget_event(&event, &db_pool).await {
+    let AppState { db_pool, .. } = state.as_ref();
+
+    if let Err(error) = write_widget_event(&event, db_pool).await {
         tracing::warn!("Error while saving event {}", error);
     };
 

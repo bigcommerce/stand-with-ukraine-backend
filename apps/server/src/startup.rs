@@ -1,3 +1,4 @@
+use crate::configuration::SharedState;
 use crate::liq_pay::HttpAPI as LiqPayHttpAPI;
 use crate::routes;
 use crate::{
@@ -39,7 +40,7 @@ impl Application {
             .local_addr()
             .expect("listener does not have an address")
             .port();
-        let server = run(listener, configuration.get_app_state())?;
+        let server = run(listener, configuration.get_app_state());
 
         Ok(Self { port, server })
     }
@@ -63,21 +64,13 @@ pub fn get_connection_pool(configuration: &Database) -> PgPool {
         .connect_lazy_with(configuration.with_db())
 }
 
-/// # Errors
-///
-/// Will return `std::io::Error` if server could not bind to the listener
-pub fn run(
-    listener: TcpListener,
-    state: AppState,
-) -> Result<Serve<Router, Router>, std::io::Error> {
+pub fn run(listener: TcpListener, shared_state: SharedState) -> Serve<Router, Router> {
     let app = Router::new()
         .merge(routes::router())
         .layer(OtelInResponseLayer::default())
         .layer(OtelAxumLayer::default())
-        .with_state(state.clone())
-        .layer(Extension(state));
+        .with_state(shared_state.clone())
+        .layer(Extension(shared_state));
 
-    let server = axum::serve(listener, app);
-
-    Ok(server)
+    axum::serve(listener, app)
 }
