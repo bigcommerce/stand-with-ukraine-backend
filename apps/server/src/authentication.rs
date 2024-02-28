@@ -1,11 +1,10 @@
-use anyhow::Context;
+use axum::extract::FromRef;
 use axum::RequestPartsExt;
 use axum::{
     async_trait,
     extract::FromRequestParts,
     http::{request::Parts, StatusCode},
     response::{IntoResponse, Response},
-    Extension,
 };
 use axum_extra::{
     headers::{authorization::Bearer, Authorization},
@@ -15,7 +14,7 @@ use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, 
 use secrecy::{ExposeSecret, Secret};
 use time::{Duration, OffsetDateTime};
 
-use crate::configuration::SharedState;
+use crate::state::Shared;
 
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub struct AuthClaims {
@@ -27,22 +26,20 @@ pub struct AuthClaims {
 #[async_trait]
 impl<S> FromRequestParts<S> for AuthClaims
 where
+    Shared: FromRef<S>,
     S: Send + Sync,
 {
     type Rejection = Error;
 
-    #[tracing::instrument(name = "decode auth from request", skip(parts, _state))]
-    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+    #[tracing::instrument(name = "decode auth from request", skip(parts, state))]
+    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         // Extract the token from the authorization header
         let TypedHeader(Authorization(bearer)) = parts
             .extract::<TypedHeader<Authorization<Bearer>>>()
             .await
             .map_err(|_| Error::NoToken)?;
 
-        let Extension(state) = parts
-            .extract::<Extension<SharedState>>()
-            .await
-            .context("extract state")?;
+        let state = Shared::from_ref(state);
 
         decode_token(bearer.token(), &state.jwt_secret)
     }

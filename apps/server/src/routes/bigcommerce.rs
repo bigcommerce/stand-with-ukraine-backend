@@ -9,11 +9,11 @@ use axum::{
 
 use crate::{
     authentication::{create_jwt, Error},
-    configuration::{AppState, SharedState},
     data::{write_store_as_uninstalled, write_store_credentials},
+    state::{App, Shared},
 };
 
-pub fn router() -> Router<SharedState> {
+pub fn router() -> Router<Shared> {
     Router::new()
         .route("/install", get(install))
         .route("/uninstall", get(uninstall))
@@ -43,21 +43,19 @@ impl IntoResponse for InstallError {
 
 #[tracing::instrument(
     name = "Process install request",
-    skip(query, state),
+    skip(query, bigcommerce_client, db_pool, jwt_secret, base_url),
     fields(context=tracing::field::Empty, user_email=tracing::field::Empty)
 )]
 async fn install(
     Query(query): Query<InstallQuery>,
-    State(state): State<SharedState>,
-) -> Result<Response, InstallError> {
-    let AppState {
+    State(App {
         bigcommerce_client,
         db_pool,
         jwt_secret,
         base_url,
         ..
-    } = state.as_ref();
-
+    }): State<App>,
+) -> Result<Response, InstallError> {
     tracing::Span::current().record("context", &tracing::field::display(&query.context));
 
     let oauth_credentials = bigcommerce_client
@@ -75,17 +73,17 @@ async fn install(
         .get_bigcommerce_store()
         .map_err(InstallError::UnexpectedError)?;
 
-    write_store_credentials(&store, db_pool)
+    write_store_credentials(&store, &db_pool)
         .await
         .context("Failed to store credentials in database")
         .map_err(InstallError::UnexpectedError)?;
 
-    let jwt = create_jwt(store.get_store_hash(), jwt_secret)
+    let jwt = create_jwt(store.get_store_hash(), &jwt_secret)
         .context("Failed to encode jwt token")
         .map_err(InstallError::UnexpectedError)?;
 
     Ok(Redirect::to(&generate_dashboard_url(
-        base_url,
+        &base_url,
         &jwt,
         store.get_store_hash(),
     ))
@@ -118,18 +116,19 @@ impl IntoResponse for LoadError {
     }
 }
 
-#[tracing::instrument(name = "Process load request", skip(query, state))]
+#[tracing::instrument(
+    name = "Process load request",
+    skip(query, bigcommerce_client, base_url, jwt_secret)
+)]
 async fn load(
     Query(query): Query<LoadQuery>,
-    State(state): State<SharedState>,
-) -> Result<Response, LoadError> {
-    let AppState {
+    State(App {
         bigcommerce_client,
         base_url,
         jwt_secret,
         ..
-    } = state.as_ref();
-
+    }): State<App>,
+) -> Result<Response, LoadError> {
     let claims = bigcommerce_client
         .decode_jwt(&query.signed_payload_jwt)
         .map_err(LoadError::InvalidCredentials)?;
@@ -138,24 +137,25 @@ async fn load(
         .get_store_hash()
         .map_err(LoadError::UnexpectedError)?;
 
-    let jwt = create_jwt(store_hash, jwt_secret)
+    let jwt = create_jwt(store_hash, &jwt_secret)
         .context("Failed to encode token")
         .map_err(LoadError::UnexpectedError)?;
 
-    Ok(Redirect::to(&generate_dashboard_url(base_url, &jwt, store_hash)).into_response())
+    Ok(Redirect::to(&generate_dashboard_url(&base_url, &jwt, store_hash)).into_response())
 }
 
-#[tracing::instrument(name = "Process uninstall request", skip(query, state))]
+#[tracing::instrument(
+    name = "Process uninstall request",
+    skip(query, bigcommerce_client, db_pool)
+)]
 async fn uninstall(
     Query(query): Query<LoadQuery>,
-    State(state): State<SharedState>,
-) -> Result<Response, LoadError> {
-    let AppState {
+    State(App {
         bigcommerce_client,
         db_pool,
         ..
-    } = state.as_ref();
-
+    }): State<App>,
+) -> Result<Response, LoadError> {
     let claims = bigcommerce_client
         .decode_jwt(&query.signed_payload_jwt)
         .map_err(LoadError::InvalidCredentials)?;
@@ -168,7 +168,7 @@ async fn uninstall(
         .get_store_hash()
         .map_err(LoadError::UnexpectedError)?;
 
-    write_store_as_uninstalled(store_hash, db_pool)
+    write_store_as_uninstalled(store_hash, &db_pool)
         .await
         .context("Failed to set store as uninstalled")
         .map_err(LoadError::UnexpectedError)?;

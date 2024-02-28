@@ -6,12 +6,14 @@ use secrecy::{ExposeSecret, Secret};
 use serde_aux::field_attributes::deserialize_number_from_string;
 use sqlx::{
     postgres::{PgConnectOptions, PgSslMode},
-    ConnectOptions, PgPool,
+    ConnectOptions,
 };
 
 use crate::{
-    bigcommerce::client::HttpAPI as BigCommerceHttpAPI, liq_pay::HttpAPI as LiqPayHttpAPI,
+    bigcommerce::client::HttpAPI as BigCommerceHttpAPI,
+    liq_pay::HttpAPI as LiqPayHttpAPI,
     startup::get_connection_pool,
+    state::{App, Shared},
 };
 
 #[derive(serde::Deserialize, Clone)]
@@ -118,7 +120,7 @@ impl Configuration {
             .try_deserialize()
     }
 
-    pub fn get_app_state(&self) -> SharedState {
+    pub fn get_app_state(&self) -> Shared {
         let db_pool = get_connection_pool(&self.database);
         let bigcommerce_client = BigCommerceHttpAPI::new(
             self.bigcommerce.api_base_url.clone(),
@@ -133,7 +135,7 @@ impl Configuration {
             self.liq_pay.private_key.clone(),
         );
 
-        Arc::new(AppState {
+        Arc::new(App {
             db_pool,
             base_url: self.application.base_url.clone(),
             jwt_secret: self.application.jwt_secret.clone(),
@@ -142,17 +144,6 @@ impl Configuration {
         })
     }
 }
-
-#[derive(Clone)]
-pub struct AppState {
-    pub db_pool: PgPool,
-    pub base_url: String,
-    pub jwt_secret: Secret<String>,
-    pub bigcommerce_client: BigCommerceHttpAPI,
-    pub liq_pay_client: LiqPayHttpAPI,
-}
-
-pub type SharedState = Arc<AppState>;
 
 pub struct LightstepAccessToken(pub Secret<String>);
 

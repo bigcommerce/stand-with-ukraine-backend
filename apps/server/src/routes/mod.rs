@@ -1,6 +1,6 @@
 use axum::{response::Response, routing::get, Router};
 
-use crate::configuration::SharedState;
+use crate::state::Shared;
 
 mod bigcommerce;
 mod pay;
@@ -10,7 +10,7 @@ pub async fn health_check() -> Response {
     Response::new("".into())
 }
 
-pub fn router() -> Router<SharedState> {
+pub fn router() -> Router<Shared> {
     Router::new()
         .route("/health_check", get(health_check))
         .nest("/pay", pay::router())

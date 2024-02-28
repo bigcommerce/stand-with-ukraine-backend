@@ -1,29 +1,15 @@
-use crate::configuration::SharedState;
-use crate::liq_pay::HttpAPI as LiqPayHttpAPI;
+use crate::configuration::{Configuration, Database};
 use crate::routes;
-use crate::{
-    bigcommerce::client::HttpAPI as BigCommerceHttpAPI,
-    configuration::{Configuration, Database},
-};
+use crate::state::Shared;
 use axum::serve::Serve;
-use axum::{Extension, Router};
+use axum::Router;
 use axum_tracing_opentelemetry::middleware::{OtelAxumLayer, OtelInResponseLayer};
-use secrecy::Secret;
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use tokio::net::TcpListener;
 
 pub struct Application {
     port: u16,
     server: Serve<Router, Router>,
-}
-
-#[derive(Clone)]
-pub struct AppState {
-    pub db_pool: PgPool,
-    pub base_url: String,
-    pub jwt_secret: Secret<String>,
-    pub bigcommerce_client: BigCommerceHttpAPI,
-    pub liq_pay_client: LiqPayHttpAPI,
 }
 
 impl Application {
@@ -64,13 +50,14 @@ pub fn get_connection_pool(configuration: &Database) -> PgPool {
         .connect_lazy_with(configuration.with_db())
 }
 
-pub fn run(listener: TcpListener, shared_state: SharedState) -> Serve<Router, Router> {
+#[allow(clippy::default_constructed_unit_structs)]
+// reason = "OtelInResponseLayer struct is external and might change"
+pub fn run(listener: TcpListener, shared_state: Shared) -> Serve<Router, Router> {
     let app = Router::new()
         .merge(routes::router())
         .layer(OtelInResponseLayer::default())
         .layer(OtelAxumLayer::default())
-        .with_state(shared_state.clone())
-        .layer(Extension(shared_state));
+        .with_state(shared_state);
 
     axum::serve(listener, app)
 }

@@ -1,12 +1,12 @@
-use crate::configuration::{AppState, SharedState};
 use crate::liq_pay::InputQuery;
+use crate::state::{App, Shared};
 use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Redirect};
 use axum::routing::get;
 use axum::Router;
 
-pub fn router() -> Router<SharedState> {
+pub fn router() -> Router<Shared> {
     Router::new().route("/", get(pay))
 }
 
@@ -24,13 +24,11 @@ impl IntoResponse for PayError {
     }
 }
 
-#[tracing::instrument(name = "Process pay request", skip(query, state))]
+#[tracing::instrument(name = "Process pay request", skip(query, liq_pay_client))]
 async fn pay(
     Query(query): Query<InputQuery>,
-    State(state): State<SharedState>,
+    State(App { liq_pay_client, .. }): State<App>,
 ) -> Result<Redirect, PayError> {
-    let AppState { liq_pay_client, .. } = state.as_ref();
-
     let checkout_request = liq_pay_client
         .generate_request_payload(query, "Support BigCommerce colleagues defending Ukraine")?;
 
