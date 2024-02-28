@@ -37,7 +37,7 @@ impl Application {
 
     /// # Errors
     ///
-    /// Will return `std::io::Error` if actix server returns an error
+    /// Will return `std::io::Error` if axum server returns an error
     pub async fn run_until_stopped(self) -> Result<(), std::io::Error> {
         self.server.await
     }
