@@ -12,11 +12,13 @@ use axum_extra::{
 };
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use secrecy::{ExposeSecret, Secret};
+use serde::{Deserialize, Serialize};
 use time::{Duration, OffsetDateTime};
+use tracing::trace;
 
-use crate::state::Shared;
+use crate::state::SharedState;
 
-#[derive(serde::Deserialize, serde::Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct AuthClaims {
     pub sub: String,
     pub role: String,
@@ -26,7 +28,7 @@ pub struct AuthClaims {
 #[async_trait]
 impl<S> FromRequestParts<S> for AuthClaims
 where
-    Shared: FromRef<S>,
+    SharedState: FromRef<S>,
     S: Send + Sync,
 {
     type Rejection = Error;
@@ -39,7 +41,7 @@ where
             .await
             .map_err(|_| Error::NoToken)?;
 
-        let state = Shared::from_ref(state);
+        let state = SharedState::from_ref(state);
 
         decode_token(bearer.token(), &state.jwt_secret)
     }
@@ -48,10 +50,6 @@ where
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
         match self {
-            Self::InvalidServerConfiguration => {
-                (StatusCode::INTERNAL_SERVER_ERROR, "Unknown error")
-            }
-            Self::Unexpected(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Unknown error"),
             Self::InvalidToken(_) | Self::NoToken => (StatusCode::BAD_REQUEST, "Invalid token"),
         }
         .into_response()
@@ -83,6 +81,8 @@ pub fn decode_token(token: &str, secret: &Secret<String>) -> Result<AuthClaims, 
     let validation = Validation::new(Algorithm::HS512);
     let decoded = decode::<AuthClaims>(token, &key, &validation).map_err(Error::InvalidToken)?;
 
+    trace!(?decoded, "token decoded");
+
     Ok(decoded.claims)
 }
 
@@ -93,12 +93,6 @@ pub enum Error {
 
     #[error("Token is invalid.")]
     InvalidToken(#[source] jsonwebtoken::errors::Error),
-
-    #[error("Server Configuration Invalid")]
-    InvalidServerConfiguration,
-
-    #[error(transparent)]
-    Unexpected(#[from] anyhow::Error),
 }
 
 #[cfg(test)]

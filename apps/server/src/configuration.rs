@@ -13,7 +13,7 @@ use crate::{
     bigcommerce::client::HttpAPI as BigCommerceHttpAPI,
     liq_pay::HttpAPI as LiqPayHttpAPI,
     startup::get_connection_pool,
-    state::{App, Shared},
+    state::{AppState, SharedState},
 };
 
 #[derive(serde::Deserialize, Clone)]
@@ -120,7 +120,7 @@ impl Configuration {
             .try_deserialize()
     }
 
-    pub fn get_app_state(&self) -> Shared {
+    pub fn get_app_state(&self) -> SharedState {
         let db_pool = get_connection_pool(&self.database);
         let bigcommerce_client = BigCommerceHttpAPI::new(
             self.bigcommerce.api_base_url.clone(),
@@ -135,7 +135,7 @@ impl Configuration {
             self.liq_pay.private_key.clone(),
         );
 
-        Arc::new(App {
+        Arc::new(AppState {
             db_pool,
             base_url: self.application.base_url.clone(),
             jwt_secret: self.application.jwt_secret.clone(),

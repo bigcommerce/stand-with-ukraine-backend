@@ -7,7 +7,7 @@ use crate::{
         write_widget_event, CharityEvent, FeedbackForm, UniversalConfiguratorEvent,
         WidgetConfiguration, WidgetEvent,
     },
-    state::{App, Shared},
+    state::{AppState, SharedState},
 };
 
 use tower_http::cors::{Any, CorsLayer};
@@ -21,7 +21,7 @@ use axum::{
     Json, Router,
 };
 
-pub fn router() -> Router<Shared> {
+pub fn router() -> Router<SharedState> {
     let v1_router = Router::new()
         .route("/configuration", post(save_widget_configuration))
         .route("/configuration", get(get_widget_configuration))
@@ -64,7 +64,7 @@ impl IntoResponse for ConfigurationError {
 #[tracing::instrument(name = "Save widget configuration", skip(auth, db_pool))]
 async fn save_widget_configuration(
     auth: AuthClaims,
-    State(App { db_pool, .. }): State<App>,
+    State(AppState { db_pool, .. }): State<AppState>,
     Json(widget_configuration): Json<WidgetConfiguration>,
 ) -> Result<Response, ConfigurationError> {
     let store_hash = auth.sub.as_str();
@@ -79,7 +79,7 @@ async fn save_widget_configuration(
 #[tracing::instrument(name = "Get widget configuration", skip(auth, db_pool))]
 async fn get_widget_configuration(
     auth: AuthClaims,
-    State(App { db_pool, .. }): State<App>,
+    State(AppState { db_pool, .. }): State<AppState>,
 ) -> Result<Response, ConfigurationError> {
     let store_hash = auth.sub.as_str();
 
@@ -111,12 +111,12 @@ impl IntoResponse for PublishError {
 )]
 async fn publish_widget(
     auth: AuthClaims,
-    State(App {
+    State(AppState {
         db_pool,
         base_url,
         bigcommerce_client,
         ..
-    }): State<App>,
+    }): State<AppState>,
 ) -> Result<Response, PublishError> {
     let store_hash = auth.sub.as_str();
     let widget_configuration = read_widget_configuration(store_hash, &db_pool)
@@ -166,11 +166,11 @@ struct Feedback {
 )]
 async fn remove_widget(
     auth: AuthClaims,
-    State(App {
+    State(AppState {
         db_pool,
         bigcommerce_client,
         ..
-    }): State<App>,
+    }): State<AppState>,
     Query(feedback): Query<Feedback>,
 ) -> Result<Response, PublishError> {
     let store_hash = auth.sub.as_str();
@@ -204,11 +204,11 @@ async fn remove_widget(
 #[tracing::instrument(name = "Preview widget", skip(auth, db_pool, bigcommerce_client))]
 async fn preview_widget(
     auth: AuthClaims,
-    State(App {
+    State(AppState {
         db_pool,
         bigcommerce_client,
         ..
-    }): State<App>,
+    }): State<AppState>,
 ) -> Result<Response, PublishError> {
     let store_hash = auth.sub.as_str();
 
@@ -229,7 +229,7 @@ async fn preview_widget(
 #[tracing::instrument(name = "Get widget status", skip(auth, db_pool))]
 async fn get_published_status(
     auth: AuthClaims,
-    State(App { db_pool, .. }): State<App>,
+    State(AppState { db_pool, .. }): State<AppState>,
 ) -> Result<Response, PublishError> {
     let store_hash = auth.sub.as_str();
 
@@ -244,7 +244,7 @@ async fn get_published_status(
 #[tracing::instrument(name = "Log charity event", skip(db_pool))]
 async fn log_charity_event(
     Query(event): Query<CharityEvent>,
-    State(App { db_pool, .. }): State<App>,
+    State(AppState { db_pool, .. }): State<AppState>,
 ) -> Response {
     if let Err(error) = write_charity_visited_event(&event, &db_pool).await {
         tracing::warn!("Error while saving event {}", error);
@@ -256,7 +256,7 @@ async fn log_charity_event(
 #[tracing::instrument(name = "Save feedback form", skip(db_pool))]
 async fn submit_general_feedback(
     Query(event): Query<FeedbackForm>,
-    State(App { db_pool, .. }): State<App>,
+    State(AppState { db_pool, .. }): State<AppState>,
 ) -> Response {
     if let Err(error) = write_general_feedback(&event, &db_pool).await {
         tracing::warn!("Error while saving event {}", error);
@@ -268,7 +268,7 @@ async fn submit_general_feedback(
 #[tracing::instrument(name = "Save universal configurator event", skip(db_pool))]
 async fn submit_universal_configurator_event(
     Query(event): Query<UniversalConfiguratorEvent>,
-    State(App { db_pool, .. }): State<App>,
+    State(AppState { db_pool, .. }): State<AppState>,
 ) -> Response {
     if let Err(error) = write_universal_widget_event(&event, &db_pool).await {
         tracing::warn!("Error while saving event {}", error);
@@ -280,7 +280,7 @@ async fn submit_universal_configurator_event(
 #[tracing::instrument(name = "Log widget event", skip(db_pool))]
 async fn log_widget_event(
     Query(event): Query<WidgetEvent>,
-    State(App { db_pool, .. }): State<App>,
+    State(AppState { db_pool, .. }): State<AppState>,
 ) -> Response {
     if let Err(error) = write_widget_event(&event, &db_pool).await {
         tracing::warn!("Error while saving event {}", error);

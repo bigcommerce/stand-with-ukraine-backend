@@ -10,10 +10,10 @@ use axum::{
 use crate::{
     authentication::{create_jwt, Error},
     data::{write_store_as_uninstalled, write_store_credentials},
-    state::{App, Shared},
+    state::{AppState, SharedState},
 };
 
-pub fn router() -> Router<Shared> {
+pub fn router() -> Router<SharedState> {
     Router::new()
         .route("/install", get(install))
         .route("/uninstall", get(uninstall))
@@ -48,13 +48,13 @@ impl IntoResponse for InstallError {
 )]
 async fn install(
     Query(query): Query<InstallQuery>,
-    State(App {
+    State(AppState {
         bigcommerce_client,
         db_pool,
         jwt_secret,
         base_url,
         ..
-    }): State<App>,
+    }): State<AppState>,
 ) -> Result<Response, InstallError> {
     tracing::Span::current().record("context", &tracing::field::display(&query.context));
 
@@ -122,12 +122,12 @@ impl IntoResponse for LoadError {
 )]
 async fn load(
     Query(query): Query<LoadQuery>,
-    State(App {
+    State(AppState {
         bigcommerce_client,
         base_url,
         jwt_secret,
         ..
-    }): State<App>,
+    }): State<AppState>,
 ) -> Result<Response, LoadError> {
     let claims = bigcommerce_client
         .decode_jwt(&query.signed_payload_jwt)
@@ -150,11 +150,11 @@ async fn load(
 )]
 async fn uninstall(
     Query(query): Query<LoadQuery>,
-    State(App {
+    State(AppState {
         bigcommerce_client,
         db_pool,
         ..
-    }): State<App>,
+    }): State<AppState>,
 ) -> Result<Response, LoadError> {
     let claims = bigcommerce_client
         .decode_jwt(&query.signed_payload_jwt)

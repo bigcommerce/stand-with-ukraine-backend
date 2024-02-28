@@ -16,7 +16,7 @@ use uuid::Uuid;
 use wiremock::MockServer;
 
 static TRACING: Lazy<()> = Lazy::new(|| {
-    let default_filter_level = "off".into();
+    let default_filter_level = "trace".into();
     let subscriber_name = "test".into();
     init_tracing(subscriber_name, default_filter_level);
 });

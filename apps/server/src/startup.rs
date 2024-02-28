@@ -1,6 +1,6 @@
 use crate::configuration::{Configuration, Database};
 use crate::routes;
-use crate::state::Shared;
+use crate::state::SharedState;
 use axum::serve::Serve;
 use axum::Router;
 use axum_tracing_opentelemetry::middleware::{OtelAxumLayer, OtelInResponseLayer};
@@ -51,8 +51,8 @@ pub fn get_connection_pool(configuration: &Database) -> PgPool {
 }
 
 #[allow(clippy::default_constructed_unit_structs)]
-// reason = "OtelInResponseLayer struct is external and might change"
-pub fn run(listener: TcpListener, shared_state: Shared) -> Serve<Router, Router> {
+// reason = "`OtelInResponseLayer` struct is an external dependency that might change"
+pub fn run(listener: TcpListener, shared_state: SharedState) -> Serve<Router, Router> {
     let app = Router::new()
         .merge(routes::router())
         .layer(OtelInResponseLayer::default())
