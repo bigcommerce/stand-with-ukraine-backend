@@ -124,11 +124,21 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Docker Image Metadata
-        id: meta
+        id: backend-meta
         uses: docker/metadata-action@v4
         with:
           images: |
             ${{ secrets.CLOUD_RUN_APP_IMAGE }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha
+
+      - name: Docker Image Metadata
+        id: otel-collector-meta
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            ${{ secrets.CLOUD_RUN_OTEL_COLLECTOR_IMAGE }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha
@@ -148,38 +158,36 @@ jobs:
           file: apps/server/Dockerfile
           target: runtime
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.backend-meta.outputs.tags }}
+          labels: ${{ steps.backend-meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Build collector image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          provenance: false
+          file: otel-collector/Dockerfile
+          target: runtime
+          push: true
+          tags: ${{ steps.otel-collector-meta.outputs.tags }}
+          labels: ${{ steps.otel-collector-meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Replace variables in run-service.yaml
+        run: |
+          sed -i s@%OTEL_COLLECTOR_IMAGE%@${{ fromJSON(steps.otel-collector-meta.outputs.json).tags[1] }}@g run-service.yaml
+          sed -i s@%APP_IMAGE%@${{ fromJSON(steps.backend-meta.outputs.json).tags[1] }}@g run-service.yaml
+          sed -i s@%SERVICE_ACCOUNT%@${{ secrets.CLOUD_RUN_SERVICE_ACCOUNT }}@g run-service.yaml
+          sed -i s@%APP__APPLICATION__PORT%@${{ secrets.APP__APPLICATION__PORT }}@g run-service.yaml
+          sed -i s@%APP__APPLICATION__BASE_URL%@${{ secrets.APP__APPLICATION__BASE_URL }}@g run-service.yaml
+          sed -i s@%APP__BIGCOMMERCE__INSTALL_REDIRECT_URI%@${{ secrets.APP__BIGCOMMERCE__INSTALL_REDIRECT_URI }}@g run-service.yaml
+
       - name: Deploy Cloud Run
         run: |
-          gcloud beta run deploy ${{ secrets.CLOUD_RUN_APP }} \
-          --project=${{ secrets.GCP_PROJECT_ID }} \
-          --image=${{ fromJSON(steps.meta.outputs.json).tags[1] }} \
-          --service-account=${{ secrets.CLOUD_RUN_SERVICE_ACCOUNT }} \
-          --port=${{ secrets.APP__APPLICATION__PORT }} \
-          --set-cloudsql-instances=${{ secrets.CLOUD_SQL_DB }} \
-          --allow-unauthenticated \
-          --concurrency=1000 \
-          --min-instances=1 \
-          --max-instances=5 \
-          --execution-environment=gen2 \
-          --region=us-central1 \
-          --set-env-vars=APP__APPLICATION__PORT=${{ secrets.APP__APPLICATION__PORT }} \
-          --set-env-vars=APP__APPLICATION__BASE_URL=${{ secrets.APP__APPLICATION__BASE_URL }} \
-          --set-env-vars=APP__BIGCOMMERCE__INSTALL_REDIRECT_URI=${{ secrets.APP__BIGCOMMERCE__INSTALL_REDIRECT_URI }} \
-          --set-env-vars=APP__DATABASE__REQUIRE_SSL=false \
-          --set-secrets=APP__DATABASE__SOCKET=APP__DATABASE__SOCKET:2 \
-          --set-secrets=APP__DATABASE__DATABASE_NAME=APP__DATABASE__DATABASE_NAME:1 \
-          --set-secrets=APP__DATABASE__PASSWORD=APP__DATABASE__PASSWORD:1 \
-          --set-secrets=APP__DATABASE__USERNAME=APP__DATABASE__USERNAME:1 \
-          --set-secrets=APP__BIGCOMMERCE__CLIENT_SECRET=APP__BIGCOMMERCE__CLIENT_SECRET:1 \
-          --set-secrets=APP__BIGCOMMERCE__CLIENT_ID=APP__BIGCOMMERCE__CLIENT_ID:1 \
-          --set-secrets=APP__APPLICATION__JWT_SECRET=APP__APPLICATION__JWT_SECRET:1 \
-          --set-secrets=APP__LIQ_PAY__PUBLIC_KEY=APP__LIQ_PAY__PUBLIC_KEY:2 \
-          --set-secrets=APP__LIQ_PAY__PRIVATE_KEY=APP__LIQ_PAY__PRIVATE_KEY:2
+          gcloud run services replace run-service.yaml
 
   coverage:
     name: coverage
