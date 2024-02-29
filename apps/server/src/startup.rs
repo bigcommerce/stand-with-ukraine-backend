@@ -26,7 +26,7 @@ impl Application {
             .local_addr()
             .expect("listener does not have an address")
             .port();
-        let server = run(listener, configuration.get_app_state());
+        let server = build_server(listener, configuration.get_app_state());
 
         Ok(Self { port, server })
     }
@@ -52,7 +52,7 @@ pub fn get_connection_pool(configuration: &Database) -> PgPool {
 
 #[allow(clippy::default_constructed_unit_structs)]
 // reason = "`OtelInResponseLayer` struct is an external dependency that might change"
-pub fn run(listener: TcpListener, shared_state: SharedState) -> Serve<Router, Router> {
+pub fn build_server(listener: TcpListener, shared_state: SharedState) -> Serve<Router, Router> {
     let app = Router::new()
         .merge(routes::router())
         .layer(OtelInResponseLayer::default())

@@ -34,7 +34,7 @@ enum InstallError {
 }
 
 impl IntoResponse for InstallError {
-    fn into_response(self) -> axum::response::Response {
+    fn into_response(self) -> Response {
         match self {
             Self::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
         }

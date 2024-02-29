@@ -10,12 +10,12 @@ use crate::{
     state::{AppState, SharedState},
 };
 
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::CorsLayer;
 
 use anyhow::Context;
 use axum::{
     extract::{Query, State},
-    http::{Method, StatusCode},
+    http::StatusCode,
     response::{IntoResponse, Response},
     routing::{delete, get, post},
     Json, Router,
@@ -30,9 +30,7 @@ pub fn router() -> Router<SharedState> {
         .route("/publish", delete(remove_widget))
         .route("/preview", get(preview_widget));
 
-    let cors = CorsLayer::new()
-        .allow_methods([Method::GET, Method::POST])
-        .allow_origin(Any);
+    let cors = CorsLayer::permissive();
 
     let v2_router = Router::new()
         .layer(cors)
