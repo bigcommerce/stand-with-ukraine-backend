@@ -8,7 +8,7 @@ use swu_app::{
     data::write_store_credentials,
 };
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn install_request_fails_without_bigcommerce_response() {
     let app = spawn_app().await;
     let client = create_test_server_client_no_redirect();
@@ -27,7 +27,7 @@ async fn install_request_fails_without_bigcommerce_response() {
     assert!(response.status().is_server_error());
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn install_request_fails_without_query_parameters() {
     let app = spawn_app().await;
 
@@ -74,7 +74,7 @@ async fn install_request_fails_without_query_parameters() {
     );
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn install_request_succeeds() {
     let app = spawn_app().await;
     let client = create_test_server_client_no_redirect();
@@ -121,7 +121,7 @@ async fn install_request_succeeds() {
     assert_eq!(row.store_hash, "STORE_HASH");
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn load_request_fails_with_bad_token() {
     let app = spawn_app().await;
     let client = create_test_server_client_no_redirect();
@@ -153,7 +153,7 @@ async fn load_request_fails_with_bad_token() {
     assert!(response.status().is_server_error());
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn load_request_succeeds() {
     let app = spawn_app().await;
     let client = create_test_server_client_no_redirect();
@@ -178,7 +178,7 @@ async fn load_request_succeeds() {
     );
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn uninstall_request_succeeds() {
     let app = spawn_app().await;
     let client = create_test_server_client_no_redirect();
@@ -212,7 +212,7 @@ async fn uninstall_request_succeeds() {
     assert_eq!(response.status().as_u16(), 200);
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn uninstall_request_fails_with_non_owner() {
     let app = spawn_app().await;
     let client = create_test_server_client_no_redirect();

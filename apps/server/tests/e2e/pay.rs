@@ -1,7 +1,7 @@
 use crate::helpers;
 use crate::helpers::create_test_server_client_no_redirect;
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn pay_check() {
     let app = helpers::spawn_app().await;
     let response = create_test_server_client_no_redirect()

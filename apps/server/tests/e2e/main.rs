@@ -3,9 +3,9 @@ pub mod widget;
 
 pub mod helpers;
 pub mod mocks;
-mod pay;
+pub mod pay;
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn health_check() {
     let app = helpers::spawn_app().await;
 

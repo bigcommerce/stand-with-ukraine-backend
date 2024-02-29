@@ -8,7 +8,7 @@ use crate::{
     },
 };
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn widget_publish_request_fails_without_token_or_with_invalid_token() {
     let app = spawn_app().await;
 
@@ -34,7 +34,7 @@ async fn widget_publish_request_fails_without_token_or_with_invalid_token() {
     assert!(response.status().is_client_error());
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn widget_publish_request_succeeds() {
     let app = spawn_app().await;
 
@@ -121,7 +121,7 @@ async fn widget_publish_request_succeeds() {
     }
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn widget_publish_request_fails_without_configuration_saved() {
     let app = spawn_app().await;
 
@@ -145,7 +145,7 @@ async fn widget_publish_request_fails_without_configuration_saved() {
     assert!(response.status().is_server_error());
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn widget_publish_request_fails_without_bigcommerce_server_response() {
     let app = spawn_app().await;
 
@@ -170,7 +170,7 @@ async fn widget_publish_request_fails_without_bigcommerce_server_response() {
     assert!(response.status().is_server_error());
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn get_published_status_fails_without_store() {
     let app = spawn_app().await;
 
@@ -185,7 +185,7 @@ async fn get_published_status_fails_without_store() {
     assert!(response.status().is_server_error());
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn widget_preview_request_fails_without_store() {
     let app = spawn_app().await;
 
@@ -200,7 +200,7 @@ async fn widget_preview_request_fails_without_store() {
     assert!(response.status().is_server_error());
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn widget_preview_request_succeeds() {
     let app = spawn_app().await;
     let client = create_test_server_client_no_redirect();
@@ -228,7 +228,7 @@ async fn widget_preview_request_succeeds() {
     );
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn widget_remove_request_fails_without_store() {
     let app = spawn_app().await;
 
@@ -243,7 +243,7 @@ async fn widget_remove_request_fails_without_store() {
     assert!(response.status().is_server_error());
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn widget_remove_request_succeeds() {
     let app = spawn_app().await;
 
@@ -283,7 +283,7 @@ async fn widget_remove_request_succeeds() {
     assert!(!response.published);
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn widget_remove_request_with_feedback_succeeds() {
     let app = spawn_app().await;
 

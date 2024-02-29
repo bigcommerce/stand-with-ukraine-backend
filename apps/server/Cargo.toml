@@ -37,16 +37,13 @@ sha1 = "0.10.5"
 assert-json-diff = "2.0.2"
 opentelemetry-otlp = { version = "0.14.0" }
 opentelemetry_sdk = { version = "0.21.2", features = ["rt-tokio"] }
-axum = { version = "0.7.4", features = [
-  "default",
-  "tokio",
-  "tracing",
-  "macros",
-  "json",
-] }
 tower-http = { version = "0.5.2", features = ["cors", "trace"] }
 axum-extra = { version = "0.9.2", features = ["typed-header"] }
 axum-tracing-opentelemetry = "0.17.1"
+
+[dependencies.axum]
+version = "0.7.4"
+features = ["default", "tokio", "tracing", "macros", "json"]
 
 [dependencies.reqwest]
 version = "0.11.24"
@@ -69,7 +66,7 @@ features = [
 
 [dependencies.tokio]
 version = "1.35.1"
-features = ["macros", "rt-multi-thread"]
+features = ["macros", "rt-multi-thread", "signal"]
 
 [dev-dependencies]
 rstest = "0.18.2"

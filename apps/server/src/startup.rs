@@ -6,6 +6,7 @@ use axum::Router;
 use axum_tracing_opentelemetry::middleware::{OtelAxumLayer, OtelInResponseLayer};
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use tokio::net::TcpListener;
+use tokio::signal;
 
 pub struct Application {
     port: u16,
@@ -39,7 +40,7 @@ impl Application {
     ///
     /// Will return `std::io::Error` if axum server returns an error
     pub async fn run_until_stopped(self) -> Result<(), std::io::Error> {
-        self.server.await
+        self.server.with_graceful_shutdown(shutdown_signal()).await
     }
 }
 
@@ -60,4 +61,36 @@ pub fn build_server(listener: TcpListener, shared_state: SharedState) -> Serve<R
         .with_state(shared_state);
 
     axum::serve(listener, app)
+}
+
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        () = ctrl_c => {
+        },
+        () = terminate => {
+        },
+    }
+
+    //TODO: remove when https://github.com/open-telemetry/opentelemetry-rust/issues/868 is fixed
+    //for now we have to use async task because global tracer is in a RWLock that will block otherwise
+    tokio::task::spawn_blocking(opentelemetry::global::shutdown_tracer_provider)
+        .await
+        .unwrap();
 }

@@ -74,10 +74,12 @@ We hope this sample gives you a good reference point for building your next kill
   - Tracing / Logs
     - Open telemetry is supported so you can enable it:
       - Run jaeger locally: `docker run -d -p16686:16686 -p4317:4317 jaegertracing/all-in-one:latest`
-      - Run the app with flag enabled `RUST_LOG=trace OTEL_ENABLE=true cargo run --bin swu-app` 
-      - View spans in the jaeger ui
+      - Run
+        - the app with flag enabled `RUST_LOG=trace OTEL_ENABLE=true cargo run --bin swu-app`
+        - or the test suite `OTEL_ENABLE=true cargo nextest run`
+      - View spans in the jaeger ui (service = `swu-app` for server binary, or service = `test` for test suite)
         - http://localhost:16686
-    - Or you can use console output + bunyan 
+    - Or you can use console output + bunyan
       - Recommended setup is `cargo install bunyan`
       - Set log level during testing and pass it through bunyan `RUST_LOG=trace cargo test | bunyan`
 

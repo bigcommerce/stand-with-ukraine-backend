@@ -1,5 +1,4 @@
 use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
-use once_cell::sync::Lazy;
 use reqwest::Client;
 use secrecy::{ExposeSecret, Secret};
 use sqlx::{Connection, Executor, PgConnection, PgPool};
@@ -15,11 +14,11 @@ use time::{Duration, OffsetDateTime};
 use uuid::Uuid;
 use wiremock::MockServer;
 
-static TRACING: Lazy<()> = Lazy::new(|| {
+pub fn init_test_tracing() {
     let default_filter_level = "trace".into();
     let subscriber_name = "test".into();
     init_tracing(subscriber_name, default_filter_level);
-});
+}
 
 pub struct TestApp {
     pub address: String,
@@ -36,7 +35,7 @@ pub struct TestApp {
 }
 
 pub async fn spawn_app() -> TestApp {
-    Lazy::force(&TRACING);
+    init_test_tracing();
 
     let bigcommerce_server = MockServer::start().await;
 
@@ -71,6 +70,12 @@ pub async fn spawn_app() -> TestApp {
         bc_redirect_uri: configuration.bigcommerce.install_redirect_uri,
         base_url: configuration.application.base_url,
         test_client: reqwest::Client::new(),
+    }
+}
+
+impl Drop for TestApp {
+    fn drop(&mut self) {
+        tokio::task::block_in_place(opentelemetry::global::shutdown_tracer_provider);
     }
 }
 
