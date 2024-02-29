@@ -5,13 +5,11 @@ receivers:
 
 processors:
   batch:
-    # batch metrics before sending to reduce API usage
     send_batch_max_size: 200
     send_batch_size: 200
     timeout: 5s
 
   memory_limiter:
-    # drop metrics if memory usage gets too high
     check_interval: 1s
     limit_percentage: 65
     spike_limit_percentage: 20
@@ -20,6 +18,12 @@ processors:
     detectors: [env, gcp]
     timeout: 2s
     override: false
+
+  resource:
+    attributes:
+      - key: service.instance.id
+        from_attribute: faas.id
+        action: upsert
 
 exporters:
   googlecloud:
@@ -35,13 +39,13 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [resourcedetection]
+      processors: [batch, memory_limiter, resourcedetection, resource]
       exporters: [googlecloud]
     logs:
       receivers: [otlp]
-      processors: [resourcedetection]
+      processors: [batch, memory_limiter, resourcedetection, resource]
       exporters: [googlecloud]
     metrics:
       receivers: [otlp]
-      processors: [resourcedetection]
+      processors: [batch, memory_limiter, resourcedetection, resource]
       exporters: [googlemanagedprometheus]
