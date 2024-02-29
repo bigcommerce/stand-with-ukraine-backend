@@ -177,12 +177,12 @@ jobs:
 
       - name: Replace variables in run-service.yaml
         run: |
-          sed -i s@%OTEL_COLLECTOR_IMAGE%@${{ fromJSON(steps.otel-collector-meta.outputs.json).tags[1] }}@g run-service.yaml
-          sed -i s@%APP_IMAGE%@${{ fromJSON(steps.backend-meta.outputs.json).tags[1] }}@g run-service.yaml
-          sed -i s@%SERVICE_ACCOUNT%@${{ secrets.CLOUD_RUN_SERVICE_ACCOUNT }}@g run-service.yaml
-          sed -i s@%APP__APPLICATION__PORT%@${{ secrets.APP__APPLICATION__PORT }}@g run-service.yaml
-          sed -i s@%APP__APPLICATION__BASE_URL%@${{ secrets.APP__APPLICATION__BASE_URL }}@g run-service.yaml
-          sed -i s@%APP__BIGCOMMERCE__INSTALL_REDIRECT_URI%@${{ secrets.APP__BIGCOMMERCE__INSTALL_REDIRECT_URI }}@g run-service.yaml
+          sed -i s#%OTEL_COLLECTOR_IMAGE%#${{ fromJSON(steps.otel-collector-meta.outputs.json).tags[1] }}#g run-service.yaml
+          sed -i s#%APP_IMAGE%#${{ fromJSON(steps.backend-meta.outputs.json).tags[1] }}#g run-service.yaml
+          sed -i s#%SERVICE_ACCOUNT%#${{ secrets.CLOUD_RUN_SERVICE_ACCOUNT }}#g run-service.yaml
+          sed -i s#%APP__APPLICATION__PORT%#${{ secrets.APP__APPLICATION__PORT }}#g run-service.yaml
+          sed -i s#%APP__APPLICATION__BASE_URL%#${{ secrets.APP__APPLICATION__BASE_URL }}#g run-service.yaml
+          sed -i s#%APP__BIGCOMMERCE__INSTALL_REDIRECT_URI%#${{ secrets.APP__BIGCOMMERCE__INSTALL_REDIRECT_URI }}#g run-service.yaml
 
       - name: Deploy Cloud Run
         run: |
