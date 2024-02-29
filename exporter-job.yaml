@@ -1,0 +1,53 @@
+apiVersion: run.googleapis.com/v1
+kind: Job
+metadata:
+  name: exporter
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/cloudsql-instances: stand-with-ukraine-bc-app:us-central1:db
+        run.googleapis.com/execution-environment: gen2
+    spec:
+      parallelism: 1
+      taskCount: 1
+      template:
+        spec:
+          containers:
+          - name: exporter
+            image: "%EXPORTER_IMAGE%"
+            env:
+            - name: EXPORTER__DATABASE__REQUIRE_SSL
+              value: 'false'
+            - name: EXPORTER__DATABASE__SOCKET
+              valueFrom:
+                secretKeyRef:
+                  key: '2'
+                  name: APP__DATABASE__SOCKET
+            - name: EXPORTER__DATABASE__DATABASE_NAME
+              valueFrom:
+                secretKeyRef:
+                  key: '1'
+                  name: APP__DATABASE__DATABASE_NAME
+            - name: EXPORTER__DATABASE__PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: '1'
+                  name: APP__DATABASE__PASSWORD
+            - name: EXPORTER__DATABASE__USERNAME
+              valueFrom:
+                secretKeyRef:
+                  key: '1'
+                  name: APP__DATABASE__USERNAME
+            - name: EXPORTER__SHEETS__SPREADSHEET_ID
+              valueFrom:
+                secretKeyRef:
+                  key: '1'
+                  name: EXPORTER__SHEETS__SPREADSHEET_ID
+            resources:
+              limits:
+                cpu: 1000m
+                memory: 512Mi
+          maxRetries: 0
+          timeoutSeconds: '600'
+          serviceAccountName: "%SERVICE_ACCOUNT%"

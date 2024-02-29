@@ -134,7 +134,7 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: |
-            ${{ secrets.CLOUD_RUN_EXPORTER_IMAGE }}
+            ${{ vars.CLOUD_RUN_EXPORTER_IMAGE }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha
@@ -156,22 +156,14 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=registry,ref=${{ vars.CLOUD_RUN_EXPORTER_IMAGE }}:buildcache
+          cache-to: type=registry,ref=${{ vars.CLOUD_RUN_EXPORTER_IMAGE }}:buildcache,mode=max
+
+      - name: Replace variables in exporter-job.yaml
+        run: |
+          sed -i s#%EXPORTER_IMAGE%#${{ fromJSON(steps.meta.outputs.json).tags[1] }}#g exporter-job.yaml
+          sed -i s#%SERVICE_ACCOUNT%#${{ secrets.CLOUD_RUN_SERVICE_ACCOUNT }}#g exporter-job.yaml
 
       - name: Update Cloud Run Job
         run: |
-          gcloud beta run jobs update ${{ secrets.CLOUD_RUN_EXPORTER }} \
-          --project=${{ secrets.GCP_PROJECT_ID }} \
-          --image=${{ fromJSON(steps.meta.outputs.json).tags[1] }} \
-          --service-account=${{ secrets.CLOUD_RUN_SERVICE_ACCOUNT }} \
-          --parallelism=1 \
-          --set-cloudsql-instances=${{ secrets.CLOUD_SQL_DB }} \
-          --execution-environment=gen2 \
-          --region=us-central1 \
-          --set-env-vars=EXPORTER__DATABASE__REQUIRE_SSL=false \
-          --set-secrets=EXPORTER__DATABASE__SOCKET=APP__DATABASE__SOCKET:2 \
-          --set-secrets=EXPORTER__DATABASE__DATABASE_NAME=APP__DATABASE__DATABASE_NAME:1 \
-          --set-secrets=EXPORTER__DATABASE__PASSWORD=APP__DATABASE__PASSWORD:1 \
-          --set-secrets=EXPORTER__DATABASE__USERNAME=APP__DATABASE__USERNAME:1 \
-          --set-secrets=EXPORTER__SHEETS__SPREADSHEET_ID=EXPORTER__SHEETS__SPREADSHEET_ID:1
+          gcloud run jobs replace exporter-job.yaml --region=us-central1 --project=${{ secrets.GCP_PROJECT_ID }}

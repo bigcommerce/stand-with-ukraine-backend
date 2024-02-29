@@ -175,18 +175,18 @@ jobs:
           cache-from: type=registry,ref=${{ vars.CLOUD_RUN_OTEL_COLLECTOR_IMAGE }}:buildcache
           cache-to: type=registry,ref=${{ vars.CLOUD_RUN_OTEL_COLLECTOR_IMAGE }}:buildcache,mode=max
 
-      - name: Replace variables in run-service.yaml
+      - name: Replace variables in backend-service.yaml
         run: |
-          sed -i s#%OTEL_COLLECTOR_IMAGE%#${{ fromJSON(steps.otel-collector-meta.outputs.json).tags[1] }}#g run-service.yaml
-          sed -i s#%APP_IMAGE%#${{ fromJSON(steps.backend-meta.outputs.json).tags[1] }}#g run-service.yaml
-          sed -i s#%SERVICE_ACCOUNT%#${{ secrets.CLOUD_RUN_SERVICE_ACCOUNT }}#g run-service.yaml
-          sed -i s#%APP__APPLICATION__PORT%#${{ secrets.APP__APPLICATION__PORT }}#g run-service.yaml
-          sed -i s#%APP__APPLICATION__BASE_URL%#${{ secrets.APP__APPLICATION__BASE_URL }}#g run-service.yaml
-          sed -i s#%APP__BIGCOMMERCE__INSTALL_REDIRECT_URI%#${{ secrets.APP__BIGCOMMERCE__INSTALL_REDIRECT_URI }}#g run-service.yaml
+          sed -i s#%OTEL_COLLECTOR_IMAGE%#${{ fromJSON(steps.otel-collector-meta.outputs.json).tags[1] }}#g backend-service.yaml
+          sed -i s#%APP_IMAGE%#${{ fromJSON(steps.backend-meta.outputs.json).tags[1] }}#g backend-service.yaml
+          sed -i s#%SERVICE_ACCOUNT%#${{ secrets.CLOUD_RUN_SERVICE_ACCOUNT }}#g backend-service.yaml
+          sed -i s#%APP__APPLICATION__PORT%#${{ secrets.APP__APPLICATION__PORT }}#g backend-service.yaml
+          sed -i s#%APP__APPLICATION__BASE_URL%#${{ secrets.APP__APPLICATION__BASE_URL }}#g backend-service.yaml
+          sed -i s#%APP__BIGCOMMERCE__INSTALL_REDIRECT_URI%#${{ secrets.APP__BIGCOMMERCE__INSTALL_REDIRECT_URI }}#g backend-service.yaml
 
       - name: Deploy Cloud Run
         run: |
-          gcloud run services replace run-service.yaml --region=us-central1 --project=${{ secrets.GCP_PROJECT_ID }}
+          gcloud run services replace backend-service.yaml --region=us-central1 --project=${{ secrets.GCP_PROJECT_ID }}
 
   coverage:
     name: coverage
