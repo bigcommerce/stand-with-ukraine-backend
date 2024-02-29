@@ -169,7 +169,6 @@ jobs:
           context: .
           provenance: false
           file: otel-collector/Dockerfile
-          target: runtime
           push: true
           tags: ${{ steps.otel-collector-meta.outputs.tags }}
           labels: ${{ steps.otel-collector-meta.outputs.labels }}
