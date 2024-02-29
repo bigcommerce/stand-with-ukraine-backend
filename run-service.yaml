@@ -27,7 +27,7 @@ spec:
             - name: OTEL_ENABLE
               value: "true"
             - name: RUST_LOG
-              value: "trace"
+              value: "warn,swu_app=trace,otel::tracing=trace"
             - name: APP__APPLICATION__PORT
               value: "%APP__APPLICATION__PORT%"
             - name: APP__APPLICATION__BASE_URL
