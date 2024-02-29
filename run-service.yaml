@@ -1,0 +1,103 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: backend
+  annotations:
+    run.googleapis.com/ingress: all
+    run.googleapis.com/ingress-status: all
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "1"
+        run.googleapis.com/cloudsql-instances: stand-with-ukraine-bc-app:us-central1:db
+        run.googleapis.com/execution-environment: gen2
+        autoscaling.knative.dev/maxScale: "5"
+    spec:
+      containerConcurrency: 1000
+      timeoutSeconds: 300
+      serviceAccountName: "%SERVICE_ACCOUNT%"
+      containers:
+        - name: app
+          image: "%APP_IMAGE%"
+          ports:
+            - name: http1
+              containerPort: "%APP__APPLICATION__PORT%"
+          env:
+            - name: OTEL_ENABLE
+              value: "true"
+            - name: RUST_LOG
+              value: "trace"
+            - name: APP__APPLICATION__PORT
+              value: "%APP__APPLICATION__PORT%"
+            - name: APP__APPLICATION__BASE_URL
+              value: "%APP__APPLICATION__BASE_URL%"
+            - name: APP__BIGCOMMERCE__INSTALL_REDIRECT_URI
+              value: "%APP__BIGCOMMERCE__INSTALL_REDIRECT_URI%"
+            - name: APP__DATABASE__REQUIRE_SSL
+              value: "false"
+            - name: APP__DATABASE__SOCKET
+              valueFrom:
+                secretKeyRef:
+                  key: "2"
+                  name: APP__DATABASE__SOCKET
+            - name: APP__DATABASE__DATABASE_NAME
+              valueFrom:
+                secretKeyRef:
+                  key: "1"
+                  name: APP__DATABASE__DATABASE_NAME
+            - name: APP__DATABASE__PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: "1"
+                  name: APP__DATABASE__PASSWORD
+            - name: APP__DATABASE__USERNAME
+              valueFrom:
+                secretKeyRef:
+                  key: "1"
+                  name: APP__DATABASE__USERNAME
+            - name: APP__BIGCOMMERCE__CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  key: "1"
+                  name: APP__BIGCOMMERCE__CLIENT_SECRET
+            - name: APP__BIGCOMMERCE__CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  key: "1"
+                  name: APP__BIGCOMMERCE__CLIENT_ID
+            - name: APP__APPLICATION__JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  key: "1"
+                  name: APP__APPLICATION__JWT_SECRET
+            - name: APP__LIQ_PAY__PUBLIC_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: "2"
+                  name: APP__LIQ_PAY__PUBLIC_KEY
+            - name: APP__LIQ_PAY__PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: "2"
+                  name: APP__LIQ_PAY__PRIVATE_KEY
+          resources:
+            limits:
+              cpu: 750m
+              memory: 256Mi
+          startupProbe:
+            timeoutSeconds: 240
+            periodSeconds: 240
+            failureThreshold: 1
+            tcpSocket:
+              port: 8000
+        - name: otel-collector
+          image: "%OTEL_COLLECTOR_IMAGE%"
+          startupProbe:
+            httpGet:
+              path: /
+              port: 13133
+          resources:
+            limits:
+              cpu: 250m
+              memory: 256Mi
