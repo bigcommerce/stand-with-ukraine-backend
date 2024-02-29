@@ -1,7 +1,5 @@
 use crate::{
     authentication::AuthClaims,
-    bigcommerce::client::HttpAPI,
-    configuration::BaseURL,
     data::{
         read_store_credentials, read_store_published, read_widget_configuration,
         write_charity_visited_event, write_general_feedback, write_store_published,
@@ -9,40 +7,42 @@ use crate::{
         write_widget_event, CharityEvent, FeedbackForm, UniversalConfiguratorEvent,
         WidgetConfiguration, WidgetEvent,
     },
+    state::{AppState, SharedState},
 };
 
-use actix_web::{http::StatusCode, web, HttpResponse, ResponseError};
-use actix_web_httpauth::extractors::bearer::Config;
+use tower_http::cors::CorsLayer;
+
 use anyhow::Context;
-use sqlx::PgPool;
+use axum::{
+    extract::{Query, State},
+    http::StatusCode,
+    response::{IntoResponse, Response},
+    routing::{delete, get, post},
+    Json, Router,
+};
 
-pub fn register_routes(cfg: &mut web::ServiceConfig) {
-    let bearer_auth_config = Config::default().realm("api-v1").scope("modify");
+pub fn router() -> Router<SharedState> {
+    let v1_router = Router::new()
+        .route("/configuration", post(save_widget_configuration))
+        .route("/configuration", get(get_widget_configuration))
+        .route("/publish", post(publish_widget))
+        .route("/publish", get(get_published_status))
+        .route("/publish", delete(remove_widget))
+        .route("/preview", get(preview_widget));
 
-    cfg.service(
-        web::scope("/api/v1")
-            .app_data(bearer_auth_config)
-            .route("/configuration", web::post().to(save_widget_configuration))
-            .route("/configuration", web::get().to(get_widget_configuration))
-            .route("/publish", web::post().to(publish_widget))
-            .route("/publish", web::get().to(get_published_status))
-            .route("/publish", web::delete().to(remove_widget))
-            .route("/preview", web::get().to(preview_widget)),
-    );
+    let cors = CorsLayer::permissive();
 
-    let cors = actix_cors::Cors::permissive();
+    let v2_router = Router::new()
+        .layer(cors)
+        .route("/widget-event", post(log_widget_event))
+        .route("/charity-event", post(log_charity_event))
+        .route("/feedback-form", post(submit_general_feedback))
+        .route(
+            "/universal-event",
+            post(submit_universal_configurator_event),
+        );
 
-    cfg.service(
-        web::scope("/api/v2")
-            .wrap(cors)
-            .route("/widget-event", web::post().to(log_widget_event))
-            .route("/charity-event", web::post().to(log_charity_event))
-            .route("/feedback-form", web::post().to(submit_general_feedback))
-            .route(
-                "/universal-event",
-                web::post().to(submit_universal_configurator_event),
-            ),
-    );
+    Router::new().nest("/v1", v1_router).nest("/v2", v2_router)
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -51,10 +51,10 @@ enum ConfigurationError {
     UnexpectedError(#[from] anyhow::Error),
 }
 
-impl ResponseError for ConfigurationError {
-    fn error_response(&self) -> HttpResponse {
+impl IntoResponse for ConfigurationError {
+    fn into_response(self) -> axum::response::Response {
         match self {
-            Self::UnexpectedError(_) => HttpResponse::new(StatusCode::INTERNAL_SERVER_ERROR),
+            Self::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
         }
     }
 }
@@ -62,26 +62,30 @@ impl ResponseError for ConfigurationError {
 #[tracing::instrument(name = "Save widget configuration", skip(auth, db_pool))]
 async fn save_widget_configuration(
     auth: AuthClaims,
-    widget_configuration: web::Json<WidgetConfiguration>,
-    db_pool: web::Data<PgPool>,
-) -> Result<HttpResponse, ConfigurationError> {
-    write_widget_configuration(auth.sub.as_str(), &widget_configuration, &db_pool)
+    State(AppState { db_pool, .. }): State<AppState>,
+    Json(widget_configuration): Json<WidgetConfiguration>,
+) -> Result<Response, ConfigurationError> {
+    let store_hash = auth.sub.as_str();
+
+    write_widget_configuration(store_hash, &widget_configuration, &db_pool)
         .await
         .map_err(ConfigurationError::UnexpectedError)?;
 
-    Ok(HttpResponse::Ok().finish())
+    Ok(StatusCode::OK.into_response())
 }
 
 #[tracing::instrument(name = "Get widget configuration", skip(auth, db_pool))]
 async fn get_widget_configuration(
     auth: AuthClaims,
-    db_pool: web::Data<PgPool>,
-) -> Result<HttpResponse, ConfigurationError> {
-    let widget_configuration = read_widget_configuration(auth.sub.as_str(), &db_pool)
+    State(AppState { db_pool, .. }): State<AppState>,
+) -> Result<Response, ConfigurationError> {
+    let store_hash = auth.sub.as_str();
+
+    let widget_configuration = read_widget_configuration(store_hash, &db_pool)
         .await
         .map_err(ConfigurationError::UnexpectedError)?;
 
-    Ok(HttpResponse::Ok().json(widget_configuration))
+    Ok(Json(widget_configuration).into_response())
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -90,24 +94,28 @@ enum PublishError {
     UnexpectedError(#[from] anyhow::Error),
 }
 
-impl ResponseError for PublishError {
-    fn error_response(&self) -> HttpResponse {
+impl IntoResponse for PublishError {
+    fn into_response(self) -> Response {
         match self {
-            Self::UnexpectedError(_) => HttpResponse::new(StatusCode::INTERNAL_SERVER_ERROR),
+            Self::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
+        .into_response()
     }
 }
 
 #[tracing::instrument(
     name = "Publish the widget",
-    skip(auth, base_url, db_pool, bigcommerce_client)
+    skip(auth, db_pool, base_url, bigcommerce_client)
 )]
 async fn publish_widget(
     auth: AuthClaims,
-    db_pool: web::Data<PgPool>,
-    base_url: web::Data<BaseURL>,
-    bigcommerce_client: web::Data<HttpAPI>,
-) -> Result<HttpResponse, PublishError> {
+    State(AppState {
+        db_pool,
+        base_url,
+        bigcommerce_client,
+        ..
+    }): State<AppState>,
+) -> Result<Response, PublishError> {
     let store_hash = auth.sub.as_str();
     let widget_configuration = read_widget_configuration(store_hash, &db_pool)
         .await
@@ -142,7 +150,7 @@ async fn publish_widget(
         .context("Failed to set store as published")
         .map_err(PublishError::UnexpectedError)?;
 
-    Ok(HttpResponse::Ok().finish())
+    Ok(StatusCode::OK.into_response())
 }
 
 #[derive(serde::Deserialize)]
@@ -156,10 +164,13 @@ struct Feedback {
 )]
 async fn remove_widget(
     auth: AuthClaims,
-    db_pool: web::Data<PgPool>,
-    bigcommerce_client: web::Data<HttpAPI>,
-    feedback: web::Query<Feedback>,
-) -> Result<HttpResponse, PublishError> {
+    State(AppState {
+        db_pool,
+        bigcommerce_client,
+        ..
+    }): State<AppState>,
+    Query(feedback): Query<Feedback>,
+) -> Result<Response, PublishError> {
     let store_hash = auth.sub.as_str();
 
     let store = read_store_credentials(store_hash, &db_pool)
@@ -178,7 +189,6 @@ async fn remove_widget(
         .context("Failed to set store as not published")
         .map_err(PublishError::UnexpectedError)?;
 
-    let feedback = feedback.into_inner();
     if let Some(reason) = feedback.reason {
         write_unpublish_feedback(store_hash, reason.as_str(), &db_pool)
             .await
@@ -186,15 +196,18 @@ async fn remove_widget(
             .map_err(PublishError::UnexpectedError)?;
     }
 
-    Ok(HttpResponse::Ok().finish())
+    Ok(StatusCode::OK.into_response())
 }
 
 #[tracing::instrument(name = "Preview widget", skip(auth, db_pool, bigcommerce_client))]
 async fn preview_widget(
     auth: AuthClaims,
-    db_pool: web::Data<PgPool>,
-    bigcommerce_client: web::Data<HttpAPI>,
-) -> Result<HttpResponse, PublishError> {
+    State(AppState {
+        db_pool,
+        bigcommerce_client,
+        ..
+    }): State<AppState>,
+) -> Result<Response, PublishError> {
     let store_hash = auth.sub.as_str();
 
     let store = read_store_credentials(store_hash, &db_pool)
@@ -208,14 +221,14 @@ async fn preview_widget(
         .context("Failed to get store information")
         .map_err(PublishError::UnexpectedError)?;
 
-    Ok(HttpResponse::Ok().json(store_information))
+    Ok(Json(store_information).into_response())
 }
 
 #[tracing::instrument(name = "Get widget status", skip(auth, db_pool))]
 async fn get_published_status(
     auth: AuthClaims,
-    db_pool: web::Data<PgPool>,
-) -> Result<HttpResponse, PublishError> {
+    State(AppState { db_pool, .. }): State<AppState>,
+) -> Result<Response, PublishError> {
     let store_hash = auth.sub.as_str();
 
     let store_status = read_store_published(store_hash, &db_pool)
@@ -223,53 +236,53 @@ async fn get_published_status(
         .context("Failed to get store status")
         .map_err(PublishError::UnexpectedError)?;
 
-    Ok(HttpResponse::Ok().json(store_status))
+    Ok(Json(store_status).into_response())
 }
 
 #[tracing::instrument(name = "Log charity event", skip(db_pool))]
 async fn log_charity_event(
-    event: web::Query<CharityEvent>,
-    db_pool: web::Data<PgPool>,
-) -> HttpResponse {
-    if let Err(error) = write_charity_visited_event(&event.into_inner(), &db_pool).await {
+    Query(event): Query<CharityEvent>,
+    State(AppState { db_pool, .. }): State<AppState>,
+) -> Response {
+    if let Err(error) = write_charity_visited_event(&event, &db_pool).await {
         tracing::warn!("Error while saving event {}", error);
     };
 
-    HttpResponse::Ok().finish()
+    StatusCode::OK.into_response()
 }
 
 #[tracing::instrument(name = "Save feedback form", skip(db_pool))]
 async fn submit_general_feedback(
-    event: web::Query<FeedbackForm>,
-    db_pool: web::Data<PgPool>,
-) -> HttpResponse {
-    if let Err(error) = write_general_feedback(&event.into_inner(), &db_pool).await {
+    Query(event): Query<FeedbackForm>,
+    State(AppState { db_pool, .. }): State<AppState>,
+) -> Response {
+    if let Err(error) = write_general_feedback(&event, &db_pool).await {
         tracing::warn!("Error while saving event {}", error);
     };
 
-    HttpResponse::Ok().finish()
+    StatusCode::OK.into_response()
 }
 
 #[tracing::instrument(name = "Save universal configurator event", skip(db_pool))]
 async fn submit_universal_configurator_event(
-    event: web::Query<UniversalConfiguratorEvent>,
-    db_pool: web::Data<PgPool>,
-) -> HttpResponse {
-    if let Err(error) = write_universal_widget_event(&event.into_inner(), &db_pool).await {
+    Query(event): Query<UniversalConfiguratorEvent>,
+    State(AppState { db_pool, .. }): State<AppState>,
+) -> Response {
+    if let Err(error) = write_universal_widget_event(&event, &db_pool).await {
         tracing::warn!("Error while saving event {}", error);
     };
 
-    HttpResponse::Ok().finish()
+    StatusCode::OK.into_response()
 }
 
 #[tracing::instrument(name = "Log widget event", skip(db_pool))]
 async fn log_widget_event(
-    event: web::Query<WidgetEvent>,
-    db_pool: web::Data<PgPool>,
-) -> HttpResponse {
-    if let Err(error) = write_widget_event(&event.into_inner(), &db_pool).await {
+    Query(event): Query<WidgetEvent>,
+    State(AppState { db_pool, .. }): State<AppState>,
+) -> Response {
+    if let Err(error) = write_widget_event(&event, &db_pool).await {
         tracing::warn!("Error while saving event {}", error);
     };
 
-    HttpResponse::Ok().finish()
+    StatusCode::OK.into_response()
 }

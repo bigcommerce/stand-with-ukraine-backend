@@ -5,4 +5,5 @@ pub mod data;
 pub mod liq_pay;
 pub mod routes;
 pub mod startup;
+pub mod state;
 pub mod telemetry;

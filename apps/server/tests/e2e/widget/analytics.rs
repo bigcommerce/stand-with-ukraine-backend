@@ -1,6 +1,6 @@
 use crate::helpers::spawn_app;
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn insert_event_without_store_does_not_create_record() {
     let app = spawn_app().await;
 
@@ -41,7 +41,7 @@ async fn insert_event_without_store_does_not_create_record() {
     );
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn insert_event_after_store_created_creates_record() {
     let app = spawn_app().await;
     app.insert_test_store().await;
@@ -92,7 +92,7 @@ async fn insert_event_after_store_created_creates_record() {
     );
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn insert_event_using_universal_creates_record() {
     let app = spawn_app().await;
     app.insert_test_store().await;
@@ -140,7 +140,7 @@ async fn insert_event_using_universal_creates_record() {
     );
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn submit_general_feedback_without_required_or_invalid_fields_does_not_create_record() {
     let app = spawn_app().await;
 
@@ -181,7 +181,7 @@ async fn submit_general_feedback_without_required_or_invalid_fields_does_not_cre
     assert_eq!(app.get_form_feedback_submissions().await.count(), 0);
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn submit_general_feedback_should_create_record() {
     let app = spawn_app().await;
 
@@ -204,7 +204,7 @@ async fn submit_general_feedback_should_create_record() {
     assert_eq!(app.get_form_feedback_submissions().await.count(), 1);
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn submit_universal_configurator_event_should_create_record() {
     let app = spawn_app().await;
 

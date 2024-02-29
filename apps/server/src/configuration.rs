@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use config::{Config, ConfigError, Environment, File};
 use dotenvy::dotenv;
 use secrecy::{ExposeSecret, Secret};
@@ -5,6 +7,13 @@ use serde_aux::field_attributes::deserialize_number_from_string;
 use sqlx::{
     postgres::{PgConnectOptions, PgSslMode},
     ConnectOptions,
+};
+
+use crate::{
+    bigcommerce::client::HttpAPI as BigCommerceHttpAPI,
+    liq_pay::HttpAPI as LiqPayHttpAPI,
+    startup::get_connection_pool,
+    state::{AppState, SharedState},
 };
 
 #[derive(serde::Deserialize, Clone)]
@@ -110,21 +119,29 @@ impl Configuration {
             .build()?
             .try_deserialize()
     }
-}
 
-pub struct BaseURL(pub String);
+    pub fn get_app_state(&self) -> SharedState {
+        let db_pool = get_connection_pool(&self.database);
+        let bigcommerce_client = BigCommerceHttpAPI::new(
+            self.bigcommerce.api_base_url.clone(),
+            self.bigcommerce.login_base_url.clone(),
+            self.bigcommerce.client_id.clone(),
+            self.bigcommerce.client_secret.clone(),
+            self.bigcommerce.install_redirect_uri.clone(),
+            std::time::Duration::from_millis(self.bigcommerce.timeout.into()),
+        );
+        let liq_pay_client = LiqPayHttpAPI::new(
+            self.liq_pay.public_key.clone(),
+            self.liq_pay.private_key.clone(),
+        );
 
-impl std::fmt::Display for BaseURL {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-pub struct JWTSecret(pub Secret<String>);
-
-impl AsRef<Secret<String>> for JWTSecret {
-    fn as_ref(&self) -> &Secret<String> {
-        &self.0
+        Arc::new(AppState {
+            db_pool,
+            base_url: self.application.base_url.clone(),
+            jwt_secret: self.application.jwt_secret.clone(),
+            bigcommerce_client,
+            liq_pay_client,
+        })
     }
 }
 

@@ -1,58 +1,33 @@
-use std::net::TcpListener;
-
-use crate::liq_pay::HttpAPI as LiqPayHttpAPI;
-use crate::{
-    bigcommerce::client::HttpAPI as BigCommerceHttpAPI,
-    configuration::{BaseURL, Configuration, Database, JWTSecret, LightstepAccessToken},
-    routes::register,
-};
-use actix_web::{dev::Server, web::Data, App, HttpServer};
-use secrecy::Secret;
+use crate::configuration::{Configuration, Database};
+use crate::routes;
+use crate::state::SharedState;
+use axum::serve::Serve;
+use axum::Router;
+use axum_tracing_opentelemetry::middleware::{OtelAxumLayer, OtelInResponseLayer};
 use sqlx::{postgres::PgPoolOptions, PgPool};
-use tracing_actix_web::TracingLogger;
+use tokio::net::TcpListener;
+use tokio::signal;
 
 pub struct Application {
     port: u16,
-    server: Server,
+    server: Serve<Router, Router>,
 }
 
 impl Application {
     /// # Errors
     ///
     /// Will return `std::io::Error` if listener could not be setup on the port provided
-    pub fn build(configuration: Configuration) -> Result<Self, std::io::Error> {
-        let db_pool = get_connection_pool(&configuration.database);
-        let bigcommerce_client = BigCommerceHttpAPI::new(
-            configuration.bigcommerce.api_base_url,
-            configuration.bigcommerce.login_base_url,
-            configuration.bigcommerce.client_id,
-            configuration.bigcommerce.client_secret,
-            configuration.bigcommerce.install_redirect_uri,
-            std::time::Duration::from_millis(configuration.bigcommerce.timeout.into()),
-        );
-        let liq_pay_client = LiqPayHttpAPI::new(
-            configuration.liq_pay.public_key,
-            configuration.liq_pay.private_key,
-        );
-
+    pub async fn build(configuration: Configuration) -> Result<Self, std::io::Error> {
         let address = format!(
             "{}:{}",
             configuration.application.host, configuration.application.port
         );
-        let listener = TcpListener::bind(address)?;
+        let listener = TcpListener::bind(address).await?;
         let port = listener
             .local_addr()
             .expect("listener does not have an address")
             .port();
-        let server = run(
-            listener,
-            db_pool,
-            configuration.application.base_url,
-            configuration.application.jwt_secret,
-            configuration.application.lightstep_access_token,
-            bigcommerce_client,
-            liq_pay_client,
-        )?;
+        let server = build_server(listener, configuration.get_app_state());
 
         Ok(Self { port, server })
     }
@@ -63,9 +38,9 @@ impl Application {
 
     /// # Errors
     ///
-    /// Will return `std::io::Error` if actix server returns an error
+    /// Will return `std::io::Error` if axum server returns an error
     pub async fn run_until_stopped(self) -> Result<(), std::io::Error> {
-        self.server.await
+        self.server.with_graceful_shutdown(shutdown_signal()).await
     }
 }
 
@@ -76,38 +51,46 @@ pub fn get_connection_pool(configuration: &Database) -> PgPool {
         .connect_lazy_with(configuration.with_db())
 }
 
-/// # Errors
-///
-/// Will return `std::io::Error` if server could not bind to the listener
-pub fn run(
-    listener: TcpListener,
-    db_pool: PgPool,
-    base_url: String,
-    jwt_secret: Secret<String>,
-    lightstep_access_token: Secret<String>,
-    bigcommerce_client: BigCommerceHttpAPI,
-    liq_pay_client: LiqPayHttpAPI,
-) -> Result<Server, std::io::Error> {
-    let db_pool = Data::new(db_pool);
-    let base_url = Data::new(BaseURL(base_url));
-    let bigcommerce_client = Data::new(bigcommerce_client);
-    let liq_pay_client = Data::new(liq_pay_client);
-    let jwt_secret = Data::new(JWTSecret(jwt_secret));
-    let lightstep_access_token = Data::new(LightstepAccessToken(lightstep_access_token));
+#[allow(clippy::default_constructed_unit_structs)]
+// reason = "`OtelInResponseLayer` struct is an external dependency that might change"
+pub fn build_server(listener: TcpListener, shared_state: SharedState) -> Serve<Router, Router> {
+    let app = Router::new()
+        .merge(routes::router())
+        .layer(OtelInResponseLayer::default())
+        .layer(OtelAxumLayer::default())
+        .with_state(shared_state);
 
-    let server = HttpServer::new(move || {
-        App::new()
-            .wrap(TracingLogger::default())
-            .app_data(db_pool.clone())
-            .app_data(base_url.clone())
-            .app_data(bigcommerce_client.clone())
-            .app_data(liq_pay_client.clone())
-            .app_data(jwt_secret.clone())
-            .app_data(lightstep_access_token.clone())
-            .configure(register)
-    })
-    .listen(listener)?
-    .run();
+    axum::serve(listener, app)
+}
 
-    Ok(server)
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        () = ctrl_c => {
+        },
+        () = terminate => {
+        },
+    }
+
+    //TODO: remove when https://github.com/open-telemetry/opentelemetry-rust/issues/868 is fixed
+    //for now we have to use async task because global tracer is in a RWLock that will block otherwise
+    tokio::task::spawn_blocking(opentelemetry::global::shutdown_tracer_provider)
+        .await
+        .unwrap();
 }

@@ -2,7 +2,7 @@ use swu_app::data::WidgetConfiguration;
 
 use crate::helpers::{get_widget_configuration, spawn_app};
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn save_widget_configuration_fails_with_invalid_config() {
     let app = spawn_app().await;
 
@@ -22,7 +22,7 @@ async fn save_widget_configuration_fails_with_invalid_config() {
     assert!(response.status().is_client_error());
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn save_widget_configuration_fails_when_store_not_defined() {
     let app = spawn_app().await;
 
@@ -38,7 +38,7 @@ async fn save_widget_configuration_fails_when_store_not_defined() {
     assert!(response.status().is_server_error());
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn read_widget_configuration_fails_with_no_store() {
     let app = spawn_app().await;
 
@@ -53,7 +53,7 @@ async fn read_widget_configuration_fails_with_no_store() {
     assert!(response.status().is_server_error());
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn save_and_read_widget_configuration() {
     let app = spawn_app().await;
 

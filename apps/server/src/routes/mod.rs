@@ -1,17 +1,19 @@
-use actix_web::{web, HttpResponse};
+use axum::{response::Response, routing::get, Router};
+
+use crate::state::SharedState;
 
 mod bigcommerce;
 mod pay;
 mod widget;
 
-pub async fn health_check() -> HttpResponse {
-    HttpResponse::Ok().finish()
+pub async fn health_check() -> Response {
+    Response::new("".into())
 }
 
-pub fn register(cfg: &mut web::ServiceConfig) {
-    cfg.service(web::resource("/health_check").route(web::get().to(health_check)));
-
-    pay::register_routes(cfg);
-    bigcommerce::register_routes(cfg);
-    widget::register_routes(cfg);
+pub fn router() -> Router<SharedState> {
+    Router::new()
+        .route("/health_check", get(health_check))
+        .nest("/pay", pay::router())
+        .nest("/api", widget::router())
+        .nest("/bigcommerce", bigcommerce::router())
 }

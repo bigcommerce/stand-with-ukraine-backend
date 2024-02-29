@@ -1,40 +1,23 @@
-use crate::liq_pay::HttpAPI;
 use crate::liq_pay::InputQuery;
-use actix_web::web::Redirect;
-use actix_web::{web, HttpResponse, ResponseError};
-use reqwest::StatusCode;
+use crate::state::{AppState, SharedState};
+use axum::extract::{Query, State};
+use axum::response::Redirect;
+use axum::routing::get;
+use axum::Router;
 
-pub fn register_routes(cfg: &mut web::ServiceConfig) {
-    cfg.service(web::resource("/pay").route(web::get().to(pay)));
+pub fn router() -> Router<SharedState> {
+    Router::new().route("/", get(pay))
 }
 
-#[derive(thiserror::Error, Debug)]
-enum PayError {
-    #[error(transparent)]
-    UnexpectedError(#[from] anyhow::Error),
-}
-
-impl ResponseError for PayError {
-    fn error_response(&self) -> HttpResponse {
-        match self {
-            Self::UnexpectedError(_) => HttpResponse::new(StatusCode::INTERNAL_SERVER_ERROR),
-        }
-    }
-}
-
-#[tracing::instrument(name = "Process pay request", skip(query, liq_pay))]
+#[tracing::instrument(name = "Process pay request", skip(query, liq_pay_client))]
 async fn pay(
-    query: web::Query<InputQuery>,
-    liq_pay: web::Data<HttpAPI>,
-) -> Result<Redirect, PayError> {
-    let checkout_request = liq_pay.generate_request_payload(
-        query.into_inner(),
-        "Support BigCommerce colleagues defending Ukraine",
-    )?;
+    Query(query): Query<InputQuery>,
+    State(AppState { liq_pay_client, .. }): State<AppState>,
+) -> Redirect {
+    let checkout_request = liq_pay_client
+        .generate_request_payload(query, "Support BigCommerce colleagues defending Ukraine");
 
-    let url = liq_pay
-        .link(checkout_request)
-        .map_err(PayError::UnexpectedError)?;
+    let url = liq_pay_client.link(checkout_request);
 
-    Ok(Redirect::to(url))
+    Redirect::to(&url)
 }
