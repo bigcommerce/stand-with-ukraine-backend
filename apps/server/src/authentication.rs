@@ -78,7 +78,8 @@ pub struct AuthorizedUser(pub String);
 #[tracing::instrument(name = "decode token")]
 pub fn decode_token(token: &str, secret: &Secret<String>) -> Result<AuthClaims, Error> {
     let key = DecodingKey::from_secret(secret.expose_secret().as_bytes());
-    let validation = Validation::new(Algorithm::HS512);
+    let mut validation = Validation::new(Algorithm::HS512);
+    validation.validate_aud = false;
     let decoded = decode::<AuthClaims>(token, &key, &validation).map_err(Error::InvalidToken)?;
 
     trace!(?decoded, "token decoded");

@@ -1,14 +1,15 @@
 use secrecy::Secret;
+use serde::{Deserialize, Serialize};
 
 use super::store::APIToken;
 
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct User {
     pub id: i32,
     pub email: String,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(Deserialize)]
 pub struct OAuthResponse {
     pub access_token: Secret<String>,
     pub scope: String,
@@ -31,7 +32,7 @@ impl OAuthResponse {
     }
 }
 
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct Claims {
     user: User,
     owner: User,
