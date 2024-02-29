@@ -186,7 +186,7 @@ jobs:
 
       - name: Deploy Cloud Run
         run: |
-          gcloud run services replace run-service.yaml
+          gcloud run services replace run-service.yaml --region=us-central1 --project=${{ secrets.GCP_PROJECT_ID }}
 
   coverage:
     name: coverage
