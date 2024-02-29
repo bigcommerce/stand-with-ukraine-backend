@@ -160,8 +160,8 @@ jobs:
           push: true
           tags: ${{ steps.backend-meta.outputs.tags }}
           labels: ${{ steps.backend-meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=registry,ref=${{ secrets.CLOUD_RUN_APP_IMAGE }}:buildcache
+          cache-to: type=registry,ref=${{ secrets.CLOUD_RUN_APP_IMAGE }}:buildcache,mode=max
 
       - name: Build collector image
         uses: docker/build-push-action@v5
@@ -173,8 +173,8 @@ jobs:
           push: true
           tags: ${{ steps.otel-collector-meta.outputs.tags }}
           labels: ${{ steps.otel-collector-meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=registry,ref=${{ secrets.CLOUD_RUN_OTEL_COLLECTOR_IMAGE }}:buildcache
+          cache-to: type=registry,ref=${{ secrets.CLOUD_RUN_OTEL_COLLECTOR_IMAGE }}:buildcache,mode=max
 
       - name: Replace variables in run-service.yaml
         run: |
