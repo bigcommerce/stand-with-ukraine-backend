@@ -48,6 +48,7 @@ where
 }
 
 impl IntoResponse for Error {
+    #[tracing::instrument(name = "authentication error")]
     fn into_response(self) -> Response {
         match self {
             Self::InvalidToken(_) | Self::NoToken => (StatusCode::BAD_REQUEST, "Invalid token"),

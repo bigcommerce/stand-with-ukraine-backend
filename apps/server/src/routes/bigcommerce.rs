@@ -34,6 +34,7 @@ enum InstallError {
 }
 
 impl IntoResponse for InstallError {
+    #[tracing::instrument(name = "install error")]
     fn into_response(self) -> Response {
         match self {
             Self::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
@@ -107,6 +108,7 @@ enum LoadError {
 }
 
 impl IntoResponse for LoadError {
+    #[tracing::instrument(name = "load error")]
     fn into_response(self) -> Response {
         match self {
             Self::NotStoreOwnerError | Self::InvalidCredentials(_) => StatusCode::UNAUTHORIZED,

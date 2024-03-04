@@ -52,6 +52,7 @@ enum ConfigurationError {
 }
 
 impl IntoResponse for ConfigurationError {
+    #[tracing::instrument(name = "configuration error")]
     fn into_response(self) -> axum::response::Response {
         match self {
             Self::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
@@ -95,6 +96,7 @@ enum PublishError {
 }
 
 impl IntoResponse for PublishError {
+    #[tracing::instrument(name = "publish error")]
     fn into_response(self) -> Response {
         match self {
             Self::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
