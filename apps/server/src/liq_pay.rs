@@ -90,7 +90,7 @@ impl HttpAPI {
         }
     }
 
-    #[tracing::instrument(name = "Generate payload", skip(self))]
+    #[tracing::instrument(name = "generate request payload", skip(self))]
     pub fn generate_request_payload(
         &self,
         query: InputQuery,
@@ -118,7 +118,7 @@ impl HttpAPI {
         }
     }
 
-    #[tracing::instrument(name = "Generate LiqPay link", skip(self))]
+    #[tracing::instrument(name = "generate link", skip(self))]
     pub fn link(&self, request: CheckoutRequest) -> String {
         let data = serde_json::to_string(&request).unwrap();
         let data = encoder.encode(data);

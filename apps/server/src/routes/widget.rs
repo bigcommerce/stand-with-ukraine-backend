@@ -52,6 +52,7 @@ enum ConfigurationError {
 }
 
 impl IntoResponse for ConfigurationError {
+    #[tracing::instrument(name = "configuration error")]
     fn into_response(self) -> axum::response::Response {
         match self {
             Self::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
@@ -59,7 +60,7 @@ impl IntoResponse for ConfigurationError {
     }
 }
 
-#[tracing::instrument(name = "Save widget configuration", skip(auth, db_pool))]
+#[tracing::instrument(name = "save widget configuration", skip(auth, db_pool))]
 async fn save_widget_configuration(
     auth: AuthClaims,
     State(AppState { db_pool, .. }): State<AppState>,
@@ -74,7 +75,7 @@ async fn save_widget_configuration(
     Ok(StatusCode::OK.into_response())
 }
 
-#[tracing::instrument(name = "Get widget configuration", skip(auth, db_pool))]
+#[tracing::instrument(name = "get widget configuration", skip(auth, db_pool))]
 async fn get_widget_configuration(
     auth: AuthClaims,
     State(AppState { db_pool, .. }): State<AppState>,
@@ -95,6 +96,7 @@ enum PublishError {
 }
 
 impl IntoResponse for PublishError {
+    #[tracing::instrument(name = "publish error")]
     fn into_response(self) -> Response {
         match self {
             Self::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
@@ -104,7 +106,7 @@ impl IntoResponse for PublishError {
 }
 
 #[tracing::instrument(
-    name = "Publish the widget",
+    name = "publish widget",
     skip(auth, db_pool, base_url, bigcommerce_client)
 )]
 async fn publish_widget(
@@ -159,7 +161,7 @@ struct Feedback {
 }
 
 #[tracing::instrument(
-    name = "Remove widget",
+    name = "remove widget",
     skip(auth, db_pool, bigcommerce_client, feedback)
 )]
 async fn remove_widget(
@@ -199,7 +201,7 @@ async fn remove_widget(
     Ok(StatusCode::OK.into_response())
 }
 
-#[tracing::instrument(name = "Preview widget", skip(auth, db_pool, bigcommerce_client))]
+#[tracing::instrument(name = "preview widget", skip(auth, db_pool, bigcommerce_client))]
 async fn preview_widget(
     auth: AuthClaims,
     State(AppState {
@@ -224,7 +226,7 @@ async fn preview_widget(
     Ok(Json(store_information).into_response())
 }
 
-#[tracing::instrument(name = "Get widget status", skip(auth, db_pool))]
+#[tracing::instrument(name = "get widget status", skip(auth, db_pool))]
 async fn get_published_status(
     auth: AuthClaims,
     State(AppState { db_pool, .. }): State<AppState>,
@@ -239,49 +241,49 @@ async fn get_published_status(
     Ok(Json(store_status).into_response())
 }
 
-#[tracing::instrument(name = "Log charity event", skip(db_pool))]
+#[tracing::instrument(name = "log charity event", skip(db_pool))]
 async fn log_charity_event(
     Query(event): Query<CharityEvent>,
     State(AppState { db_pool, .. }): State<AppState>,
 ) -> Response {
     if let Err(error) = write_charity_visited_event(&event, &db_pool).await {
-        tracing::warn!("Error while saving event {}", error);
+        tracing::warn!("error while saving event {}", error);
     };
 
     StatusCode::OK.into_response()
 }
 
-#[tracing::instrument(name = "Save feedback form", skip(db_pool))]
+#[tracing::instrument(name = "save feedback form", skip(db_pool))]
 async fn submit_general_feedback(
     Query(event): Query<FeedbackForm>,
     State(AppState { db_pool, .. }): State<AppState>,
 ) -> Response {
     if let Err(error) = write_general_feedback(&event, &db_pool).await {
-        tracing::warn!("Error while saving event {}", error);
+        tracing::warn!("error while saving event {}", error);
     };
 
     StatusCode::OK.into_response()
 }
 
-#[tracing::instrument(name = "Save universal configurator event", skip(db_pool))]
+#[tracing::instrument(name = "save universal configurator event", skip(db_pool))]
 async fn submit_universal_configurator_event(
     Query(event): Query<UniversalConfiguratorEvent>,
     State(AppState { db_pool, .. }): State<AppState>,
 ) -> Response {
     if let Err(error) = write_universal_widget_event(&event, &db_pool).await {
-        tracing::warn!("Error while saving event {}", error);
+        tracing::warn!("error while saving event {}", error);
     };
 
     StatusCode::OK.into_response()
 }
 
-#[tracing::instrument(name = "Log widget event", skip(db_pool))]
+#[tracing::instrument(name = "log widget event", skip(db_pool))]
 async fn log_widget_event(
     Query(event): Query<WidgetEvent>,
     State(AppState { db_pool, .. }): State<AppState>,
 ) -> Response {
     if let Err(error) = write_widget_event(&event, &db_pool).await {
-        tracing::warn!("Error while saving event {}", error);
+        tracing::warn!("error while saving event {}", error);
     };
 
     StatusCode::OK.into_response()

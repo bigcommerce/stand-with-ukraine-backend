@@ -34,6 +34,7 @@ enum InstallError {
 }
 
 impl IntoResponse for InstallError {
+    #[tracing::instrument(name = "install error")]
     fn into_response(self) -> Response {
         match self {
             Self::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
@@ -42,7 +43,7 @@ impl IntoResponse for InstallError {
 }
 
 #[tracing::instrument(
-    name = "Process install request",
+    name = "process install request",
     skip(query, bigcommerce_client, db_pool, jwt_secret, base_url),
     fields(context=tracing::field::Empty, user_email=tracing::field::Empty)
 )]
@@ -107,6 +108,7 @@ enum LoadError {
 }
 
 impl IntoResponse for LoadError {
+    #[tracing::instrument(name = "load error")]
     fn into_response(self) -> Response {
         match self {
             Self::NotStoreOwnerError | Self::InvalidCredentials(_) => StatusCode::UNAUTHORIZED,
@@ -117,7 +119,7 @@ impl IntoResponse for LoadError {
 }
 
 #[tracing::instrument(
-    name = "Process load request",
+    name = "load request",
     skip(query, bigcommerce_client, base_url, jwt_secret)
 )]
 async fn load(
@@ -144,10 +146,7 @@ async fn load(
     Ok(Redirect::to(&generate_dashboard_url(&base_url, &jwt, store_hash)).into_response())
 }
 
-#[tracing::instrument(
-    name = "Process uninstall request",
-    skip(query, bigcommerce_client, db_pool)
-)]
+#[tracing::instrument(name = "uninstall request", skip(query, bigcommerce_client, db_pool))]
 async fn uninstall(
     Query(query): Query<LoadQuery>,
     State(AppState {
