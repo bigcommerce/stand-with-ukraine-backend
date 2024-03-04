@@ -3,6 +3,7 @@
 use anyhow::Context;
 use email_address::EmailAddress;
 use secrecy::Secret;
+use serde::{Deserialize, Serialize};
 use sqlx::{types::time::OffsetDateTime, PgPool};
 use uuid::Uuid;
 
@@ -117,7 +118,7 @@ pub async fn write_unpublish_feedback(
     Ok(())
 }
 
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(Deserialize, Serialize)]
 pub struct StoreStatus {
     pub published: bool,
 }
@@ -144,7 +145,7 @@ pub async fn read_store_published(
     Ok(store_status)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct WidgetConfiguration {
     pub style: String,
     pub placement: String,
@@ -229,7 +230,7 @@ pub async fn read_widget_configuration(
     Ok(widget_configuration)
 }
 
-#[derive(serde::Deserialize, serde::Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub enum Charity {
     Unicef,
@@ -248,7 +249,7 @@ impl Charity {
     }
 }
 
-#[derive(serde::Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct CharityEvent {
     store_hash: String,
     charity: Charity,
@@ -277,7 +278,7 @@ pub async fn write_charity_visited_event(
 }
 
 #[allow(clippy::use_self)]
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub enum WidgetEventType {
     WidgetOpened,
@@ -298,7 +299,7 @@ impl WidgetEventType {
 }
 
 #[allow(clippy::use_self)]
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub enum CharityEventType {
     SupportClicked,
@@ -315,7 +316,7 @@ impl CharityEventType {
     }
 }
 
-#[derive(serde::Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct WidgetEvent {
     store_hash: String,
     event: WidgetEventType,
@@ -345,7 +346,7 @@ pub async fn write_widget_event(event: &WidgetEvent, db_pool: &PgPool) -> Result
     Ok(())
 }
 
-#[derive(serde::Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct FeedbackForm {
     name: String,
     email: EmailAddress,
@@ -373,7 +374,7 @@ pub async fn write_general_feedback(
     Ok(())
 }
 
-#[derive(serde::Deserialize, serde::Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub enum UniversalConfiguratorEventType {
     GenerateCode,
@@ -390,7 +391,7 @@ impl UniversalConfiguratorEventType {
     }
 }
 
-#[derive(serde::Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct UniversalConfiguratorEvent {
     metadata: Option<String>,
     event_type: UniversalConfiguratorEventType,

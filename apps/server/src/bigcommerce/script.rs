@@ -1,9 +1,11 @@
-#[derive(serde::Deserialize)]
+use serde::Deserialize;
+
+#[derive(Deserialize)]
 pub struct ListResponse {
     pub data: Vec<GetResponse>,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(Deserialize)]
 pub struct GetResponse {
     pub uuid: String,
     pub api_client_id: String,
@@ -12,6 +14,7 @@ pub struct GetResponse {
     pub name: String,
 }
 
+#[derive(Debug)]
 pub struct Script {
     name: String,
     description: String,

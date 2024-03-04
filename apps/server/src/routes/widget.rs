@@ -10,6 +10,7 @@ use crate::{
     state::{AppState, SharedState},
 };
 
+use serde::Deserialize;
 use tower_http::cors::CorsLayer;
 
 use anyhow::Context;
@@ -155,7 +156,7 @@ async fn publish_widget(
     Ok(StatusCode::OK.into_response())
 }
 
-#[derive(serde::Deserialize)]
+#[derive(Deserialize)]
 struct Feedback {
     reason: Option<String>,
 }

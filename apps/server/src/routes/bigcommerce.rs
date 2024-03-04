@@ -6,6 +6,7 @@ use axum::{
     routing::get,
     Router,
 };
+use serde::Deserialize;
 
 use crate::{
     authentication::{create_jwt, Error},
@@ -20,7 +21,7 @@ pub fn router() -> Router<SharedState> {
         .route("/load", get(load))
 }
 
-#[derive(serde::Deserialize)]
+#[derive(Deserialize)]
 struct InstallQuery {
     code: String,
     scope: String,
@@ -91,7 +92,7 @@ async fn install(
     .into_response())
 }
 
-#[derive(serde::Deserialize)]
+#[derive(Deserialize)]
 struct LoadQuery {
     signed_payload_jwt: String,
 }

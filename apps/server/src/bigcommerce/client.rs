@@ -60,6 +60,7 @@ impl HttpAPI {
         format!("{}/oauth2/token", self.login_base_url)
     }
 
+    #[tracing::instrument(name = "authorize oauth install", skip(self))]
     pub async fn authorize_oauth_install(
         &self,
         code: &str,
@@ -98,6 +99,7 @@ impl HttpAPI {
         format!("{}/{}", self.get_scripts_route(store_hash), script_id)
     }
 
+    #[tracing::instrument(name = "get all scripts", skip(self))]
     pub async fn get_all_scripts(&self, store: &APIToken) -> Result<ListResponse, anyhow::Error> {
         self.http_client
             .get(self.get_scripts_route(store.get_store_hash()))
@@ -111,6 +113,7 @@ impl HttpAPI {
             .context("parse get all scripts response")
     }
 
+    #[tracing::instrument(name = "try get scripts with name", skip(self))]
     pub async fn try_get_script_with_name(
         &self,
         store: &APIToken,
@@ -127,6 +130,7 @@ impl HttpAPI {
         Ok(None)
     }
 
+    #[tracing::instrument(name = "remove all scripts", skip(self))]
     pub async fn remove_all_scripts(&self, store: &APIToken) -> Result<(), anyhow::Error> {
         let scripts = self.get_all_scripts(store).await?;
 
@@ -142,6 +146,7 @@ impl HttpAPI {
         Ok(())
     }
 
+    #[tracing::instrument(name = "create script", skip(self))]
     pub async fn create_script(
         &self,
         store: &APIToken,
@@ -159,6 +164,7 @@ impl HttpAPI {
         Ok(())
     }
 
+    #[tracing::instrument(name = "update script", skip(self))]
     pub async fn update_script(
         &self,
         store: &APIToken,
@@ -177,6 +183,7 @@ impl HttpAPI {
         Ok(())
     }
 
+    #[tracing::instrument(name = "decode bc signed jwt", skip(self))]
     pub fn decode_jwt(&self, token: &str) -> Result<Claims, Error> {
         let key = DecodingKey::from_secret(self.client_secret.expose_secret().as_bytes());
         let mut validation = Validation::new(Algorithm::HS256);
@@ -187,6 +194,7 @@ impl HttpAPI {
         Ok(decoded.claims)
     }
 
+    #[tracing::instrument(name = "get store information", skip(self))]
     pub async fn get_store_information(
         &self,
         store: &APIToken,

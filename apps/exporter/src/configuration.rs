@@ -1,14 +1,15 @@
 use config::{Config, ConfigError, Environment, File};
 use dotenvy::dotenv;
+use serde::Deserialize;
 use swu_app::configuration::Database;
 
-#[derive(serde::Deserialize, Clone)]
+#[derive(Deserialize, Clone)]
 pub struct Configuration {
     pub database: Database,
     pub sheets: Sheets,
 }
 
-#[derive(serde::Deserialize, Clone)]
+#[derive(Deserialize, Clone)]
 pub struct Sheets {
     pub spreadsheet_id: String,
     pub credential_path: String,

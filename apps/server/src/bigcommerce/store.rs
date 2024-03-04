@@ -1,12 +1,14 @@
 use anyhow::Context;
 use reqwest::header;
 use secrecy::{ExposeSecret, Secret};
+use serde::{Deserialize, Serialize};
 
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(Deserialize, Serialize)]
 pub struct Information {
     pub secure_url: String,
 }
 
+#[derive(Debug)]
 pub struct APIToken {
     store_hash: String,
     access_token: Secret<String>,

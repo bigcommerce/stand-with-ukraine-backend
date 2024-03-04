@@ -3,6 +3,7 @@ use std::sync::Arc;
 use config::{Config, ConfigError, Environment, File};
 use dotenvy::dotenv;
 use secrecy::{ExposeSecret, Secret};
+use serde::Deserialize;
 use serde_aux::field_attributes::deserialize_number_from_string;
 use sqlx::{
     postgres::{PgConnectOptions, PgSslMode},
@@ -16,7 +17,7 @@ use crate::{
     state::{AppState, SharedState},
 };
 
-#[derive(serde::Deserialize, Clone)]
+#[derive(Deserialize, Clone)]
 pub struct Configuration {
     pub database: Database,
     pub application: Application,
@@ -24,7 +25,7 @@ pub struct Configuration {
     pub liq_pay: LiqPay,
 }
 
-#[derive(serde::Deserialize, Clone)]
+#[derive(Deserialize, Clone)]
 pub struct Database {
     pub username: String,
     pub password: Secret<String>,
@@ -37,7 +38,7 @@ pub struct Database {
     pub port: u16,
 }
 
-#[derive(serde::Deserialize, Clone)]
+#[derive(Deserialize, Clone)]
 pub struct BigCommerce {
     pub client_id: String,
     pub client_secret: Secret<String>,
@@ -74,13 +75,13 @@ impl Database {
     }
 }
 
-#[derive(serde::Deserialize, Clone)]
+#[derive(Deserialize, Clone)]
 pub struct LiqPay {
     pub public_key: Secret<String>,
     pub private_key: Secret<String>,
 }
 
-#[derive(serde::Deserialize, Clone)]
+#[derive(Deserialize, Clone)]
 pub struct Application {
     pub base_url: String,
     pub jwt_secret: Secret<String>,
