@@ -29,6 +29,7 @@ pub struct TestApp {
     pub jwt_secret: Secret<String>,
     pub base_url: String,
     pub bc_secret: Secret<String>,
+    pub bc_client_id: String,
     pub bc_redirect_uri: String,
 
     pub test_client: Client,
@@ -67,6 +68,7 @@ pub async fn spawn_app() -> TestApp {
         db_pool: get_connection_pool(&configuration.database),
         jwt_secret: configuration.application.jwt_secret,
         bc_secret: configuration.bigcommerce.client_secret,
+        bc_client_id: configuration.bigcommerce.client_id,
         bc_redirect_uri: configuration.bigcommerce.install_redirect_uri,
         base_url: configuration.application.base_url,
         test_client: reqwest::Client::new(),
@@ -119,8 +121,11 @@ impl TestApp {
         let expiration = now + Duration::minutes(30);
         let claims = serde_json::json!( {
             "iss": "bc",
+            "aud": self.bc_client_id,
             "iat": now.unix_timestamp(),
+            "nbf": now.unix_timestamp() - 5,
             "exp": expiration.unix_timestamp(),
+            "jti": uuid::Uuid::new_v4().to_string(),
             "sub": sub,
             "user": user,
             "owner": owner,
