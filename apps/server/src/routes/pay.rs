@@ -9,7 +9,7 @@ pub fn router() -> Router<SharedState> {
     Router::new().route("/", get(pay))
 }
 
-#[tracing::instrument(name = "Process pay request", skip(query, liq_pay_client))]
+#[tracing::instrument(name = "pay request", skip(query, liq_pay_client))]
 async fn pay(
     Query(query): Query<InputQuery>,
     State(AppState { liq_pay_client, .. }): State<AppState>,

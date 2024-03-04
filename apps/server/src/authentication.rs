@@ -14,7 +14,6 @@ use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, 
 use secrecy::{ExposeSecret, Secret};
 use serde::{Deserialize, Serialize};
 use time::{Duration, OffsetDateTime};
-use tracing::trace;
 
 use crate::state::SharedState;
 
@@ -57,6 +56,7 @@ impl IntoResponse for Error {
     }
 }
 
+#[tracing::instrument(name = "create jwt token", skip(secret))]
 pub fn create_jwt(
     store_hash: &str,
     secret: &Secret<String>,
@@ -82,8 +82,6 @@ pub fn decode_token(token: &str, secret: &Secret<String>) -> Result<AuthClaims, 
     let mut validation = Validation::new(Algorithm::HS512);
     validation.validate_aud = false;
     let decoded = decode::<AuthClaims>(token, &key, &validation).map_err(Error::InvalidToken)?;
-
-    trace!(?decoded, "token decoded");
 
     Ok(decoded.claims)
 }

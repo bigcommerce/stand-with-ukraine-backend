@@ -8,7 +8,7 @@ use uuid::Uuid;
 
 use crate::bigcommerce::{script::Script, store::APIToken};
 
-#[tracing::instrument(name = "Write store credentials to database", skip(store, pool))]
+#[tracing::instrument(name = "write store credentials to database", skip(store, pool))]
 pub async fn write_store_credentials(store: &APIToken, pool: &PgPool) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
@@ -27,7 +27,7 @@ pub async fn write_store_credentials(store: &APIToken, pool: &PgPool) -> Result<
     Ok(())
 }
 
-#[tracing::instrument(name = "Read store credentials from database", skip(store_hash, pool))]
+#[tracing::instrument(name = "read store credentials from database", skip(store_hash, pool))]
 pub async fn read_store_credentials(
     store_hash: &str,
     pool: &PgPool,
@@ -48,7 +48,7 @@ pub async fn read_store_credentials(
 }
 
 #[tracing::instrument(
-    name = "Write store is uninstalled in database",
+    name = "write store is uninstalled in database",
     skip(store_hash, pool)
 )]
 pub async fn write_store_as_uninstalled(
@@ -70,7 +70,7 @@ pub async fn write_store_as_uninstalled(
 }
 
 #[tracing::instrument(
-    name = "Write store published status in database",
+    name = "write store published status in database",
     skip(store_hash, pool)
 )]
 pub async fn write_store_published(
@@ -93,7 +93,7 @@ pub async fn write_store_published(
     Ok(())
 }
 
-#[tracing::instrument(name = "Write unpublish feedback to database", skip(store_hash, pool))]
+#[tracing::instrument(name = "write unpublish feedback to database", skip(store_hash, pool))]
 pub async fn write_unpublish_feedback(
     store_hash: &str,
     reason: &str,
@@ -123,7 +123,7 @@ pub struct StoreStatus {
 }
 
 #[tracing::instrument(
-    name = "Read store published status from database",
+    name = "read store published status from database",
     skip(store_hash, pool)
 )]
 pub async fn read_store_published(
@@ -175,7 +175,7 @@ impl WidgetConfiguration {
 }
 
 #[tracing::instrument(
-    name = "Write widget configuration to database",
+    name = "write widget configuration to database",
     skip(store_hash, db_pool)
 )]
 pub async fn write_widget_configuration(
@@ -204,7 +204,7 @@ pub async fn write_widget_configuration(
 }
 
 #[tracing::instrument(
-    name = "Read widget configuration from database",
+    name = "read widget configuration from database",
     skip(store_hash, db_pool)
 )]
 pub async fn read_widget_configuration(
@@ -255,7 +255,7 @@ pub struct CharityEvent {
     event: CharityEventType,
 }
 
-#[tracing::instrument(name = "Write charity visit event to database", skip(db_pool))]
+#[tracing::instrument(name = "write charity visit event to database", skip(db_pool))]
 pub async fn write_charity_visited_event(
     event: &CharityEvent,
     db_pool: &PgPool,
@@ -328,7 +328,7 @@ pub fn store_hash_field_from_str(store_hash: &str) -> Option<&str> {
     }
 }
 
-#[tracing::instrument(name = "Write widget event to database", skip(db_pool))]
+#[tracing::instrument(name = "write widget event to database", skip(db_pool))]
 pub async fn write_widget_event(event: &WidgetEvent, db_pool: &PgPool) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
@@ -352,7 +352,7 @@ pub struct FeedbackForm {
     message: String,
 }
 
-#[tracing::instrument(name = "Write feedback to database", skip(db_pool))]
+#[tracing::instrument(name = "write feedback to database", skip(db_pool))]
 pub async fn write_general_feedback(
     data: &FeedbackForm,
     db_pool: &PgPool,
@@ -396,7 +396,7 @@ pub struct UniversalConfiguratorEvent {
     event_type: UniversalConfiguratorEventType,
 }
 
-#[tracing::instrument(name = "Write universal widget event to database", skip(db_pool))]
+#[tracing::instrument(name = "write universal widget event to database", skip(db_pool))]
 pub async fn write_universal_widget_event(
     data: &UniversalConfiguratorEvent,
     db_pool: &PgPool,
