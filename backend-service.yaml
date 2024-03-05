@@ -26,6 +26,8 @@ spec:
           env:
             - name: OTEL_ENABLE
               value: "true"
+            - name: GCLOUD_TRACE_PROPAGATOR
+              value: "true"
             - name: RUST_LOG
               value: "warn,swu_app=trace,otel::tracing=trace"
             - name: APP__APPLICATION__PORT

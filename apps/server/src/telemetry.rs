@@ -10,6 +10,8 @@ use tracing::Dispatch;
 use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, EnvFilter, Registry};
 
+use crate::google_trace_context_propagator::GoogleTraceContextPropagator;
+
 pub fn init_tracing(name: String, default_env_filter: String) {
     let env_filter =
         EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(default_env_filter));
@@ -38,6 +40,10 @@ pub fn generate_otlp_tracing_subscriber(name: String, env_filter: EnvFilter) -> 
         )
         .install_batch(runtime::Tokio)
         .expect("make tracing pipeline");
+
+    if std::env::var("GCLOUD_TRACE_PROPAGATOR").is_ok() {
+        opentelemetry::global::set_text_map_propagator(GoogleTraceContextPropagator::new());
+    }
 
     let telemetry = tracing_opentelemetry::layer().with_tracer(tracer);
 
