@@ -9,10 +9,11 @@ spec:
   template:
     metadata:
       annotations:
-        autoscaling.knative.dev/minScale: "1"
         run.googleapis.com/cloudsql-instances: stand-with-ukraine-bc-app:us-central1:db
-        run.googleapis.com/execution-environment: gen2
+        run.googleapis.com/execution-environment: gen1
         autoscaling.knative.dev/maxScale: "5"
+        run.googleapis.com/startup-cpu-boost: "false"
+        run.googleapis.com/container-dependencies: '{"app":["otel-collector"]}'
     spec:
       containerConcurrency: 1000
       timeoutSeconds: 300
@@ -96,6 +97,9 @@ spec:
         - name: otel-collector
           image: "%OTEL_COLLECTOR_IMAGE%"
           startupProbe:
+            timeoutSeconds: 1
+            periodSeconds: 10
+            failureThreshold: 3
             httpGet:
               path: /
               port: 13133
