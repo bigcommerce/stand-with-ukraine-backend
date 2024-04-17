@@ -9,19 +9,19 @@ name = "swu-exporter"
 
 [dependencies]
 swu-app = { path = "../server" }
-google-sheets4 = "5.0.3"
-serde = { version = "1.0.188", features = ["derive"] }
-serde_json = "1.0.108"
-time = { version = "0.3.32", features = ["std"] }
+google-sheets4 = "5.0.4"
+serde = { version = "1.0.198", features = ["derive"] }
+serde_json = "1.0.116"
+time = { version = "0.3.36", features = ["std"] }
 config = "0.14.0"
 dotenvy = "0.15.7"
 
 [dependencies.tokio]
-version = "1.35.1"
+version = "1.37.0"
 features = ["macros", "rt-multi-thread"]
 
 [dependencies.sqlx]
-version = "0.7.3"
+version = "0.7.4"
 default-features = false
 features = [
   "runtime-tokio",
@@ -35,6 +35,6 @@ features = [
 ]
 
 [dev-dependencies]
-rstest = "0.18.2"
+rstest = "0.19.0"
 rand = "0.8.5"
 rusty-hook = "^0.11.2"
