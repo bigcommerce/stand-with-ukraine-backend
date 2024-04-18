@@ -27,7 +27,6 @@ pub async fn get_sheets_client(credential_path: &str, token_cache_path: &str) ->
                 .with_native_roots()
                 .https_or_http()
                 .enable_http1()
-                .enable_http2()
                 .build(),
         ),
         authenticator,
