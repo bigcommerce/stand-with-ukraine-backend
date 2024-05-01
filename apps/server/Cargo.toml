@@ -48,7 +48,7 @@ version = "0.7.5"
 features = ["default", "tokio", "tracing", "macros", "json"]
 
 [dependencies.reqwest]
-version = "0.12.3"
+version = "0.12.4"
 features = ["json", "rustls-tls"]
 default-features = false
 
