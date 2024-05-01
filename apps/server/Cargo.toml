@@ -21,7 +21,7 @@ secrecy = { version = "0.8.0", features = ["serde"] }
 serde = { version = "1.0.198", features = ["derive"] }
 serde_json = "1.0.116"
 serde-aux = { version = "4.5.0", default-features = false }
-thiserror = "1.0.58"
+thiserror = "1.0.59"
 time = { version = "0.3.36", features = ["std"] }
 tracing = { version = "0.1.40", features = ["log"] }
 tracing-bunyan-formatter = "0.3.9"
