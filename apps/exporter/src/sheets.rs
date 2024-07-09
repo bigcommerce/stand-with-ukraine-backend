@@ -25,6 +25,7 @@ pub async fn get_sheets_client(credential_path: &str, token_cache_path: &str) ->
         hyper::Client::builder().build(
             hyper_rustls::HttpsConnectorBuilder::new()
                 .with_native_roots()
+                .expect("native tls available")
                 .https_or_http()
                 .enable_http1()
                 .build(),
