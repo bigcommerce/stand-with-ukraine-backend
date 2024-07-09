@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://run.googleapis.com/$discovery/rest?version=v1
 apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
@@ -10,9 +11,9 @@ spec:
     metadata:
       annotations:
         run.googleapis.com/cloudsql-instances: stand-with-ukraine-bc-app:us-central1:db
-        run.googleapis.com/execution-environment: gen1
-        autoscaling.knative.dev/maxScale: "5"
-        run.googleapis.com/startup-cpu-boost: "false"
+        run.googleapis.com/execution-environment: gen2
+        autoscaling.knative.dev/maxScale: 1
+        autoscaling.knative.dev/minScale: 1
         run.googleapis.com/container-dependencies: '{"app":["otel-collector"]}'
     spec:
       containerConcurrency: 1000
@@ -89,14 +90,16 @@ spec:
               cpu: 750m
               memory: 256Mi
           startupProbe:
-            timeoutSeconds: 240
-            periodSeconds: 240
-            failureThreshold: 1
+            initialDelaySeconds: 0
+            timeoutSeconds: 1
+            periodSeconds: 10
+            failureThreshold: 3
             tcpSocket:
               port: 8000
         - name: otel-collector
           image: "%OTEL_COLLECTOR_IMAGE%"
           startupProbe:
+            initialDelaySeconds: 0
             timeoutSeconds: 1
             periodSeconds: 10
             failureThreshold: 3
