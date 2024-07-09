@@ -12,8 +12,8 @@ spec:
       annotations:
         run.googleapis.com/cloudsql-instances: stand-with-ukraine-bc-app:us-central1:db
         run.googleapis.com/execution-environment: gen2
-        autoscaling.knative.dev/maxScale: 1
-        autoscaling.knative.dev/minScale: 1
+        autoscaling.knative.dev/maxScale: '1'
+        autoscaling.knative.dev/minScale: '1'
         run.googleapis.com/container-dependencies: '{"app":["otel-collector"]}'
     spec:
       containerConcurrency: 1000
