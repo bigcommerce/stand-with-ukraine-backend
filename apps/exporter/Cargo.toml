@@ -17,7 +17,7 @@ config = "0.14.0"
 dotenvy = "0.15.7"
 
 [dependencies.tokio]
-version = "1.38.0"
+version = "1.39.2"
 features = ["macros", "rt-multi-thread"]
 
 [dependencies.sqlx]
