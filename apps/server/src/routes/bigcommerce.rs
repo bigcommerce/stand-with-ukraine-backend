@@ -58,7 +58,7 @@ async fn install(
         ..
     }): State<AppState>,
 ) -> Result<Response, InstallError> {
-    tracing::Span::current().record("context", &tracing::field::display(&query.context));
+    tracing::Span::current().record("context", tracing::field::display(&query.context));
 
     let oauth_credentials = bigcommerce_client
         .authorize_oauth_install(&query.code, &query.scope, &query.context)
@@ -68,7 +68,7 @@ async fn install(
 
     tracing::Span::current().record(
         "user_email",
-        &tracing::field::display(&oauth_credentials.user.email),
+        tracing::field::display(&oauth_credentials.user.email),
     );
 
     let store = oauth_credentials
