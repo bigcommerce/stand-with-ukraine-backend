@@ -32,7 +32,7 @@ tracing-subscriber = { version = "0.3.18", features = [
 ] }
 uuid = { version = "1.10.0", features = ["v4"] }
 dotenvy = "0.15.7"
-email_address = "0.2.5"
+email_address = "0.2.9"
 sha1 = "0.10.6"
 assert-json-diff = "2.0.2"
 opentelemetry-otlp = { version = "0.16.0" }
